@@ -176,12 +176,15 @@
         .nav-tabs a.active {
             color: var(--text);
             font-weight: 500;
+            border-bottom: 2px solid var(--link);
+            border-radius: 0;
+            padding-bottom: 4px;
         }
 
         /* Sections */
         .section {
             display: none;
-            padding: 32px 0 80px;
+            padding: 40px 0 80px;
         }
 
         .section.visible {
@@ -193,21 +196,38 @@
         }
 
         .section-header {
-            margin-bottom: 32px;
+            margin-bottom: 36px;
         }
 
-
         .section-header h2 {
-            font-size: 1.3rem;
+            font-size: 1.6rem;
             font-weight: 600;
             color: var(--text);
-            margin-top: 4px;
-            letter-spacing: -0.2px;
+            letter-spacing: -0.3px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--link);
+            display: inline-block;
         }
 
         /* Entry items */
         .entry {
-            margin-bottom: 28px;
+            margin-bottom: 16px;
+        }
+
+        .entry-separated {
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .entry-separated:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        .entry-separated .entry {
+            margin-bottom: 0;
         }
 
         .entry-top {
@@ -219,8 +239,8 @@
         }
 
         .entry-title {
-            font-weight: 500;
-            font-size: 0.95rem;
+            font-weight: 600;
+            font-size: 1.05rem;
             color: var(--text);
         }
 
@@ -268,8 +288,8 @@
         }
 
         .pub-title {
-            font-weight: 500;
-            font-size: 0.92rem;
+            font-weight: 600;
+            font-size: 1rem;
             color: var(--text);
             line-height: 1.5;
         }
@@ -442,31 +462,37 @@
             <h2>Education</h2>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Imperial College London</span>
-                <span class="entry-date">2021 &ndash; 2025</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Imperial College London</span>
+                    <span class="entry-date">2021 &ndash; 2025</span>
+                </div>
+                <div class="entry-subtitle">PhD in Statistics &amp; Machine Learning</div>
+                <div class="entry-detail">Fully funded by Roth Scholarship</div>
             </div>
-            <div class="entry-subtitle">PhD in Statistics &amp; Machine Learning</div>
-            <div class="entry-detail">Fully funded by Roth Scholarship</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Imperial College London</span>
-                <span class="entry-date">2020 &ndash; 2021</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Imperial College London</span>
+                    <span class="entry-date">2020 &ndash; 2021</span>
+                </div>
+                <div class="entry-subtitle">MSc in Statistics</div>
+                <div class="entry-detail">Distinction</div>
             </div>
-            <div class="entry-subtitle">MSc in Statistics</div>
-            <div class="entry-detail">Distinction</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Beijing Institute of Technology</span>
-                <span class="entry-date">2016 &ndash; 2020</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Beijing Institute of Technology</span>
+                    <span class="entry-date">2016 &ndash; 2020</span>
+                </div>
+                <div class="entry-subtitle">BSc in Mathematics</div>
+                <div class="entry-detail">Top 10% of cohort &middot; Thesis with Distinction</div>
             </div>
-            <div class="entry-subtitle">BSc in Mathematics</div>
-            <div class="entry-detail">Top 10% of cohort &middot; Thesis with Distinction</div>
         </div>
     </section>
 
@@ -476,31 +502,35 @@
             <h2>Experience</h2>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">TESCO &mdash; Data Scientist Intern</span>
-                <span class="entry-date">Aug &ndash; Oct 2024</span>
-            </div>
-            <div class="entry-subtitle">London, UK</div>
-            <div class="entry-desc">
-                <ul>
-                    <li>Delivered an end-to-end ML pipeline for demand forecasting with the forecasting and supply chain teams.</li>
-                    <li>Designed multiple deep neural network architectures for supply chain forecasting, matching or exceeding TESCO's current approach with fewer workflows.</li>
-                </ul>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">TESCO &mdash; Data Scientist Intern</span>
+                    <span class="entry-date">Aug &ndash; Oct 2024</span>
+                </div>
+                <div class="entry-subtitle">London, UK</div>
+                <div class="entry-desc">
+                    <ul>
+                        <li>Delivered an end-to-end ML pipeline for demand forecasting with the forecasting and supply chain teams.</li>
+                        <li>Designed multiple deep neural network architectures for supply chain forecasting, matching or exceeding TESCO's current approach with fewer workflows.</li>
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">IQVIA &mdash; Data Analyst Intern</span>
-                <span class="entry-date">Jul &ndash; Sep 2019</span>
-            </div>
-            <div class="entry-subtitle">Beijing, China</div>
-            <div class="entry-desc">
-                <ul>
-                    <li>Cleaned and analyzed survey and experimental datasets with feature engineering, missing-data handling, and statistical testing.</li>
-                    <li>Built data visualizations for communicating results to non-technical stakeholders.</li>
-                </ul>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">IQVIA &mdash; Data Analyst Intern</span>
+                    <span class="entry-date">Jul &ndash; Sep 2019</span>
+                </div>
+                <div class="entry-subtitle">Beijing, China</div>
+                <div class="entry-desc">
+                    <ul>
+                        <li>Cleaned and analyzed survey and experimental datasets with feature engineering, missing-data handling, and statistical testing.</li>
+                        <li>Built data visualizations for communicating results to non-technical stakeholders.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </section>
@@ -550,25 +580,31 @@
             <h2>Open Source Packages</h2>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">wmwm <span class="pkg-lang">R</span><span class="pkg-lang">Python</span></span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">wmwm <span class="pkg-lang">R</span><span class="pkg-lang">Python</span></span>
+                </div>
+                <div class="entry-subtitle">Wilcoxon-Mann-Whitney two-sample hypothesis testing in the presence of missing data.</div>
             </div>
-            <div class="entry-subtitle">Wilcoxon-Mann-Whitney two-sample hypothesis testing in the presence of missing data.</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">bosfr <span class="pkg-lang">R</span></span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">bosfr <span class="pkg-lang">R</span></span>
+                </div>
+                <div class="entry-subtitle">Computing tight bounds of Spearman's footrule in the presence of missing data.</div>
             </div>
-            <div class="entry-subtitle">Computing tight bounds of Spearman's footrule in the presence of missing data.</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">abwm <span class="pkg-lang">R</span></span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">abwm <span class="pkg-lang">R</span></span>
+                </div>
+                <div class="entry-subtitle">Ansari-Bradley two-sample hypothesis testing in the presence of missing data.</div>
             </div>
-            <div class="entry-subtitle">Ansari-Bradley two-sample hypothesis testing in the presence of missing data.</div>
         </div>
     </section>
 
@@ -578,27 +614,33 @@
             <h2>Invited Talks</h2>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">StatML CDT White Board Talk</span>
-                <span class="entry-date">Jan 2025</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">StatML CDT White Board Talk</span>
+                    <span class="entry-date">Jan 2025</span>
+                </div>
+                <div class="entry-detail">Valid hypothesis testing with missing data</div>
             </div>
-            <div class="entry-detail">Valid hypothesis testing with missing data</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Imperial Internal Statistics Seminar</span>
-                <span class="entry-date">Jun 2025</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Imperial Internal Statistics Seminar</span>
+                    <span class="entry-date">Jun 2025</span>
+                </div>
+                <div class="entry-detail">Rank-based hypothesis testing in the presence of missing data</div>
             </div>
-            <div class="entry-detail">Rank-based hypothesis testing in the presence of missing data</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">RSS Conference 2026</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">RSS Conference 2026</span>
+                </div>
+                <div class="entry-detail">Session on missing data (to be confirmed)</div>
             </div>
-            <div class="entry-detail">Session on missing data (to be confirmed)</div>
         </div>
     </section>
 
@@ -608,25 +650,31 @@
             <h2>Selected Projects</h2>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">E-Commerce Order Cancellation Prediction</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">E-Commerce Order Cancellation Prediction</span>
+                </div>
+                <div class="entry-subtitle">Predict order cancellation with highly imbalanced dataset for real-world impact.</div>
             </div>
-            <div class="entry-subtitle">Predict order cancellation with highly imbalanced dataset for real-world impact.</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Deep Learning Hangman Game</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Deep Learning Hangman Game</span>
+                </div>
+                <div class="entry-subtitle">Play word guessing games using deep learning with high success rate (~60%).</div>
             </div>
-            <div class="entry-subtitle">Play word guessing games using deep learning with high success rate (~60%).</div>
         </div>
 
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Stock Clustering</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Stock Clustering</span>
+                </div>
+                <div class="entry-subtitle">Cluster stocks using daily return to produce balanced investment groups.</div>
             </div>
-            <div class="entry-subtitle">Cluster stocks using daily return to produce balanced investment groups.</div>
         </div>
     </section>
 
@@ -660,28 +708,32 @@
             <h2>Skills</h2>
         </div>
 
-        <div class="skill-group">
-            <div class="skill-label">Programming &amp; Tools</div>
-            <div class="tags">
-                <span class="tag">Python</span>
-                <span class="tag">R</span>
-                <span class="tag">TensorFlow</span>
-                <span class="tag">pandas</span>
-                <span class="tag">NumPy</span>
-                <span class="tag">scikit-learn</span>
-                <span class="tag">MATLAB</span>
-                <span class="tag">Azure ML</span>
-                <span class="tag">HPC</span>
-                <span class="tag">Linux</span>
-                <span class="tag">Git</span>
+        <div class="entry-separated">
+            <div class="skill-group">
+                <div class="skill-label">Programming &amp; Tools</div>
+                <div class="tags">
+                    <span class="tag">Python</span>
+                    <span class="tag">R</span>
+                    <span class="tag">TensorFlow</span>
+                    <span class="tag">pandas</span>
+                    <span class="tag">NumPy</span>
+                    <span class="tag">scikit-learn</span>
+                    <span class="tag">MATLAB</span>
+                    <span class="tag">Azure ML</span>
+                    <span class="tag">HPC</span>
+                    <span class="tag">Linux</span>
+                    <span class="tag">Git</span>
+                </div>
             </div>
         </div>
 
-        <div class="skill-group">
-            <div class="skill-label">Languages</div>
-            <div class="tags">
-                <span class="tag">Chinese (Native)</span>
-                <span class="tag">English (Proficient)</span>
+        <div class="entry-separated">
+            <div class="skill-group">
+                <div class="skill-label">Languages</div>
+                <div class="tags">
+                    <span class="tag">Chinese (Native)</span>
+                    <span class="tag">English (Proficient)</span>
+                </div>
             </div>
         </div>
     </section>
@@ -691,24 +743,30 @@
         <div class="section-header">
             <h2>Contact</h2>
         </div>
-        <p class="intro-text">Feel free to reach out if you'd like to discuss research, collaboration, or opportunities.</p>
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">Email</span>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.8; margin-bottom: 28px;">Feel free to reach out if you'd like to discuss research, collaboration, or opportunities.</p>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">Email</span>
+                </div>
+                <div class="entry-subtitle"><a href="mailto:yijin.zeng20@imperial.ac.uk">yijin.zeng20@imperial.ac.uk</a></div>
             </div>
-            <div class="entry-subtitle"><a href="mailto:yijin.zeng20@imperial.ac.uk">yijin.zeng20@imperial.ac.uk</a></div>
         </div>
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">GitHub</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">GitHub</span>
+                </div>
+                <div class="entry-subtitle"><a href="https://github.com/Yijin-Zeng">github.com/Yijin-Zeng</a></div>
             </div>
-            <div class="entry-subtitle"><a href="https://github.com/Yijin-Zeng">github.com/Yijin-Zeng</a></div>
         </div>
-        <div class="entry">
-            <div class="entry-top">
-                <span class="entry-title">LinkedIn</span>
+        <div class="entry-separated">
+            <div class="entry">
+                <div class="entry-top">
+                    <span class="entry-title">LinkedIn</span>
+                </div>
+                <div class="entry-subtitle"><a href="https://www.linkedin.com/in/yijin-zeng/">linkedin.com/in/yijin-zeng</a></div>
             </div>
-            <div class="entry-subtitle"><a href="https://www.linkedin.com/in/yijin-zeng/">linkedin.com/in/yijin-zeng</a></div>
         </div>
     </section>
 
