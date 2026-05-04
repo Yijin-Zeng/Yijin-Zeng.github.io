@@ -43,12 +43,14 @@
         /* Hero / Intro */
         .intro {
             display: flex;
-            gap: 48px;
+            gap: 64px;
             align-items: center;
         }
 
         .portrait {
-            width: 360px;
+            width: 420px;
+            height: auto;
+            display: block;
             border-radius: 0;
             object-fit: cover;
             flex-shrink: 0;
@@ -61,10 +63,10 @@
         }
 
         .intro h1 {
-            font-size: 1.8rem;
+            font-size: 2.6rem;
             font-weight: 600;
-            margin-bottom: 20px;
-            letter-spacing: -0.3px;
+            margin-bottom: 36px;
+            letter-spacing: -0.5px;
         }
 
         @media (max-width: 540px) {
@@ -74,32 +76,56 @@
                 text-align: center;
             }
             .portrait { width: 180px; }
-            .intro-links { justify-content: center; }
         }
 
         .intro-text {
             color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.8;
-            margin-bottom: 16px;
+            font-size: 1.15rem;
+            line-height: 2.1;
+            margin-bottom: 28px;
         }
 
-        .intro-links {
+        .intro-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+            gap: 20px;
+        }
+
+        .intro-caption {
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .intro-icons {
             display: flex;
             gap: 20px;
-            flex-wrap: wrap;
-            margin-top: 24px;
-            font-size: 0.9rem;
+            justify-content: center;
         }
 
-        .intro-links a {
-            color: var(--text-secondary);
-            transition: color 0.2s;
+        .intro-icons a {
+            color: var(--text-light);
+            transition: all 0.25s;
+            display: inline-flex;
         }
 
-        .intro-links a:hover {
-            color: var(--text);
+        .intro-icons a svg {
+            width: 28px;
+            height: 28px;
+            fill: currentColor;
+            transition: transform 0.25s;
+        }
+
+        .intro-icons a:hover {
+            color: var(--link);
             text-decoration: none;
+        }
+
+        .intro-icons a:hover svg {
+            transform: scale(1.3);
         }
 
         .divider {
@@ -160,6 +186,10 @@
 
         .section.visible {
             display: block;
+        }
+
+        .section#home.visible {
+            padding: 64px 0 80px;
         }
 
         .section-header {
@@ -262,6 +292,20 @@
             color: var(--text-light);
             margin-top: 8px;
             line-height: 1.6;
+        }
+
+        .pub-status {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .pub-status.under-review {
+            background: #fef3c7;
+            color: #92400e;
         }
 
         /* Packages */
@@ -374,14 +418,20 @@
                 correlation analysis, and change point detection in the presence of missing data &mdash;
                 with applications in A/B testing, causal inference, information retrieval, and continual learning.
             </p>
-            <div class="intro-links">
-                <a href="https://github.com/Yijin-Zeng">GitHub</a>
-                <a href="https://www.linkedin.com/in/yijin-zeng/">LinkedIn</a>
-                <a href="mailto:yijin.zeng20@imperial.ac.uk">Email</a>
-                <a href="cv.pdf">CV &darr;</a>
             </div>
+            <div class="intro-right">
+                <img src="Photos/Yijin.jpg" alt="Yijin Zeng" class="portrait">
+                <div class="intro-caption">
+                    <div>Machine Learning Scientist</div>
+                    <div>PhD in Statistics and Machine Learning</div>
+                </div>
+                <div class="intro-icons">
+                    <a href="https://github.com/Yijin-Zeng" title="GitHub"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
+                    <a href="https://www.linkedin.com/in/yijin-zeng/" title="LinkedIn"><svg viewBox="0 0 16 16"><path d="M13.6 1H2.4C1.6 1 1 1.6 1 2.4v11.2c0 .8.6 1.4 1.4 1.4h11.2c.8 0 1.4-.6 1.4-1.4V2.4c0-.8-.6-1.4-1.4-1.4zM5.3 13H3.1V6.5h2.2V13zM4.2 5.6c-.7 0-1.3-.6-1.3-1.3s.6-1.3 1.3-1.3 1.3.6 1.3 1.3-.6 1.3-1.3 1.3zM13 13h-2.2V9.8c0-.8 0-1.8-1.1-1.8s-1.3.9-1.3 1.7V13H6.2V6.5h2.1v.9c.3-.6 1-1.1 2.1-1.1 2.2 0 2.6 1.5 2.6 3.4V13z"/></svg></a>
+                    <a href="mailto:yijin.zeng20@imperial.ac.uk" title="Email"><svg viewBox="0 0 24 24"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg></a>
+                    <a href="cv.pdf" title="CV"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6zm2-4h8v2H8v-2zm0-3h8v2H8v-2z"/></svg></a>
+                </div>
             </div>
-            <img src="Photos/Yijin.jpg" alt="Yijin Zeng" class="portrait">
         </div>
     </section>
 
@@ -463,29 +513,33 @@
         <div class="pub">
             <div class="pub-title">On Two-Sample Testing for Data with Arbitrarily Missing Values</div>
             <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue">arXiv:2403.15327 &middot; 2024</div>
+            <div class="pub-venue"><a href="https://arxiv.org/abs/2403.15327">arXiv:2403.15327</a> &middot; 2024</div>
             <div class="pub-summary">A two-sample hypothesis testing method for partially observed univariate data to detect location shifts, with no assumption on the values of missing data.</div>
+            <span class="pub-status under-review">Under Review</span>
         </div>
 
         <div class="pub">
             <div class="pub-title">MMD Two-Sample Testing in the Presence of Arbitrarily Missing Data</div>
             <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue">arXiv:2405.15531 &middot; 2024</div>
+            <div class="pub-venue"><a href="https://arxiv.org/abs/2405.15531">arXiv:2405.15531</a> &middot; 2024</div>
             <div class="pub-summary">Extended framework for high-dimensional data with any distributional shifts.</div>
+            <span class="pub-status under-review">Under Review</span>
         </div>
 
         <div class="pub">
             <div class="pub-title">Exact Bounds of Spearman's Footrule in the Presence of Missing Data with Applications to Independence Testing</div>
             <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue">arXiv:2501.11696 &middot; 2025</div>
+            <div class="pub-venue"><a href="https://arxiv.org/abs/2501.11696">arXiv:2501.11696</a> &middot; 2025</div>
             <div class="pub-summary">Tight bounds for Spearman's footrule in the presence of missing data, with applications for independence testing.</div>
+            <span class="pub-status under-review">Under Review</span>
         </div>
 
         <div class="pub">
             <div class="pub-title">Scale Two-Sample Testing with Arbitrarily Missing Data</div>
             <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue">arXiv:2509.20332 &middot; 2025</div>
+            <div class="pub-venue"><a href="https://arxiv.org/abs/2509.20332">arXiv:2509.20332</a> &middot; 2025</div>
             <div class="pub-summary">Two-sample scale testing in the presence of missing data without missing data assumptions.</div>
+            <span class="pub-status under-review">Under Review</span>
         </div>
     </section>
 
