@@ -3,17 +3,656 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Personal Website</title>
+    <title>Yijin Zeng</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --accent: #3d3d3d;
+            --link: #2563eb;
+            --section-num: #bbb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        ::selection { background: #dbeafe; }
+
+        /* Layout */
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Hero / Intro */
+        .intro {
+            display: flex;
+            gap: 48px;
+            align-items: center;
+        }
+
+        .portrait {
+            width: 360px;
+            border-radius: 0;
+            object-fit: cover;
+            flex-shrink: 0;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        }
+
+        .intro-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .intro h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        @media (max-width: 540px) {
+            .intro {
+                flex-direction: column-reverse;
+                align-items: center;
+                text-align: center;
+            }
+            .portrait { width: 180px; }
+            .intro-links { justify-content: center; }
+        }
+
+        .intro-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .intro-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+            font-size: 0.9rem;
+        }
+
+        .intro-links a {
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+
+        .intro-links a:hover {
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0;
+        }
+
+        /* Navigation bar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-tabs {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-tabs a {
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            color: var(--text-light);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+
+        .nav-tabs a:first-child {
+            padding-left: 0;
+        }
+
+        .nav-tabs a:hover {
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .nav-tabs a.active {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            padding: 32px 0 80px;
+        }
+
+        .section.visible {
+            display: block;
+        }
+
+        .section-header {
+            margin-bottom: 32px;
+        }
+
+
+        .section-header h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-top: 4px;
+            letter-spacing: -0.2px;
+        }
+
+        /* Entry items */
+        .entry {
+            margin-bottom: 28px;
+        }
+
+        .entry-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .entry-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+
+        .entry-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .entry-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .entry-detail {
+            font-size: 0.88rem;
+            color: var(--text-light);
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .entry-desc {
+            margin-top: 8px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .entry-desc li {
+            margin-bottom: 4px;
+            margin-left: 16px;
+        }
+
+        /* Publications */
+        .pub {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pub:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .pub-title {
+            font-weight: 500;
+            font-size: 0.92rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .pub-authors {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .pub-venue {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .pub-summary {
+            font-size: 0.84rem;
+            color: var(--text-light);
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        /* Packages */
+        .pkg-lang {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-light);
+            background: #f0f0ec;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        /* Skills */
+        .skill-group {
+            margin-bottom: 20px;
+        }
+
+        .skill-label {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            background: #f0f0ec;
+            padding: 5px 12px;
+            border-radius: 4px;
+        }
+
+        /* Teaching */
+        .teaching-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+
+        .teaching-row:last-child {
+            border-bottom: none;
+        }
+
+        .teaching-row .course {
+            color: var(--text);
+        }
+
+        .teaching-row .term {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 32px 0;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .intro h1 { font-size: 1.5rem; }
+            .entry-top { flex-direction: column; }
+            .teaching-row { flex-direction: column; gap: 2px; }
         }
     </style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
-    <p>Welcome to my new personal website hosted on GitHub Pages.</p>
+
+<nav class="nav-bar">
+    <div class="nav-tabs">
+        <a data-section="home" class="active">Home</a>
+        <a data-section="education">Education</a>
+        <a data-section="experience">Experience</a>
+        <a data-section="publications">Publications</a>
+        <a data-section="packages">Packages</a>
+        <a data-section="talks">Talks</a>
+        <a data-section="projects">Projects</a>
+        <a data-section="teaching">Teaching</a>
+        <a data-section="skills">Skills</a>
+    </div>
+</nav>
+
+<div class="page">
+
+    <section id="home" class="section visible">
+        <div class="intro">
+            <div class="intro-content">
+            <h1>Hello, I'm Yijin Zeng.</h1>
+            <p class="intro-text">
+                I'm a final year PhD candidate in Statistics and Machine Learning at
+                <a href="https://www.imperial.ac.uk/">Imperial College London</a>,
+                jointly with the University of Oxford through the
+                <a href="https://statml.io/">StatML CDT</a>.
+            </p>
+            <p class="intro-text">
+                My research focuses on developing new methodologies for statistical hypothesis testing,
+                correlation analysis, and change point detection in the presence of missing data &mdash;
+                with applications in A/B testing, causal inference, information retrieval, and continual learning.
+            </p>
+            <div class="intro-links">
+                <a href="https://github.com/Yijin-Zeng">GitHub</a>
+                <a href="https://www.linkedin.com/in/yijin-zeng/">LinkedIn</a>
+                <a href="mailto:yijin.zeng20@imperial.ac.uk">Email</a>
+                <a href="cv.pdf">CV &darr;</a>
+            </div>
+            </div>
+            <img src="photos/Yijin.jpg" alt="Yijin Zeng" class="portrait">
+        </div>
+    </section>
+
+    <!-- Education -->
+    <section id="education" class="section">
+        <div class="section-header">
+            <h2>Education</h2>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">Imperial College London</span>
+                <span class="entry-date">2021 &ndash; 2025</span>
+            </div>
+            <div class="entry-subtitle">PhD in Statistics &amp; Machine Learning</div>
+            <div class="entry-detail">Fully funded by Roth Scholarship</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">Imperial College London</span>
+                <span class="entry-date">2020 &ndash; 2021</span>
+            </div>
+            <div class="entry-subtitle">MSc in Statistics</div>
+            <div class="entry-detail">Distinction</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">Beijing Institute of Technology</span>
+                <span class="entry-date">2016 &ndash; 2020</span>
+            </div>
+            <div class="entry-subtitle">BSc in Mathematics</div>
+            <div class="entry-detail">Top 10% of cohort &middot; Thesis with Distinction</div>
+        </div>
+    </section>
+
+    <!-- Experience -->
+    <section id="experience" class="section">
+        <div class="section-header">
+            <h2>Experience</h2>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">TESCO &mdash; Data Scientist Intern</span>
+                <span class="entry-date">Aug &ndash; Oct 2024</span>
+            </div>
+            <div class="entry-subtitle">London, UK</div>
+            <div class="entry-desc">
+                <ul>
+                    <li>Delivered an end-to-end ML pipeline for demand forecasting with the forecasting and supply chain teams.</li>
+                    <li>Designed multiple deep neural network architectures for supply chain forecasting, matching or exceeding TESCO's current approach with fewer workflows.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">IQVIA &mdash; Data Analyst Intern</span>
+                <span class="entry-date">Jul &ndash; Sep 2019</span>
+            </div>
+            <div class="entry-subtitle">Beijing, China</div>
+            <div class="entry-desc">
+                <ul>
+                    <li>Cleaned and analyzed survey and experimental datasets with feature engineering, missing-data handling, and statistical testing.</li>
+                    <li>Built data visualizations for communicating results to non-technical stakeholders.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Publications -->
+    <section id="publications" class="section">
+        <div class="section-header">
+            <h2>Publications</h2>
+        </div>
+
+        <div class="pub">
+            <div class="pub-title">On Two-Sample Testing for Data with Arbitrarily Missing Values</div>
+            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+            <div class="pub-venue">arXiv:2403.15327 &middot; 2024</div>
+            <div class="pub-summary">A two-sample hypothesis testing method for partially observed univariate data to detect location shifts, with no assumption on the values of missing data.</div>
+        </div>
+
+        <div class="pub">
+            <div class="pub-title">MMD Two-Sample Testing in the Presence of Arbitrarily Missing Data</div>
+            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+            <div class="pub-venue">arXiv:2405.15531 &middot; 2024</div>
+            <div class="pub-summary">Extended framework for high-dimensional data with any distributional shifts.</div>
+        </div>
+
+        <div class="pub">
+            <div class="pub-title">Exact Bounds of Spearman's Footrule in the Presence of Missing Data with Applications to Independence Testing</div>
+            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+            <div class="pub-venue">arXiv:2501.11696 &middot; 2025</div>
+            <div class="pub-summary">Tight bounds for Spearman's footrule in the presence of missing data, with applications for independence testing.</div>
+        </div>
+
+        <div class="pub">
+            <div class="pub-title">Scale Two-Sample Testing with Arbitrarily Missing Data</div>
+            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+            <div class="pub-venue">arXiv:2509.20332 &middot; 2025</div>
+            <div class="pub-summary">Two-sample scale testing in the presence of missing data without missing data assumptions.</div>
+        </div>
+    </section>
+
+    <!-- Packages -->
+    <section id="packages" class="section">
+        <div class="section-header">
+            <h2>Open Source Packages</h2>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">wmwm <span class="pkg-lang">R</span><span class="pkg-lang">Python</span></span>
+            </div>
+            <div class="entry-subtitle">Wilcoxon-Mann-Whitney two-sample hypothesis testing in the presence of missing data.</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">bosfr <span class="pkg-lang">R</span></span>
+            </div>
+            <div class="entry-subtitle">Computing tight bounds of Spearman's footrule in the presence of missing data.</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">abwm <span class="pkg-lang">R</span></span>
+            </div>
+            <div class="entry-subtitle">Ansari-Bradley two-sample hypothesis testing in the presence of missing data.</div>
+        </div>
+    </section>
+
+    <!-- Talks -->
+    <section id="talks" class="section">
+        <div class="section-header">
+            <h2>Invited Talks</h2>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">StatML CDT White Board Talk</span>
+                <span class="entry-date">Jan 2025</span>
+            </div>
+            <div class="entry-detail">Valid hypothesis testing with missing data</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">Imperial Internal Statistics Seminar</span>
+                <span class="entry-date">Jun 2025</span>
+            </div>
+            <div class="entry-detail">Rank-based hypothesis testing in the presence of missing data</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">RSS Conference 2026</span>
+            </div>
+            <div class="entry-detail">Session on missing data (to be confirmed)</div>
+        </div>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects" class="section">
+        <div class="section-header">
+            <h2>Selected Projects</h2>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">E-Commerce Order Cancellation Prediction</span>
+            </div>
+            <div class="entry-subtitle">Predict order cancellation with highly imbalanced dataset for real-world impact.</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">Deep Learning Hangman Game</span>
+            </div>
+            <div class="entry-subtitle">Play word guessing games using deep learning with high success rate (~60%).</div>
+        </div>
+
+        <div class="entry">
+            <div class="entry-top">
+                <span class="entry-title">Stock Clustering</span>
+            </div>
+            <div class="entry-subtitle">Cluster stocks using daily return to produce balanced investment groups.</div>
+        </div>
+    </section>
+
+    <!-- Teaching -->
+    <section id="teaching" class="section">
+        <div class="section-header">
+            <h2>Teaching</h2>
+        </div>
+
+        <div class="teaching-row">
+            <span class="course">Probability for Statistics (MSc)</span>
+            <span class="term">Summer 2023</span>
+        </div>
+        <div class="teaching-row">
+            <span class="course">Data Science (MSc)</span>
+            <span class="term">Spring 2024</span>
+        </div>
+        <div class="teaching-row">
+            <span class="course">Statistical Clinics (MSc)</span>
+            <span class="term">Summer 2024</span>
+        </div>
+        <div class="teaching-row">
+            <span class="course">Probability and Statistics (BSc)</span>
+            <span class="term">Spring 2024</span>
+        </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="section">
+        <div class="section-header">
+            <h2>Skills</h2>
+        </div>
+
+        <div class="skill-group">
+            <div class="skill-label">Programming &amp; Tools</div>
+            <div class="tags">
+                <span class="tag">Python</span>
+                <span class="tag">R</span>
+                <span class="tag">TensorFlow</span>
+                <span class="tag">pandas</span>
+                <span class="tag">NumPy</span>
+                <span class="tag">scikit-learn</span>
+                <span class="tag">MATLAB</span>
+                <span class="tag">Azure ML</span>
+                <span class="tag">HPC</span>
+                <span class="tag">Linux</span>
+                <span class="tag">Git</span>
+            </div>
+        </div>
+
+        <div class="skill-group">
+            <div class="skill-label">Languages</div>
+            <div class="tags">
+                <span class="tag">Chinese (Native)</span>
+                <span class="tag">English (Proficient)</span>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        Yijin Zeng &middot; Imperial College London
+    </footer>
+
+</div>
+
+<script>
+    var links = document.querySelectorAll('.nav-tabs a');
+    var sections = document.querySelectorAll('.section');
+
+    links.forEach(function(link) {
+        link.addEventListener('click', function() {
+            var target = this.getAttribute('data-section');
+
+            sections.forEach(function(s) { s.classList.remove('visible'); });
+            links.forEach(function(a) { a.classList.remove('active'); });
+
+            document.getElementById(target).classList.add('visible');
+            this.classList.add('active');
+        });
+    });
+</script>
+
 </body>
 </html>
