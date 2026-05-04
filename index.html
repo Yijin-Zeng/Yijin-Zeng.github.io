@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yijin Zeng</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&family=Mynerve&family=Zhi+Mang+Xing&display=swap');
 
         :root {
             --text: #1a1a1a;
@@ -63,7 +63,7 @@
         }
 
         .intro h1 {
-            font-size: 2.6rem;
+            font-size: 2.5rem;
             font-weight: 600;
             margin-bottom: 36px;
             letter-spacing: -0.5px;
@@ -80,7 +80,7 @@
 
         .intro-text {
             color: var(--text-secondary);
-            font-size: 1.15rem;
+            font-size: 1.08rem;
             line-height: 2.1;
             margin-bottom: 28px;
         }
@@ -155,7 +155,8 @@
 
         .nav-tabs a {
             padding: 6px 14px;
-            font-size: 0.82rem;
+            font-size: 0.95rem;
+            font-weight: 500;
             color: var(--text-light);
             border-radius: 6px;
             cursor: pointer;
@@ -393,8 +394,25 @@
         .footer {
             padding: 32px 0;
             border-top: 1px solid var(--border);
-            font-size: 0.8rem;
+            font-size: 1rem;
             color: var(--text-light);
+        }
+
+        .footer-glow {
+            font-family: "Mynerve";
+            font-size: 1.15em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .footer-glow:hover {
+            color: var(--link);
+            text-shadow: 0 0 10px rgba(37, 99, 235, 0.5), 0 0 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .footer-chinese {
+            font-family: "Zhi Mang Xing", cursive;
+            font-size: 1.15em;
         }
 
         /* Responsive */
@@ -427,17 +445,23 @@
     <section id="home" class="section visible">
         <div class="intro">
             <div class="intro-content">
-            <h1>Hello, I'm Yijin Zeng.</h1>
+            <h1>Hi, I'm Yijin Zeng (曾一津).</h1>
             <p class="intro-text">
-                I'm a final year PhD candidate in Statistics and Machine Learning at
-                <a href="https://www.imperial.ac.uk/">Imperial College London</a>,
+                I'm a machine learning scientist in Expedia Group, working on Expedia's B2B 
+                Revenue Optimisation & Data Science Team. Prior to this, I completed a PhD 
+                in Statistics and Machine Learning at <a href="https://www.imperial.ac.uk/"> Imperial College London</a>,
                 jointly with the University of Oxford through the
-                <a href="https://statml.io/">StatML CDT</a>.
+                <a href="https://statml.io/">StatML CDT</a> program.
             </p>
             <p class="intro-text">
-                My research focuses on developing new methodologies for statistical hypothesis testing,
-                correlation analysis, and change point detection in the presence of missing data &mdash;
-                with applications in A/B testing, causal inference, information retrieval, and continual learning.
+                My PhD research focused on developing rigorous statistical methodologies for hypothesis testing, 
+                correlation analysis, and change-point detection in the presence of missing data.
+            </p>
+            <p class="intro-text">
+                As a Machine Learning Researcher, I understand models through the language of statistics and mathematics.
+                At Expedia, I love taking ownership of end-to-end machine learning pipelines. 
+                Outside of my day job, my passion is to solve complex, real-world problems by
+                bridging the gap between statistics and deep learning.
             </p>
             </div>
             <div class="intro-right">
@@ -469,7 +493,11 @@
                     <span class="entry-date">2021 &ndash; 2025</span>
                 </div>
                 <div class="entry-subtitle">PhD in Statistics &amp; Machine Learning</div>
-                <div class="entry-detail">Fully funded by Roth Scholarship</div>
+                <div class="entry-detail"> During my PhD, I was advised by
+                    <a href="https://profiles.imperial.ac.uk/dean.bodenham">Dr. Dean Bodenham</a>, 
+                    and <a href="https://profiles.imperial.ac.uk/n.adams">Prof. Niall Adams</a>,
+                    and I was fully funded by Roth Scholarship and StatML CDT. 
+                </div>
             </div>
         </div>
 
@@ -480,7 +508,7 @@
                     <span class="entry-date">2020 &ndash; 2021</span>
                 </div>
                 <div class="entry-subtitle">MSc in Statistics</div>
-                <div class="entry-detail">Distinction</div>
+                <div class="entry-detail">I moved from pure math to statistics and machine learning, and from Beijing to London. I completed the MSc with Distinction.</div>
             </div>
         </div>
 
@@ -491,7 +519,8 @@
                     <span class="entry-date">2016 &ndash; 2020</span>
                 </div>
                 <div class="entry-subtitle">BSc in Mathematics</div>
-                <div class="entry-detail">Top 10% of cohort &middot; Thesis with Distinction</div>
+                <div class="entry-detail"> I graduated in the top 10% of my cohort, and my final year thesis, 
+                <a href="https://github.com/Yijin-Zeng/Undergraduate-Thesis">'Numerical Simulation of Convection-Diffusion Equation'</a>, was awarded a Distinction (less than 10%).</div>
             </div>
         </div>
     </section>
@@ -771,7 +800,7 @@
     </section>
 
     <footer class="footer">
-        Yijin Zeng &middot; Imperial College London
+        <a href="https://yijin-zeng.github.io/" class="footer-glow">Yijin Zeng <span class="footer-chinese">(曾一津)</span></a>
     </footer>
 
 </div>
