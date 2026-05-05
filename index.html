@@ -340,6 +340,111 @@
             margin-left: 8px;
         }
 
+        /* Projects */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .project-card {
+            overflow: hidden;
+            border-radius: 8px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+
+        .project-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .project-content {
+            padding: 24px 0;
+        }
+
+        .project-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .project-title:hover {
+            color: var(--link);
+        }
+
+        .project-description {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .project-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--link);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .project-link:hover {
+            background: #1d4ed8;
+            text-decoration: none;
+        }
+
+        .other-projects-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .other-project {
+            padding: 20px;
+            background: #fafaf8;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .other-project:hover {
+            background: #f0f0ec;
+            border-color: var(--link);
+        }
+
+        .other-project-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            transition: color 0.2s;
+        }
+
+        .other-project:hover .other-project-title {
+            color: var(--link);
+        }
+
+        .other-project-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
         /* Skills */
         .skill-group {
             margin-bottom: 20px;
@@ -431,11 +536,9 @@
         <a data-section="education">Education</a>
         <a data-section="experience">Experience</a>
         <a data-section="publications">Publications</a>
-        <a data-section="packages">Packages</a>
-        <a data-section="talks">Talks</a>
         <a data-section="projects">Projects</a>
         <a data-section="teaching">Teaching</a>
-        <a data-section="skills">Skills</a>
+        <a data-section="talks">Talks</a>
         <a data-section="contact">Contact</a>
     </div>
 </nav>
@@ -597,74 +700,185 @@
             <h2>Publications</h2>
         </div>
 
-        <div class="pub">
-            <div class="pub-title">Exact Bounds of Spearman's Footrule in the Presence of Missing Data with Applications to Independence Testing</div>
-            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue"><a href="https://projecteuclid.org/journals/electronic-journal-of-statistics/volume-19/issue-2/Exact-bounds-of-Spearmans-footrule-in-the-presence-of-missing/10.1214/25-EJS2479.full">Electron. J. Statist. 19(2): 6103-6140 (2025)</a> &middot; 2025</div>
-            <div class="pub-summary">This work derives mathematical tight bounds for Spearman's footrule (a robust alternative to Spearman's rank correlation) in the presence of missing data,
-            proposed efficient algorithms for computing the bounds, and applies the bounds independence testing with missing data.</div>
-            <span class="pub-status under-review">Electronic Jornal of Statistics (EJS)</span>
+        <div style="margin-bottom: 40px;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;">Papers</h3>
+            <div class="pub">
+                <div class="pub-title">Exact Bounds of Spearman's Footrule in the Presence of Missing Data with Applications to Independence Testing</div>
+                <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+                <div class="pub-venue"><a href="https://projecteuclid.org/journals/electronic-journal-of-statistics/volume-19/issue-2/Exact-bounds-of-Spearmans-footrule-in-the-presence-of-missing/10.1214/25-EJS2479.full">Electron. J. Statist. 19(2): 6103-6140 (2025)</a> &middot; 2025</div>
+                <div class="pub-summary">This work derives mathematical tight bounds for Spearman's footrule (a robust alternative to Spearman's rank correlation) in the presence of missing data,
+                proposed efficient algorithms for computing the bounds, and applies the bounds independence testing with missing data.</div>
+                <span class="pub-status under-review">Electronic Jornal of Statistics (EJS)</span>
+            </div>
+
+            <div class="pub">
+                <div class="pub-title">MMD Two-Sample Testing in the Presence of Arbitrarily Missing Data</div>
+                <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+                <div class="pub-venue"><a href="https://openreview.net/pdf?id=GfcDel1ICb"> Transactions on Machine Learning Research (11/2025)</a> &middot; 2024</div>
+                <div class="pub-summary">This work extends the popular maximum mean discrepancy (MMD) two-sample testing methods
+                to the cases where data might be missing or partically observed.</div>
+                <span class="pub-status under-review">Transactions on Machine Learning Research (TMLR)</span>
+            </div>
         </div>
 
-        <div class="pub">
-            <div class="pub-title">MMD Two-Sample Testing in the Presence of Arbitrarily Missing Data</div>
-            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue"><a href="https://openreview.net/pdf?id=GfcDel1ICb"> Transactions on Machine Learning Research (11/2025)</a> &middot; 2024</div>
-            <div class="pub-summary">This work extends the popular maximum mean discrepancy (MMD) two-sample testing methods 
-            to the cases where data might be missing or partically observed.</div>
-            <span class="pub-status under-review">Transactions on Machine Learning Research (TMLR)</span>
+        <div style="margin-bottom: 40px;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;">Preprints</h3>
+            <div class="pub">
+                <div class="pub-title">On Two-Sample Testing for Data with Arbitrarily Missing Values</div>
+                <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+                <div class="pub-venue"><a href="https://arxiv.org/abs/2403.15327">arXiv:2403.15327</a> &middot; 2024</div>
+                <div class="pub-summary">A two-sample hypothesis testing framework for partially observed univariate data to detect location shifts, with no assumption on the values of missing data.</div>
+                <span class="pub-status under-review">Under Review</span>
+            </div>
+
+            <div class="pub">
+                <div class="pub-title">Scale Two-Sample Testing with Arbitrarily Missing Data</div>
+                <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
+                <div class="pub-venue"><a href="https://arxiv.org/abs/2509.20332">arXiv:2509.20332</a> &middot; 2025</div>
+                <div class="pub-summary">A two-sample scale testing method in the presence of missing data without missing data assumptions.</div>
+                <span class="pub-status under-review">Under Review</span>
+            </div>
         </div>
 
-        <div class="pub">
-            <div class="pub-title">On Two-Sample Testing for Data with Arbitrarily Missing Values</div>
-            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue"><a href="https://arxiv.org/abs/2403.15327">arXiv:2403.15327</a> &middot; 2024</div>
-            <div class="pub-summary">A two-sample hypothesis testing framework for partially observed univariate data to detect location shifts, with no assumption on the values of missing data.</div>
-            <span class="pub-status under-review">Under Review</span>
-        </div>
+        <div>
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;">Open Source Packages</h3>
+            <div class="entry-separated">
+                <div class="entry">
+                    <div class="entry-top">
+                        <span class="entry-title">wmwm <span class="pkg-lang"><a href="https://cran.r-project.org/web/packages/wmwm/index.html">R</a></span><span class="pkg-lang"><a href="https://www.piwheels.org/project/wmwm/">Python</a></span></span>
+                    </div>
+                    <div class="entry-subtitle">Wilcoxon-Mann-Whitney two-sample hypothesis testing in the presence of missing data.</div>
+                </div>
+            </div>
 
-        <div class="pub">
-            <div class="pub-title">Scale Two-Sample Testing with Arbitrarily Missing Data</div>
-            <div class="pub-authors"><strong>Yijin Zeng</strong>, Niall M. Adams, Dean A. Bodenham</div>
-            <div class="pub-venue"><a href="https://arxiv.org/abs/2509.20332">arXiv:2509.20332</a> &middot; 2025</div>
-            <div class="pub-summary">A two-sample scale testing method in the presence of missing data without missing data assumptions.</div>
-            <span class="pub-status under-review">Under Review</span>
+            <div class="entry-separated">
+                <div class="entry">
+                    <div class="entry-top">
+                        <span class="entry-title">bosfr <span class="pkg-lang"><a href="https://cran.r-project.org/web/packages/bosfr/index.html">R</a></span></span>
+                    </div>
+                    <div class="entry-subtitle">Computing tight bounds of Spearman's footrule in the presence of missing data.</div>
+                </div>
+            </div>
+
+            <div class="entry-separated">
+                <div class="entry">
+                    <div class="entry-top">
+                        <span class="entry-title">abwm <span class="pkg-lang"><a href="https://cran.r-project.org/web/packages/abwm/index.html">R</a></span></span>
+                    </div>
+                    <div class="entry-subtitle">Ansari-Bradley two-sample hypothesis testing in the presence of missing data.</div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Packages -->
-    <section id="packages" class="section">
+    <!-- Projects -->
+    <section id="projects" class="section">
         <div class="section-header">
-            <h2>Open Source Packages</h2>
+            <h2>Selected Projects</h2>
         </div>
 
-        <div class="entry-separated">
-            <div class="entry">
-                <div class="entry-top">
-                    <span class="entry-title">wmwm <span class="pkg-lang">R</span><span class="pkg-lang">Python</span></span>
+        <div class="projects-grid">
+        <div class="project-card">
+            <a href="https://github.com/Yijin-Zeng/Build-a-LLM-From-Scratch" target="_blank">
+                <img src="Photos/LLM.png" alt="Build a LLM From Scratch" class="project-image">
+            </a>
+            <div class="project-content">
+                <a href="https://github.com/Yijin-Zeng/Build-a-LLM-From-Scratch" target="_blank" style="text-decoration: none;">
+                    <div class="project-title">Build a LLM From Scratch</div>
+                </a>
+                <div class="project-description">
+                    A comprehensive guide to building a Large Language Model from the ground up. Learn the fundamentals of transformer architecture, training techniques, and best practices for LLM development.
                 </div>
-                <div class="entry-subtitle">Wilcoxon-Mann-Whitney two-sample hypothesis testing in the presence of missing data.</div>
             </div>
         </div>
 
-        <div class="entry-separated">
-            <div class="entry">
-                <div class="entry-top">
-                    <span class="entry-title">bosfr <span class="pkg-lang">R</span></span>
+        <div class="project-card">
+            <a href="https://github.com/Yijin-Zeng/Deep-Learning-Hangman-Game" target="_blank">
+                <img src="Photos/HangmanGame.png" alt="Deep Learning Hangman Game" class="project-image">
+            </a>
+            <div class="project-content">
+                <a href="https://github.com/Yijin-Zeng/Deep-Learning-Hangman-Game" target="_blank" style="text-decoration: none;">
+                    <div class="project-title">Deep Learning Hangman Game</div>
+                </a>
+                <div class="project-description">
+                    An intelligent word guessing game powered by deep learning. The model achieves ~60% success rate by learning word patterns and making strategic guesses using neural networks.
                 </div>
-                <div class="entry-subtitle">Computing tight bounds of Spearman's footrule in the presence of missing data.</div>
             </div>
         </div>
 
-        <div class="entry-separated">
-            <div class="entry">
-                <div class="entry-top">
-                    <span class="entry-title">abwm <span class="pkg-lang">R</span></span>
+        <div class="project-card">
+            <a href="https://github.com/Yijin-Zeng/Fine-Tuning-Qwen2.5-Coder-3B-Instruct" target="_blank">
+                <img src="Photos/LoRA.png" alt="Fine-Tuning Qwen2.5 Coder with LoRA" class="project-image">
+            </a>
+            <div class="project-content">
+                <a href="https://github.com/Yijin-Zeng/Fine-Tuning-Qwen2.5-Coder-3B-Instruct" target="_blank" style="text-decoration: none;">
+                    <div class="project-title">Fine-Tuning Qwen2.5 Coder with LoRA</div>
+                </a>
+                <div class="project-description">
+                    Efficient fine-tuning of Qwen2.5 Coder-3B using LoRA (Low-Rank Adaptation). This project demonstrates how to adapt large language models with minimal computational resources while maintaining performance.
                 </div>
-                <div class="entry-subtitle">Ansari-Bradley two-sample hypothesis testing in the presence of missing data.</div>
+            </div>
+        </div>
+        </div>
+
+        <div style="margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--border);">
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 24px;">Other Projects</h3>
+            <div class="other-projects-grid">
+                <div class="other-project">
+                    <a href="https://github.com/Yijin-Zeng/WeatherForecasting" target="_blank" style="text-decoration: none;">
+                        <div class="other-project-title">Weather Forecasting</div>
+                    </a>
+                    <div class="other-project-desc">Time series forecasting for weather prediction using machine learning models.</div>
+                </div>
+
+                <div class="other-project">
+                    <a href="https://github.com/Yijin-Zeng/StockClustering" target="_blank" style="text-decoration: none;">
+                        <div class="other-project-title">Stock Clustering</div>
+                    </a>
+                    <div class="other-project-desc">Cluster stocks using daily returns to produce balanced investment groups.</div>
+                </div>
+
+                <div class="other-project">
+                    <a href="https://github.com/Yijin-Zeng/Signal-Predictive-Power-Evaluation" target="_blank" style="text-decoration: none;">
+                        <div class="other-project-title">Signal Predictive Power Evaluation</div>
+                    </a>
+                    <div class="other-project-desc">Evaluate and analyze the predictive power of signals in financial data.</div>
+                </div>
+
+                <div class="other-project">
+                    <a href="https://github.com/Yijin-Zeng/E-CommerceOrderCancellationPrediction" target="_blank" style="text-decoration: none;">
+                        <div class="other-project-title">E-Commerce Order Cancellation Prediction</div>
+                    </a>
+                    <div class="other-project-desc">Predict order cancellation with highly imbalanced datasets for real-world impact.</div>
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- Teaching -->
+    <section id="teaching" class="section">
+        <div class="section-header">
+            <h2>Teaching</h2>
+        </div>
+
+        <div class="teaching-row">
+            <span class="course">Probability for Statistics (MSc)</span>
+            <span class="term">Summer 2023</span>
+        </div>
+        <div class="teaching-row">
+            <span class="course">Data Science (MSc)</span>
+            <span class="term">Spring 2024</span>
+        </div>
+        <div class="teaching-row">
+            <span class="course">Statistical Clinics (MSc)</span>
+            <span class="term">Summer 2024</span>
+        </div>
+        <div class="teaching-row">
+            <span class="course">Probability and Statistics (BSc)</span>
+            <span class="term">Spring 2024</span>
+        </div>
+    </section>
+
 
     <!-- Talks -->
     <section id="talks" class="section">
@@ -702,100 +916,6 @@
         </div>
     </section>
 
-    <!-- Projects -->
-    <section id="projects" class="section">
-        <div class="section-header">
-            <h2>Selected Projects</h2>
-        </div>
-
-        <div class="entry-separated">
-            <div class="entry">
-                <div class="entry-top">
-                    <span class="entry-title">E-Commerce Order Cancellation Prediction</span>
-                </div>
-                <div class="entry-subtitle">Predict order cancellation with highly imbalanced dataset for real-world impact.</div>
-            </div>
-        </div>
-
-        <div class="entry-separated">
-            <div class="entry">
-                <div class="entry-top">
-                    <span class="entry-title">Deep Learning Hangman Game</span>
-                </div>
-                <div class="entry-subtitle">Play word guessing games using deep learning with high success rate (~60%).</div>
-            </div>
-        </div>
-
-        <div class="entry-separated">
-            <div class="entry">
-                <div class="entry-top">
-                    <span class="entry-title">Stock Clustering</span>
-                </div>
-                <div class="entry-subtitle">Cluster stocks using daily return to produce balanced investment groups.</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Teaching -->
-    <section id="teaching" class="section">
-        <div class="section-header">
-            <h2>Teaching</h2>
-        </div>
-
-        <div class="teaching-row">
-            <span class="course">Probability for Statistics (MSc)</span>
-            <span class="term">Summer 2023</span>
-        </div>
-        <div class="teaching-row">
-            <span class="course">Data Science (MSc)</span>
-            <span class="term">Spring 2024</span>
-        </div>
-        <div class="teaching-row">
-            <span class="course">Statistical Clinics (MSc)</span>
-            <span class="term">Summer 2024</span>
-        </div>
-        <div class="teaching-row">
-            <span class="course">Probability and Statistics (BSc)</span>
-            <span class="term">Spring 2024</span>
-        </div>
-    </section>
-
-    <!-- Skills -->
-    <section id="skills" class="section">
-        <div class="section-header">
-            <h2>Skills</h2>
-        </div>
-
-        <div class="entry-separated">
-            <div class="skill-group">
-                <div class="skill-label">Programming &amp; Tools</div>
-                <div class="tags">
-                    <span class="tag">Python</span>
-                    <span class="tag">R</span>
-                    <span class="tag">TensorFlow</span>
-                    <span class="tag">pandas</span>
-                    <span class="tag">NumPy</span>
-                    <span class="tag">scikit-learn</span>
-                    <span class="tag">MATLAB</span>
-                    <span class="tag">Azure ML</span>
-                    <span class="tag">HPC</span>
-                    <span class="tag">Linux</span>
-                    <span class="tag">Git</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="entry-separated">
-            <div class="skill-group">
-                <div class="skill-label">Languages</div>
-                <div class="tags">
-                    <span class="tag">Chinese (Native)</span>
-                    <span class="tag">English (Proficient)</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Contact -->
     <section id="contact" class="section">
         <div class="section-header">
@@ -807,7 +927,7 @@
                 <div class="entry-top">
                     <span class="entry-title">Email</span>
                 </div>
-                <div class="entry-subtitle"><a href="mailto:yijin.zeng20@imperial.ac.uk">yijin.zeng20@imperial.ac.uk</a></div>
+                <div class="entry-subtitle"><a href="mailto:yijinzeng98@gmail.com">yijinzeng98@gmail.com</a></div>
             </div>
         </div>
         <div class="entry-separated">
