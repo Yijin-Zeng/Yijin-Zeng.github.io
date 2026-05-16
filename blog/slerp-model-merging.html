@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLERP for Model Merging - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">SLERP for Model Merging</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/LLM/SLERP For Model Merging.pdf">PDF</a>.</p>
+        <p>Model merging is the idea of combining two fine-tuned models into one without retraining. The core operation is interpolating their weight matrices, and <strong>the naive approach (linear interpolation) has a subtle but important problem: it shrinks the magnitude of the result</strong>. SLERP fixes this by interpolating along the arc of a sphere instead of cutting through the interior.</p>
+
+        <!-- SVG diagram illustrating the geometric intuition -->
+        <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" style="display:block; margin: 24px auto; max-width: 400px;">
+            <!-- Circle -->
+            <circle cx="200" cy="160" r="110" fill="none" stroke="#2563eb" stroke-width="1.5" opacity="0.4"/>
+            <!-- Origin -->
+            <circle cx="200" cy="160" r="3" fill="#1a1a1a"/>
+            <text x="192" y="180" font-size="11" fill="#1a1a1a">O</text>
+            <!-- V1 vector -->
+            <line x1="200" y1="160" x2="330" y2="130" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="335" y="135" font-size="12" fill="#1a1a1a">V₁</text>
+            <!-- V2 vector -->
+            <line x1="200" y1="160" x2="280" y2="60" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="283" y="55" font-size="12" fill="#1a1a1a">V₂</text>
+            <!-- Angle theta -->
+            <path d="M 230 152 A 30 30 0 0 0 222 138" fill="none" stroke="#dc2626" stroke-width="1.2"/>
+            <text x="232" y="142" font-size="10" fill="#dc2626">&theta;</text>
+            <!-- LERP path (straight line) -->
+            <line x1="330" y1="130" x2="280" y2="60" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4,3"/>
+            <text x="314" y="88" font-size="10" fill="#dc2626">LERP</text>
+            <!-- SLERP arc -->
+            <path d="M 310 119 A 110 110 0 0 0 270 73" fill="none" stroke="#16a34a" stroke-width="2"/>
+            <text x="315" y="75" font-size="10" fill="#16a34a">SLERP</text>
+            <!-- NLERP dashed -->
+            <line x1="310" y1="119" x2="270" y2="73" stroke="#9333ea" stroke-width="1.2" stroke-dasharray="2,2"/>
+            <text x="268" y="104" font-size="10" fill="#9333ea">NLERP</text>
+            <!-- Unit circle points for V1', V2' -->
+            <circle cx="310" cy="119" r="3" fill="#2563eb"/>
+            <circle cx="270" cy="73" r="3" fill="#2563eb"/>
+            <!-- Arrow marker definition -->
+            <defs>
+                <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+                </marker>
+            </defs>
+        </svg>
+        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">Geometric comparison: LERP cuts straight through the interior, NLERP projects back onto the sphere but spaces points unevenly, and SLERP traces the arc at constant angular velocity.</p>
+
+        <h2>Method 1: LERP (Linear Interpolation)</h2>
+        <p>The simplest approach is a direct weighted average of the two vectors:</p>
+
+        <pre><code>V = &alpha; V₁ + (1 - &alpha;) V₂ ,   where &alpha; &isin; [0, 1]</code></pre>
+
+        <h3>Problem: Shrinkage</h3>
+        <p>The norm of the interpolated vector is generally smaller than the norm of either input:</p>
+
+        <pre><code>||V||₂  &lt;  ||V₁||₂   or   ||V₂||₂</code></pre>
+
+        <p>Intuitively, when two vectors point in different directions, their weighted sum "cuts through" the interior of the space rather than staying on the surface of the sphere. For model weights, this shrinkage can degrade performance because the magnitudes of weight matrices carry important information about learned representations.</p>
+
+        <p>The interpolated vector should generally have a norm on the same order as the originals. LERP fails to guarantee this.</p>
+
+        <h2>Method 2: NLERP (Normalized LERP)</h2>
+        <p>NLERP addresses the shrinkage problem by decoupling direction and magnitude, handling each separately:</p>
+
+        <h3>Step 1: Compute the direction (unit vector)</h3>
+        <pre><code>U = (&alpha; V₁ + (1 - &alpha;) V₂) / ||&alpha; V₁ + (1 - &alpha;) V₂||₂</code></pre>
+        <p>This normalizes the LERP result to a unit vector, so we only care about direction at this stage (norm = 1).</p>
+
+        <h3>Step 2: Compute the magnitude (scale)</h3>
+        <pre><code>L = &alpha; ||V₁||₂ + (1 - &alpha;) ||V₂||₂</code></pre>
+        <p>The target magnitude is a linear interpolation of the original norms. This cares about norm only.</p>
+
+        <h3>Step 3: Rescale</h3>
+        <pre><code>V &larr; U &middot; L</code></pre>
+        <p>We multiply the unit direction by the interpolated magnitude to get the final merged vector.</p>
+
+        <p>NLERP fixes the shrinkage problem, but it does not traverse the arc evenly. As &alpha; moves from 0 to 1, the interpolated direction does not cover equal angular distances in equal steps.</p>
+
+        <h2>Method 3: SLERP (Spherical Linear Interpolation)</h2>
+        <p>SLERP is the gold standard for interpolation on a sphere. It moves along the great-circle arc at constant angular velocity, producing evenly-spaced intermediate points.</p>
+
+        <h3>Step 1: Normalize both vectors</h3>
+        <pre><code>V₁' &larr; V₁ / ||V₁||₂
+V₂' &larr; V₂ / ||V₂||₂</code></pre>
+        <p>Scale both vectors to unit length so they sit on the same unit sphere (circle in 2D).</p>
+
+        <h3>Step 2: Compute the angle between them</h3>
+        <pre><code>cos(&theta;) = V₁' &middot; V₂'       (dot product of unit vectors)
+           = (V₁ &middot; V₂) / (||V₁||₂ &middot; ||V₂||₂)</code></pre>
+
+        <h3>Step 3: Spherical interpolation of direction</h3>
+        <pre><code>U = [sin(&alpha;&theta;) / sin(&theta;)] V₁' + [sin((1 - &alpha;)&theta;) / sin(&theta;)] V₂'</code></pre>
+        <p>Note that <code>||U||₂ = 1</code> by construction. As &alpha; varies from 0 to 1, U travels from V₂' to V₁' along the great-circle arc, covering equal angles for equal increments of &alpha;.</p>
+
+        <h3>Step 4: Interpolate the magnitude</h3>
+        <pre><code>L = &alpha; ||V₁||₂ + (1 - &alpha;) ||V₂||₂</code></pre>
+
+        <h3>Step 5: Rescale</h3>
+        <pre><code>V &larr; U &middot; L</code></pre>
+
+        <h2>Comparing SLERP and NLERP</h2>
+        <p>Both methods solve the shrinkage problem of plain LERP and produce vectors with appropriate magnitude. The key difference lies in how they traverse the angular space:</p>
+
+        <ul>
+            <li><strong>SLERP</strong> (&alpha;: 0 &rarr; 1): moves evenly along the circle. Equal increments of &alpha; produce equal angular steps. This gives a geometrically uniform interpolation.</li>
+            <li><strong>NLERP</strong> (&alpha;: 0 &rarr; 1): moves unevenly. The angular speed varies &mdash; it moves faster near the midpoint and slower near the endpoints. This is because normalizing a linear combination distorts the angular spacing.</li>
+        </ul>
+
+        <p>Here we are: in practice, SLERP is preferred for model merging because the even angular traversal means the interpolation parameter &alpha; has a more predictable and uniform effect on the resulting model behavior.</p>
+
+        <h2>Practical Notes for Model Merging</h2>
+        <ul>
+            <li>SLERP is applied independently to each corresponding pair of weight matrices across the two models.</li>
+            <li>When &theta; is very small (vectors nearly parallel), SLERP degenerates numerically &mdash; fall back to LERP since shrinkage is negligible anyway.</li>
+            <li>The interpolation factor &alpha; controls how much of each model contributes: &alpha; = 0.5 gives an equal blend.</li>
+        </ul>
+
+        <h2>References</h2>
+        <ul>
+            <li>Goddard, C. et al. (2024). "Arcee's MergeKit: A Toolkit for Merging Large Language Models." arXiv:2403.13257.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

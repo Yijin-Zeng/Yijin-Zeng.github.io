@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speculative Decoding - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Speculative Decoding</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/LLM/Speculative Decoding.pdf">PDF</a>.</p>
+        <p>Speculative decoding is a clever engineering trick used to make LLMs generate text significantly faster <strong>without losing any accuracy or changing the final output distribution</strong>.</p>
+
+        <h2>The Problem: Autoregressive Generation is Slow</h2>
+
+        <p>Standard autoregressive generation produces tokens one at a time. Each forward pass through the model generates exactly one token, and the next token depends on the previous one. This sounds like the computation (all those matrix multiplications) would be the bottleneck, but it is not.</p>
+
+        <blockquote>The real constraint is memory bandwidth, not compute. For example, if we want an LLM to generate a 100-word story, doing the math is not the bottleneck &mdash; transferring the massive model weights back and forth between memory and the processing units is.</blockquote>
+
+        <p>Large models have billions of parameters. For each token generated, the entire model's weights need to be loaded from high-bandwidth memory (HBM) into the compute units. The arithmetic intensity (ratio of compute to memory access) of generating a single token is extremely low, meaning the GPU spends most of its time waiting for data rather than computing. This is the <strong>memory-bandwidth bound</strong> regime.</p>
+
+        <h2>The Speculative Decoding Approach</h2>
+
+        <p>The key insight is that if we can process the tokens in a batch, we would be much faster. Notice that dealing tokens in a batch does not reduce compute, but save the time for moving the weights in and out of the memory. 
+           The speculative decoding approach offers an elegant solution for doing exactly this in three steps:</p>
+
+        <h3>Step 1: Draft</h3>
+        <p>Let a much smaller, faster model (the "draft model") generate the next K tokens autoregressively. Because the draft model is small, this should be super fast &mdash; it has far fewer weights to move around.</p>
+
+        <h3>Step 2: Verification</h3>
+        <p>Feed all K drafted tokens into the large model in a single forward pass. The large model processes them all at once using causal self-attention (exactly like during training phase). This is computationally equivalent to what the large model would have done if it had generated those K tokens sequentially, but the key point is that we only move the large model's weights once instead of K times.</p>
+
+        <p>So now the large model computes the probability distribution over the next token for every tokens generated by the draft model in a batch.</p>
+
+        <h3>Step 3: Accept or Reject</h3>
+        <p>During verification, we obtain the large model's probability distribution at each of the K positions. We then decide whether to accept or reject each drafted token using a carefully designed acceptance criterion.</p>
+
+        <p>Let <code>p(w_i)</code> denote the probability of word <code>w_i</code> under the large model, and <code>q(w_i)</code> denote the probability under the small (draft) model. We accept each token with probability:</p>
+
+        <pre><code>acceptance probability = min(1, p(w_i) / q(w_i))</code></pre>
+
+        <p>Important notes about the accept/reject process:</p>
+        <ol>
+            <li><strong>Sequential rejection:</strong> If a token at position <code>i</code> is rejected, all tokens after position <code>i</code> are also rejected.</li>
+            <li><strong>Rejection resampling:</strong> When a token <code>w_j</code> is rejected, we do not waste the computation entirely. Since the large model already computed the next-token distribution at that position during verification, we can sample a replacement token. However, we cannot simply sample from <code>p</code> directly (that would bias the distribution). Instead, we sample from an adjusted distribution:
+                <pre><code>sample with probability:  max(0, p(w_j) - q(w_j)) / sum_j max(0, p(w_j) - q(w_j))</code></pre>
+                This sampling from the "residual" distribution ensures correctness (more on this below). Note that this is not ideal in terms of speed, because we wasted the time spent by the draft model on subsequent tokens.</li>
+            <li><strong>Guaranteed progress:</strong> Even if all K drafted tokens are rejected, we still obtain one valid token from the resampling step at the first rejected position (see the last point).
+                So speculative decoding always makes at least as much progress as standard autoregressive decoding per large-model forward pass.</li>
+        </ol>
+
+        <h2>Why Speculative Decoding Does Not Lose Any Accuracy</h2>
+
+        <p>
+        It is quite surprising to me when I first know that speculative decoding does not lose any accuracy at all, i.e. as if we are using the large model only. 
+        It turns out, we can show that, by choosing the acceptance probability and resample probability as we did above, the probability of each token get choosen
+        is exactly the same as sampling from the large model directly. The proof requires only basic probability knowledge:</p>
+
+        <h3>Setting Up the Probability</h3>
+        <p>The probability that word <code>w_i</code> is output at a given position equals:</p>
+
+        <pre><code>Pr(word i outputs)
+  = Pr(word i is proposed by small model AND accepted)
+  + Pr(proposed word by small model is rejected AND large model samples word i)</code></pre>
+
+        <h3>Expanding Each Term</h3>
+        <p>The first term (proposed and accepted):</p>
+        <pre><code>q(w_i) * min(1, p(w_i) / q(w_i)) = min(q(w_i), p(w_i))</code></pre>
+
+        <p>For the second term, the probability that the proposed word (whatever it was) gets rejected is：
+            <pre><code>(1 - sum_j q(w_j) * min(1, p(w_j)/q(w_j))),</code></pre>
+        i.e. one minus the probability of at least one word is accepted.  
+        The probability of sampling <code>w_i</code> from the adjusted distribution is known:</p>
+        <pre><code>max(0, p(w_i) - q(w_i)) / sum_j max(0, p(w_j) - q(w_j))</code></pre>
+            Hence, the second term is
+        <pre><code>(1 - sum_j q(w_j) * min(1, p(w_j)/q(w_j))) * max(0, p(w_i) - q(w_i)) / sum_j max(0, p(w_j) - q(w_j)).</code></pre>
+
+        <h3>Simplify The Second Term</h3>
+        <p>Notice that for any valid probability distribution:</p>
+        <pre><code>p(x) = min(p(x), q(x)) + max(0, p(x) - q(x))</code></pre>
+
+        <p>Summing over all words:</p>
+        <pre><code>1 = sum_j p(w_j) = sum_j min(p(w_j), q(w_j)) + sum_j max(0, p(w_j) - q(w_j))</code></pre>
+
+        <p>This lets us simplify the probability of rejection:</p>
+        <pre><code>Pr(rejection) = 1 - sum_j q(w_j) * min(1, p(w_j)/q(w_j))
+             = 1 - sum_j min(q(w_j), p(w_j))
+             = sum_j max(0, p(w_j) - q(w_j))</code></pre>
+
+        <h3>The Final Result</h3>
+        <p>Substituting back:</p>
+        <pre><code>Pr(word i outputs) = min(q(w_i), p(w_i)) + sum_j max(0, p(w_j) - q(w_j)) * max(0, p(w_i) - q(w_i)) / sum_j max(0, p(w_j) - q(w_j))
+                   = min(q(w_i), p(w_i)) + max(0, p(w_i) - q(w_i))
+                   = p(w_i)</code></pre>
+
+        Here we are, the output probability equals exactly <code>p(w_i)</code>, i,e, the probability of drawing the word from the large model directly.
+
+        <h2>Summary</h2>
+        <ul>
+            <li>Speculative decoding exploits the memory-bandwidth bound nature of LLM inference by letting a small draft model propose K tokens cheaply, while the large model verify them all in a batch.</li>
+            <li>The accept and resample probabilities are designed such that they mathematically guarantees the output distribution is identical to sampling from the large model alone.</li>
+            <li>In the best case, we get K+1 tokens for the cost of one large-model forward pass. In the worst case, we still get 1 token (no worse than standard decoding), although we might waste time on small model generating process.</li>
+        </ul>
+
+        <h2>References</h2>
+        <ul>
+            <li>Leviathan, Y., Kalman, M. and Matias, Y., 2023, July. Fast inference from transformers via speculative decoding. In International Conference on Machine Learning (pp. 19274-19286). PMLR.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Indexed Tree - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Binary Indexed Tree</h1>
+        <div class="post-meta">
+            <span class="tag">Computer Science</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/Computer Science/Binary Indexed Tree.pdf">PDF</a>.</p>
+
+        <p>Say you have a huge array and you constantly need two operations: compute prefix sums and update individual elements. If you store the raw array, prefix sums cost O(n). If you store prefix sums directly, updates cost O(n). <strong>Binary Indexed Tree (BIT) strikes a balance &mdash; both operations in O(log n)</strong>.</p>
+
+        <h2>The Problem</h2>
+        <p>Given an array <code>x_1, x_2, ..., x_n</code> (where n could be super large), we often want to know the prefix sum <code>Z_k = x_1 + ... + x_k</code>.</p>
+
+        <p>Two naive approaches:</p>
+        <ul>
+            <li><strong>Store the original array:</strong> getting Z_k requires summing k elements &mdash; O(n)</li>
+            <li><strong>Store the prefix sum array directly:</strong> getting Z_k is O(1), but updating any x_k requires updating all subsequent prefix sums &mdash; O(n)</li>
+        </ul>
+
+        <p>BIT gives us O(log n) for both.</p>
+
+        <h2>How BIT Stores Values</h2>
+        <p>Instead of storing the original array <code>x_1, ..., x_n</code>, BIT builds a new array <code>y_1, ..., y_n</code> where each y_i stores a partial sum. The key idea is that <strong>how many elements y_i covers depends on the binary representation of i</strong>:</p>
+
+        <ul>
+            <li>If i is odd: <code>y_i = x_i</code> (just that single element)</li>
+            <li>If i is even but not a power of 2: <code>y_i = x_i + x_{i-1}</code> (covers 2 elements)</li>
+            <li>If i is a power of 2 (i.e. i = 2^k): <code>y_i = x_1 + ... + x_i</code> (covers all elements up to i)</li>
+        </ul>
+
+        <p>More precisely, y_i covers <code>2^(number of trailing zeros in binary of i)</code> elements ending at position i.</p>
+
+        <h2>Operations</h2>
+
+        <h3>1. Construct a BIT: O(n log n)</h3>
+        <p>To add a new value x_{n+1} into the BIT:</p>
+        <ul>
+            <li>If n+1 is odd: <code>y_{n+1} = x_{n+1}</code> &mdash; O(1)</li>
+            <li>If n+1 is even but not a power of 2: <code>y_{n+1} = x_{n+1} + x_n</code> &mdash; O(1)</li>
+            <li>If n+1 = 2^k: <code>y_{n+1} = x_{n+1} + x_n + y_{n-1} + y_{n-3} + ...</code> &mdash; O(log n)</li>
+        </ul>
+
+        <h3>2. Search (prefix sum query): O(log n)</h3>
+        <p>To compute Z_i = x_1 + ... + x_i, we sum up a chain of y values by repeatedly stripping the lowest set bit from i:</p>
+        <ul>
+            <li>If i = 2^k: <code>Z_i = y_i</code> &mdash; O(1), the whole prefix is stored directly</li>
+            <li>If i is even (not power of 2): <code>Z_i = y_i + y_{i-2} + ... + y_j</code></li>
+            <li>If i is odd: <code>Z_i = y_i + y_{i-1} + y_{i-3} + ... + y_j</code></li>
+        </ul>
+        <p>In all cases, we hop at most O(log n) times.</p>
+
+        <h3>3. Update: O(log n)</h3>
+        <p>If we want to update x_i, we need to update all y values that include x_i in their partial sum. This propagates upward through the tree, affecting at most O(log n) entries.</p>
+
+        <h2>The Lowest Set Bit Trick</h2>
+        <p>To efficiently jump between indices for build, search, and update, we need to find and remove the lowest set bit (LSB) of an index. There's a beautiful bit manipulation trick for this: <code>index & (-index)</code> gives you the lowest set bit.</p>
+
+        <p>Here's why it works. Say we have 8 bits:</p>
+        <pre><code>7  -> 00000111
+-7 -> 11111000 + 1 -> 11111001
+7 & -7 -> 00000001  (the last 1 in 7)
+
+6  -> 00000110
+-6 -> 11111001 + 1 -> 11111010
+6 & -6 -> 00000010  (the last 1 in 6)</code></pre>
+
+        <p>This works because negation in two's complement flips all bits and adds 1, which propagates through all the trailing zeros and flips the lowest 1 &mdash; making it the only bit that aligns between the original and its negation.</p>
+
+        <p>For prefix sum queries, we repeatedly subtract the LSB: <code>i -= i & (-i)</code>. For updates, we repeatedly add the LSB: <code>i += i & (-i)</code>.</p>
+
+        <pre><code>def prefix_sum(bit, i):
+    s = 0
+    while i > 0:
+        s += bit[i]
+        i -= i & (-i)  # remove lowest set bit
+    return s
+
+def update(bit, i, delta, n):
+    while i <= n:
+        bit[i] += delta
+        i += i & (-i)  # add lowest set bit</code></pre>
+
+        <p>For example, to get Z_7: we need y_7, y_6, and y_4. In binary: 7 is <code>111</code>, strip LSB to get 6 (<code>110</code>), strip LSB to get 4 (<code>100</code>), strip LSB to get 0 &mdash; done. Three hops, three values summed.</p>
+    </div>
+</article>
+
+</body>
+</html>

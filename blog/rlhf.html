@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLHF: Reinforcement Learning from Human Feedback - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">RLHF: Reinforcement Learning from Human Feedback</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/LLM/RLHF.pdf">PDF</a>.</p>
+        <p>RLHF is what takes a language model from "can complete text" to "can follow instructions well." The full pipeline has three stages, and I find it interesting how each stage addresses a specific limitation of the previous one.</p>
+
+        <h2>Starting Point: Pre-training and SFT</h2>
+        <p>Normally we start with a pre-trained language model. After pre-training, the model only learns to complete text -- it predicts the next token given a context. This is fundamentally different from answering a question. For example, given a question as input, the model might generate another question as a continuation, because that is what "completing text" looks like.</p>
+
+        <p>To bridge this gap, we apply <strong>Supervised Fine-Tuning (SFT)</strong>: we take high-quality data and fine-tune the model on it. If we are building a chatbot, we prepare training samples in a question-answer (Q-A) format. This teaches the model to respond to prompts rather than simply continue text.</p>
+
+        <p>So after SFT, the model can answer questions -- but it still does not know what a "good" answer looks like from a human perspective. That is where RLHF comes in.</p>
+
+        <h2>Stage 1: Training a Reward Model (Using Human Feedback)</h2>
+        <p>The goal of this stage is to build a scalar reward function that can score any output from the LLM. We denote the reward model as <code>r_&theta;</code>. It is usually initialized from a fine-tuned LLM (often the same model after SFT).</p>
+
+        <h3>The Process</h3>
+        <p>We feed a prompt into the fine-tuned model and generate multiple candidate answers. For example, given a prompt, the model produces answers A, B, and C. Human annotators then rank these answers by quality (e.g., A &gt; B &gt; C).</p>
+
+        <!-- Diagram: Reward model training flow -->
+        <pre><code>                          +--> Answer A --|
+                          |               |
+Prompt --> Fine-tuned LLM +--> Answer B --|---> Ranked by humans (e.g. A > B > C)
+                          |               |
+                          +--> Answer C --|</code></pre>
+
+        <h3>The Loss Function</h3>
+        <p>For each pair of responses where one is preferred over the other (e.g., A is preferred over B), the reward model is trained using a pairwise loss:</p>
+
+        <pre><code>Loss = -log(r_&theta;(A) - r_&theta;(B))</code></pre>
+
+        <p>More precisely, this is the negative log-sigmoid of the difference in scores, encouraging the reward model to assign a higher score to the preferred response. This is known as the Bradley-Terry model for pairwise comparisons.</p>
+
+        <p>After training the reward model, we can evaluate the output of any answer given by the LLM (e.g., score it 4.2). But here is the thing -- we cannot directly use this score to tune the model because backpropagation through a discrete sampling step is not possible. It is quite surprising to me that this is where RL becomes necessary: the reward signal exists but there is no differentiable path from it back to the model weights, so we have to treat the whole thing as a policy optimization problem.</p>
+
+        <h2>Stage 2: Proximal Policy Optimization (PPO)</h2>
+        <p>Now we use the reward model to actually improve the language model's policy via RL. This stage introduces two additional models on top of the policy (the LLM being trained):</p>
+
+        <ul>
+            <li><strong>Score model (reward model r_&theta;)</strong> -- the frozen reward model from Stage 1 that scores outputs</li>
+            <li><strong>Value model</strong> -- estimates the expected score of the LLM's output; normally initialized as a copy of the model after SFT</li>
+        </ul>
+
+        <h3>The Process</h3>
+
+        <pre><code>                                    +---> Score model ---> a score (frozen at this stage)
+                                    |
+Prompt ---> Model ---> Output ------+
+                                    |
+                                    +---> Value model ---> estimated score (updated)</code></pre>
+
+        <p>The decision logic at each step:</p>
+        <ul>
+            <li>If <code>score &gt; estimated_score</code>: the output was better than expected, so increase the probability of that output</li>
+            <li>Otherwise: decrease the probability of that output</li>
+        </ul>
+
+        <h3>The Advantage</h3>
+        <p>The key signal for the policy update is the <strong>advantage</strong>:</p>
+
+        <pre><code>A = advantage = score - estimated_score</code></pre>
+
+        <p>This tells us how much better (or worse) the actual output was compared to what we expected. A positive advantage means "do more of this"; a negative advantage means "do less of this."</p>
+
+        <h3>Vanilla Policy Gradient</h3>
+        <p>The simplest approach: compute the gradient of the log-probability of the output (treating the answer as correct), then update the weights:</p>
+
+        <pre><code>weights = weights - &delta; * gradients</code></pre>
+
+        <p>Where <code>&delta;</code> is proportional to the advantage:</p>
+        <ul>
+            <li>If <code>A &gt; 0</code>: increase the probability of this output</li>
+            <li>If <code>A &lt; 0</code>: decrease the probability of this output</li>
+        </ul>
+
+        <h3>The Problem with Vanilla Policy Gradient</h3>
+        <p>The gradient can change the weights <strong>too much</strong> in a single step. This leads to <strong>catastrophic forgetting</strong> -- the model may collapse or lose previously learned capabilities after a large update.</p>
+
+        <h3>PPO: Clipped Policy Gradient</h3>
+        <p>PPO solves this by clipping the gradient of the policy gradient descent. The central concept is the <strong>probability ratio</strong> for a token <code>w</code>:</p>
+
+        <pre><code>r = prob(w after updating according to policy gradient) / prob(w before updating)</code></pre>
+
+        <p>PPO constrains this ratio to stay within a small band around 1:</p>
+
+        <pre><code>1 - &epsilon; &lt; r &lt; 1 + &epsilon;</code></pre>
+
+        <p>Typically <code>&epsilon; = 0.2</code>, meaning the probability of any token can change by at most 20% in either direction per update. This ensures the model improves steadily without making destructive jumps.</p>
+
+        <p>The name says it all: PPO keeps the updated policy "proximal" (close) to the old policy. Small, stable steps prevent catastrophic forgetting while still allowing the model to learn from the reward signal. Without the clipping, the model can collapse after a single bad update.</p>
+
+        <h2>Summary: The Full RLHF Pipeline</h2>
+        <ol>
+            <li><strong>Pre-training</strong> -- learn general text completion from a large corpus</li>
+            <li><strong>SFT</strong> -- fine-tune on high-quality Q-A data to learn the instruction-following format</li>
+            <li><strong>Reward Model Training</strong> -- collect human rankings, train a model to score outputs</li>
+            <li><strong>PPO</strong> -- use the reward model to guide policy updates, with clipping to ensure stability</li>
+        </ol>
+
+        <h2>References</h2>
+        <ul>
+            <li>Ouyang, L. et al. (2022). Training language models to follow instructions with human feedback. <em>NeurIPS</em>.</li>
+            <li>Schulman, J. et al. (2017). Proximal Policy Optimization Algorithms. <em>arXiv:1707.06347</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

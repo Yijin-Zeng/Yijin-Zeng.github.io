@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHAP and LIME - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">SHAP and LIME</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/Machine Learning/SHAP and LIME.pdf">PDF</a>.</p>
+        <p>LIME and SHAP both answer the same question — "why did the model make this prediction?" — but from completely different angles. <strong>LIME fits a local linear model around the prediction point, while SHAP uses game theory (Shapley values) to fairly distribute the prediction among features</strong>. I find it elegant how both end up being weighted linear regressions under the hood.</p>
+
+        <h2>LIME: Local Interpretable Model-agnostic Explanations</h2>
+
+        <p>LIME finds a <strong>local linear approximation</strong> of any model. While the model (e.g. <code>f(x1, x2, x3)</code>) may be very complex globally, it is easier to approximate in the vicinity of a particular instance. The key idea: fit a simple, interpretable model that behaves similarly to the complex model near the point of interest.</p>
+
+        <h3>Step 1: Create a Neighborhood</h3>
+        <p>Generate perturbed samples around the instance we want to explain by introducing small perturbations to the original feature values:</p>
+
+        <!-- SVG diagram: perturbation of an instance -->
+        <svg viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:500px;display:block;margin:0 auto 16px;">
+            <text x="20" y="75" font-family="JetBrains Mono, monospace" font-size="13" fill="#1a1a1a">x = (0.7, 0.2, 0.3)</text>
+            <line x1="195" y1="50" x2="260" y2="30" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+            <line x1="195" y1="70" x2="260" y2="70" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+            <line x1="195" y1="90" x2="260" y2="110" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+            <text x="270" y="34" font-family="JetBrains Mono, monospace" font-size="12" fill="#666">x1 = (0.72, 0.21, 0.34)</text>
+            <text x="270" y="74" font-family="JetBrains Mono, monospace" font-size="12" fill="#666">x2 = (0.68, 0.22, 0.31)</text>
+            <text x="270" y="114" font-family="JetBrains Mono, monospace" font-size="12" fill="#666">xn = (0.71, 0.19, 0.26)</text>
+            <text x="290" y="94" font-family="JetBrains Mono, monospace" font-size="11" fill="#999">...</text>
+            <defs><marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#2563eb" stroke-width="1.2"/></marker></defs>
+        </svg>
+
+        <h3>Step 2: Make Predictions</h3>
+        <p>Use the original (complex) model to get predictions for all perturbed instances:</p>
+        <pre><code>y1 = f(x1), y2 = f(x2), ..., yn = f(xn)</code></pre>
+
+        <h3>Step 3: Measure Distance</h3>
+        <p>Compute the distance between the original instance <code>x</code> and each perturbed instance:</p>
+        <pre><code>d_i = d(x, x_i)</code></pre>
+        <ul>
+            <li>For <strong>continuous features</strong>: use Euclidean distance (or other suitable metric)</li>
+            <li>For <strong>categorical features</strong>: if the value is the same as the original, distance is 0; if different, distance is 1</li>
+        </ul>
+
+        <h3>Step 4: Compute Weights</h3>
+        <p>Assign weights to each perturbed instance using an exponential kernel. The intuition: instances close to the original should get more weight.</p>
+        <pre><code>w_i = exp(-d_i^2 / sigma^2)</code></pre>
+        <p>Here <code>sigma</code> is the kernel width, which controls the locality of the explanation:</p>
+        <ul>
+            <li>A <strong>small sigma</strong>: only instances very close to the original get attention (more local explanation)</li>
+            <li>A <strong>larger sigma</strong>: instances farther from the original also receive attention (broader explanation)</li>
+        </ul>
+
+        <h3>Step 5: Fit a Weighted Linear Regression</h3>
+        <p>With the perturbed instances as input, their predictions as labels, and the distance-based weights, fit a weighted linear regression:</p>
+        <pre><code>Input:  x1, ..., xn
+Labels: y1, ..., yn
+
+Loss = sum_{i=1}^{n} w_i * (y_i - sum_{j=1}^{d} beta_j * x_{ij})^2</code></pre>
+
+        <p>The weight <code>w_i</code> ensures that the loss for each sample is weighted by its proximity to the original instance. The learned coefficients <code>beta_j</code> tell us how the model output changes locally when feature j changes.</p>
+
+        <!-- SVG diagram: LIME learns the local hyperplane -->
+        <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:400px;display:block;margin:0 auto 16px;">
+            <line x1="40" y1="180" x2="380" y2="180" stroke="#1a1a1a" stroke-width="1.5"/>
+            <line x1="40" y1="180" x2="40" y2="20" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="370" y="195" font-family="Inter, sans-serif" font-size="12" fill="#666">x</text>
+            <text x="20" y="25" font-family="Inter, sans-serif" font-size="12" fill="#666">y</text>
+            <!-- Complex model curve -->
+            <path d="M50,160 C80,155 100,80 130,40 C150,10 170,30 200,100 C230,160 260,170 300,165 C330,162 360,160 370,155" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+            <!-- Local linear approximation -->
+            <line x1="95" y1="95" x2="165" y2="25" stroke="#2563eb" stroke-width="2" stroke-dasharray="5,3"/>
+            <!-- Point of interest -->
+            <circle cx="130" cy="40" r="5" fill="#dc2626"/>
+            <!-- Labels -->
+            <text x="180" y="75" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">LIME linear</text>
+            <text x="180" y="88" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">approximation</text>
+            <text x="250" y="145" font-family="Inter, sans-serif" font-size="11" fill="#1a1a1a">complex model</text>
+        </svg>
+
+        <h3>LIME for Classification</h3>
+        <p>For classification problems, suppose the model predicts probabilities for multiple classes: <code>p(A) = 0.3</code>, <code>p(B) = 0.2</code>, <code>p(C) = 0.5</code>. To explain why the model predicted <code>p(A) = 0.3</code>, run LIME with <code>y = p(A)</code> as the target -- that is, use the probability of class A as the label for each perturbed instance.</p>
+
+        <h2>SHAP: SHapley Additive exPlanations</h2>
+
+        <p>SHAP takes a <strong>game-theoretic approach</strong> to explain the output (prediction) of any machine learning model. It is grounded in Shapley values from cooperative game theory.</p>
+
+        <h3>The Game Theory Analogy</h3>
+        <ol>
+            <li>The <strong>"game"</strong> is to make one prediction</li>
+            <li>The <strong>"players"</strong> are the model's features</li>
+            <li>The <strong>"payout"</strong> is the final prediction minus the average prediction</li>
+            <li>The <strong>"question"</strong>: how to fairly distribute the "payout" among different features?</li>
+        </ol>
+
+        <h3>Example Setup</h3>
+        <p>Consider a model that predicts the price of a flat given three features:</p>
+        <ul>
+            <li><code>x1</code>: location</li>
+            <li><code>x2</code>: square footage</li>
+            <li><code>x3</code>: number of bedrooms</li>
+        </ul>
+        <p>The model can be anything -- linear model, tree, neural network, etc. Given specific values for <code>x1, x2, x3</code>, we get a prediction <code>y_hat = f(x1, x2, x3)</code>. The question is: how does each feature contribute to this particular prediction?</p>
+
+        <h3>Computing the SHAP Value for a Feature</h3>
+        <p>To find the contribution of <code>x1</code>, we consider all possible coalitions (subsets) of features and measure how adding <code>x1</code> changes the prediction.</p>
+
+        <p>First, compute predictions for all possible subsets of features. When a feature is "absent" from a coalition, we marginalize over it (take the expectation over its possible values):</p>
+        <ul>
+            <li>Average prediction: <code>E[f(x1, x2, x3)]</code></li>
+            <li>Prediction with only <code>{x1}</code>: <code>E[f(x1, x2, x3) | X1 = x1]</code></li>
+            <li>Prediction with <code>{x1, x2}</code>: <code>E[f(x1, x2, x3) | X1 = x1, X2 = x2]</code></li>
+            <li>...and so on for all subsets</li>
+        </ul>
+
+        <h3>Marginal Contributions</h3>
+        <p>For each coalition that does not contain <code>x1</code>, compute the marginal contribution of <code>x1</code> by comparing the prediction with and without it:</p>
+
+        <pre><code>Coalition {}:
+  Without x1: C({}) = E[f(x1,x2,x3)]
+  With x1:    C({x1}) = E[f(x1,x2,x3) | X1=x1]
+  Marginal contribution: C({x1}) - C({})
+
+Coalition {x2}:
+  Without x1: C({x2}) = E[f(x1,x2,x3) | X2=x2]
+  With x1:    C({x1,x2}) = E[f(x1,x2,x3) | X1=x1, X2=x2]
+  Marginal contribution: C({x1,x2}) - C({x2})
+
+Coalition {x3}:
+  Without x1: C({x3}) = E[f(x1,x2,x3) | X3=x3]
+  With x1:    C({x1,x3}) = E[f(x1,x2,x3) | X1=x1, X3=x3]
+  Marginal contribution: C({x1,x3}) - C({x3})
+
+Coalition {x2, x3}:
+  Without x1: C({x2,x3}) = E[f(x1,x2,x3) | X2=x2, X3=x3]
+  With x1:    C({x1,x2,x3}) = f(x1,x2,x3)
+  Marginal contribution: C({x1,x2,x3}) - C({x2,x3})</code></pre>
+
+        <h3>The SHAP Value Formula</h3>
+        <p>The SHAP value is the <strong>weighted average</strong> of all marginal contributions of <code>x1</code> across all coalitions. The weight for each coalition of size <code>n_i</code> (out of <code>d</code> total features) is:</p>
+
+        <pre><code>weight = n_i! * (d - n_i - 1)! / d!</code></pre>
+
+        <p>For example, with <code>d = 3</code> features and coalition <code>{x2}</code> (size <code>n_i = 1</code>):</p>
+        <pre><code>weight = 1! * (3 - 1 - 1)! / 3! = 1 * 1 / 6 = 1/6</code></pre>
+
+        <p>This weighting ensures that all possible orderings in which features could join the coalition are treated equally -- this is the fairness guarantee from Shapley value theory.</p>
+
+        <h2>From Individual to Global Explanations</h2>
+        <p>The procedure above computes the SHAP value for one feature in one prediction. We can compute SHAP values for all features across many predictions. Averaging the absolute SHAP values for one feature across many predictions gives us a measure of <strong>feature importance</strong> -- how much that feature matters globally.</p>
+
+        <h2>Practical Considerations</h2>
+        <p>Computing exact SHAP values requires evaluating <code>2^d</code> marginal contributions (one for each possible coalition), which becomes impractical as the number of features grows. Approximation methods are necessary in practice.</p>
+
+        <p>For efficient approximation, see the <a href="https://shap.readthedocs.io/en/latest/generated/shap.KernelExplainer.html">SHAP KernelExplainer</a>, which uses a weighted linear regression approach (similar in spirit to LIME) to approximate Shapley values without exhaustive enumeration.</p>
+
+        <h2>LIME vs SHAP: Summary</h2>
+        <ul>
+            <li><strong>LIME</strong>: fits a local linear model around a prediction; fast but the explanation depends on perturbation strategy and kernel width</li>
+            <li><strong>SHAP</strong>: grounded in game theory with uniqueness and fairness guarantees; more principled but computationally expensive (exact) or requires approximation</li>
+            <li>Both are <strong>model-agnostic</strong> -- they work with any model that can produce predictions</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

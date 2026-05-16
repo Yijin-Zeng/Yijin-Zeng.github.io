@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrastive Learning - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Contrastive Learning</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/Machine Learning/Contrastive Learning.pdf">PDF</a>.</p>
+        <p>The core idea for contrastive learning is simple: <strong>similar things should be close together in embedding space, and dissimilar things should be far apart</strong>.</p>
+
+        <h2>The Core Idea</h2>
+        <p>Contrastive learning is a self-supervised (or weakly-supervised) framework that learns representations by contrasting positive pairs against negative pairs. Rather than predicting explicit labels, the model learns an embedding space where semantically related inputs are close together and unrelated inputs are far apart.</p>
+
+        <h2>Structure of CLIP</h2>
+        <p><a href="https://arxiv.org/abs/2103.00020">CLIP</a> (Contrastive Language-Image Pre-training) is a good example of contrastive learning applied to vision-language alignment. Its architecture consists of two parallel encoders:</p>
+
+        <ul>
+            <li><strong>Language encoder</strong>: processes a batch of captions into text embeddings</li>
+            <li><strong>Image encoder</strong>: processes a batch of images into image embeddings</li>
+        </ul>
+
+        <p>Given a batch of n (image, caption) pairs, both encoders produce embeddings that live in the same shared space. The model then computes a similarity matrix S between all image-text pairs:</p>
+
+        <!-- SVG diagram of CLIP architecture -->
+        <svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
+            <!-- Batch inputs -->
+            <text x="100" y="28" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666">a batch of captions</text>
+            <text x="500" y="28" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666">a batch of images</text>
+            <!-- Arrows down -->
+            <line x1="100" y1="34" x2="100" y2="54" stroke="#999" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+            <line x1="500" y1="34" x2="500" y2="54" stroke="#999" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+            <!-- Encoder boxes -->
+            <rect x="30" y="56" width="140" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/>
+            <text x="100" y="85" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">Language Encoder</text>
+            <rect x="430" y="56" width="140" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/>
+            <text x="500" y="85" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">Image Encoder</text>
+            <!-- Paired data line -->
+            <line x1="170" y1="72" x2="430" y2="72" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,3"/>
+            <text x="300" y="66" text-anchor="middle" font-size="10" font-family="Inter, sans-serif" fill="#2563eb">(caption_1, image_1) ... (caption_n, image_n)</text>
+            <!-- Arrows down from encoders -->
+            <line x1="100" y1="106" x2="100" y2="140" stroke="#999" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+            <line x1="500" y1="106" x2="500" y2="140" stroke="#999" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+            <!-- Embedding labels -->
+            <text x="100" y="156" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666">text embeddings</text>
+            <text x="500" y="156" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666">image embeddings</text>
+            <!-- Arrows converging to similarity matrix -->
+            <line x1="100" y1="164" x2="250" y2="220" stroke="#999" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+            <line x1="500" y1="164" x2="350" y2="220" stroke="#999" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+            <!-- Similarity matrix -->
+            <rect x="230" y="222" width="140" height="80" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1.5" rx="4"/>
+            <text x="300" y="250" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace" fill="#1a1a1a">S_1,1 ... S_1,n</text>
+            <text x="300" y="268" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace" fill="#1a1a1a">  :    .    :</text>
+            <text x="300" y="286" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace" fill="#1a1a1a">S_n,1 ... S_n,n</text>
+            <text x="300" y="316" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666">Similarity Matrix S (dot products)</text>
+            <!-- Arrowhead marker -->
+            <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <polygon points="0 0, 8 3, 0 6" fill="#999"/>
+                </marker>
+            </defs>
+        </svg>
+
+        <p>Each entry <code>S_i,j</code> in the matrix represents the dot-product similarity between image embedding i and text embedding j. The diagonal entries (where i = j) correspond to the correct image-text pairings.</p>
+
+        <h2>Loss Function: Symmetric Cross-Entropy</h2>
+        <p>CLIP uses a symmetric cross-entropy loss with a learnable temperature parameter. The loss operates in both directions: image-to-text and text-to-image.</p>
+
+        <h3>Image-to-Text Loss</h3>
+        <p>For each image i, we want to maximize the probability of selecting the correct caption i from among all captions in the batch:</p>
+
+        <pre><code>L_i^(I->T) = -log( exp(S_i,i / tau) / sum_j exp(S_i,j / tau) )</code></pre>
+
+        <p>The fraction inside the log can be interpreted as the probability that image i correctly identifies its paired text. Thus the loss is log-likelihood. 
+        The temperature <code>tau</code> is a learnable parameter which controls the sharpness of the distribution. Ideally, a good learned temperature
+        can tune the distances to reflect the true probability. If this is not the case, we could also consider the tune this parameter on a seperate dataset,
+        e.g. by maximizing Expected Calibration Error (ECE). This is a different topic, though.</p>
+
+        <h3>Text-to-Image Loss</h3>
+        <p>Symmetrically, for each text i, we want to maximize the probability of selecting the correct image i:</p>
+
+        <pre><code>L_i^(T->I) = -log( exp(S_i,i / tau) / sum_j exp(S_j,i / tau) )</code></pre>
+
+        <h3>Final Loss</h3>
+        <p>The overall training objective averages both directions across all pairs in the batch:</p>
+
+        <pre><code>L = (1 / 2n) * sum_i [ L_i^(I->T) + L_i^(T->I) ]</code></pre>
+
+        <p>This symmetric formulation ensures the model learns good representations from both the image and text perspectives simultaneously.</p>
+
+        <h2>Other Contrastive Loss Methods</h2>
+
+        <h3>Pairwise Contrastive Loss</h3>
+        <p>This method looks at one pair of samples at a time. Each pair is labeled as either positive (matching, e.g., image i with caption i) or negative (non-matching, e.g., image i with caption j).</p>
+
+        <pre><code>Loss = Y * D^2 + (1 - Y) * max(0, m - D)^2</code></pre>
+
+        <p>Where:</p>
+        <ul>
+            <li><code>Y = 1</code> for positive pairs, <code>Y = 0</code> for negative pairs</li>
+            <li><code>D</code> is the distance between the two embeddings</li>
+            <li><code>m</code> is a margin hyperparameter</li>
+        </ul>
+
+        <p>The intuition is straightforward:</p>
+        <ul>
+            <li><strong>Positive pair (Y=1):</strong> minimize the distance D directly.</li>
+            <li><strong>Negative pair (Y=0):</strong> push the distance to be at least m apart (only penalize if D &lt; m). But if the distance is already larger than m, leave it as it is (the same idea as in support vector machine (SVM)).</li>
+        </ul>
+
+        <h3>Triplet Loss</h3>
+        <p>Triplet loss considers three data points at a time:</p>
+        <ol>
+            <li><strong>Anchor (a):</strong> the baseline image</li>
+            <li><strong>Positive (p):</strong> a paired caption (should be close to anchor)</li>
+            <li><strong>Negative (n):</strong> an unpaired caption (should be far from anchor)</li>
+        </ol>
+
+        <pre><code>Loss = max(0, d(a,p) - d(a,n) + m)</code></pre>
+
+        <blockquote>The distance between anchor and positive should be smaller than the distance between anchor and negative by at least a margin m.</blockquote>
+
+        <p>The loss is zero when the constraint is satisfied (i.e., the negative is sufficiently farther away than the positive). Otherwise, it pushes the model to reorganize the embedding space accordingly.</p>
+
+        <h2>Comparing the Approaches</h2>
+        <ul>
+            <li><strong>Pairwise loss</strong> is simple but only sees two samples at a time, which can be slow to converge.</li>
+            <li><strong>Triplet loss</strong> provides richer signal by explicitly comparing relative distances, but requires careful mining of hard negatives.</li>
+            <li><strong>CLIP-style (InfoNCE) loss</strong> scales to entire batches, using all other samples as negatives simultaneously, making it highly efficient for large-scale training.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

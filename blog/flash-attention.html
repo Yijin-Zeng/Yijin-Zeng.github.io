@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashAttention - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">FlashAttention</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/LLM/FlashAttention.pdf">PDF</a>.</p>
+        <p>FlashAttention is one of those ideas that seems obvious in hindsight but is genuinely clever. The key insight is that <strong>standard attention wastes memory by materializing the full N x N score matrix, but you can compute the exact same result block by block without ever storing it</strong>. The trick that makes this work is an online softmax update rule.</p>
+
+        <h2>Standard Attention Recap</h2>
+        <p>Recall that standard attention computes:</p>
+        <pre><code>R = Softmax(Q K^T / sqrt(d)) V</code></pre>
+        <p>Here R is the output matrix. The problem is that computing the full <code>Q K^T</code> matrix requires O(N^2) memory where N is the sequence length. For long sequences, this intermediate matrix is enormous and must be read/written to slow GPU high-bandwidth memory (HBM).</p>
+
+        <h2>The FlashAttention Idea: Block-wise Computation</h2>
+        <p>FlashAttention divides Q, K, and V into b small blocks, each containing t elements (queries, keys, or values):</p>
+
+        <pre><code>Q = [Q_1, Q_2, ..., Q_b]      (b blocks of queries, each of size t)
+K = [K_1, K_2, ..., K_b]      (b blocks of keys)
+V = [V_1, V_2, ..., V_b]      (b blocks of values)</code></pre>
+
+        <p>The output R can similarly be partitioned into blocks:</p>
+        <pre><code>R = [R_1, R_2, ..., R_b]</code></pre>
+
+        <p>The key point is that FlashAttention computes each output block R_1, R_2, ..., R_b separately, and within each output block, it builds the result gradually by streaming through the K and V blocks one at a time.</p>
+
+        <h3>Gradual computation of R_1</h3>
+        <p>Taking R_1 as an example (all other R_i are updated similarly), FlashAttention computes it in b steps:</p>
+
+        <pre><code>Step 1:  R_1^(1) = Softmax(Q_1 (K_1^T) / sqrt(d)) (V_1)
+
+Step 2:  R_1^(2) = Softmax(Q_1 (K_1^T  K_2^T) / sqrt(d)) (V_1)
+                                                             (V_2)
+
+Step 3:  R_1^(3) = Softmax(Q_1 (K_1^T  K_2^T  K_3^T) / sqrt(d)) (V_1)
+                                                                    (V_2)
+                                                                    (V_3)
+  ...
+
+Step b:  R_1^(b) = Softmax(Q_1 (K_1^T ... K_b^T) / sqrt(d)) (V_1)
+                                                               ( : )
+                                                               (V_b)</code></pre>
+
+        <p>After b steps, <code>R_1^(b) = R_1</code>, which is what we want in the end. The critical question is: how do we update from R_1^(i) to R_1^(i+1) efficiently without recomputing everything from scratch?</p>
+
+        <h2>Efficient Incremental Updates</h2>
+        <p>Let us take one query from Q_1 as an example. Without loss of generality, denote it as q_1, and denote its output after step i as r_1^(i+1).</p>
+
+        <h3>Expanding the output at step (i+1)</h3>
+        <p>After processing through the (i+1)-th K and V blocks, the output for query q_1 is:</p>
+
+        <pre><code>r_1^(i+1) = Softmax(q_1^T (K_1 ... K_(i+1)t) / sqrt(d)) (V_1  )
+                                                            ( :   )
+                                                            (V_i+1)</code></pre>
+
+        <p>Since the (i+1)-th step has seen keys from blocks 1 through (i+1) (a total of (i+1)t keys), and each block has t values, we can write this out explicitly:</p>
+
+        <pre><code>         exp(q_1^T k_j / sqrt(d) - s^(in))
+r_1^(i+1) = SUM_j  --------------------------------  *  v_j
+         SUM_j' exp(q_1^T k_j' / sqrt(d) - s^(in))</code></pre>
+
+        <p>Here <code>s^(in)</code> is the maximum of <code>q_1^T k_j / sqrt(d)</code> across all j in blocks 1...(i+1). This is the "max trick" subtracted for numerical stability (it does not change the result since it cancels in the softmax ratio, but prevents overflow in the exponentials).</p>
+
+        <p>We use <code>v_j</code> (small v) to denote the value corresponding to key <code>k_j</code>.</p>
+
+        <h3>The decomposition</h3>
+        <p>The key mathematical insight is that we can split the sum in both the numerator and denominator into two parts: the contribution from blocks 1...i (which we already computed) and the new contribution from block i+1:</p>
+
+        <pre><code>         SUM_{j=1}^{it} exp(q_1^T k_j / sqrt(d) - s^(in)) v_j
+         +  SUM_{j=it+1}^{(i+1)t} exp(q_1^T k_j / sqrt(d) - s^(in)) v_j
+r_1^(i+1) = ----------------------------------------------------------
+                SUM_{j=1}^{(i+1)t} exp(q_1^T k_j / sqrt(d) - s^(in))</code></pre>
+
+        <p>This can be further rewritten by separating the two parts:</p>
+
+        <pre><code>              SUM_{j=1}^{it} exp(q_1^T k_j/sqrt(d) - s^(i))
+r_1^(i+1) =  ------------------------------------------------  *  [previous weighted sum]
+              SUM_{j=1}^{(i+1)t} exp(q_1^T k_j/sqrt(d) - s^(in))
+
+              SUM_{j=it+1}^{(i+1)t} exp(q_1^T k_j/sqrt(d) - s^(in))
+           +  -------------------------------------------------------  *  [new block weighted sum]
+              SUM_{j=1}^{(i+1)t} exp(q_1^T k_j/sqrt(d) - s^(in))</code></pre>
+
+        <blockquote>The second term depends only on block K_{i+1} and V_{i+1}. At each step, the running denominator sum can be updated incrementally, and the new block's contribution is computed fresh. This is what makes FlashAttention work without storing the full N x N attention matrix.</blockquote>
+
+        <h2>What Gets Updated at Each Step</h2>
+        <p>At each step when processing a new K/V block, we maintain and update:</p>
+        <ul>
+            <li><strong>The running sum of exponentials</strong> (denominator): this accumulates across all blocks seen so far and can be updated by simply adding the new block's contribution (with appropriate rescaling when the running max changes)</li>
+            <li><strong>The running weighted numerator</strong>: the sum of exp(score) * v terms, which is similarly updated by rescaling the old sum and adding the new block's terms</li>
+            <li><strong>The running max</strong> s^(in): updated as the max of the old max and the new block's max, needed for numerical stability</li>
+        </ul>
+
+        <h2>Why This Matters: Memory Efficiency</h2>
+        <p>The standard attention algorithm materializes the full N x N attention score matrix in HBM. FlashAttention avoids this by:</p>
+        <ul>
+            <li>Only ever working with blocks of size t x t in fast on-chip SRAM</li>
+            <li>Never writing the full attention matrix to slow HBM</li>
+            <li>Achieving the same exact result (not an approximation) through the incremental update scheme described above</li>
+        </ul>
+
+        <p>Here we are: FlashAttention is IO-aware -- it is designed around the GPU memory hierarchy. By keeping blocks small enough to fit in SRAM, it reduces the number of reads/writes to HBM, which is the actual bottleneck for attention computation on modern hardware. The speedup is substantial -- 2-4x wall-clock time on typical sequence lengths.</p>
+
+        <h2>Summary</h2>
+        <ul>
+            <li>FlashAttention tiles Q, K, V into blocks and uses an online softmax trick (running max + running sum of exponentials) to compute exact attention incrementally -- no approximation involved</li>
+            <li>It is IO-aware: blocks fit in SRAM, avoiding repeated reads/writes to slow HBM, making it super fast in practice (2-4x speedup)</li>
+            <li>The downside is implementation complexity -- the kernel is highly hardware-specific, and custom backward passes are needed for training; not something you casually reimplement</li>
+        </ul>
+
+        <h2>References</h2>
+        <ul>
+            <li>Dao, T. et al. (2022). FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. <em>NeurIPS</em>.</li>
+            <li>Dao, T. (2023). FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning. <em>arXiv:2307.08691</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

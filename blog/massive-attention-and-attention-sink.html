@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massive Attention and Attention Sink - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Massive Activations and Attention Sink</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/LLM/Massive Attention And Attention Sink.pdf">PDF</a>.</p>
+        <p>These are two related phenomena that I find fascinating because they reveal how transformers "hack" their own architecture. <strong>Massive activations</strong> are neurons that always fire at extreme magnitudes regardless of input, and <strong>attention sink</strong> is where the model dumps attention onto the meaningless first token. Both are emergent strategies, not bugs.</p>
+
+        <h2>Massive Activations</h2>
+
+        <p><strong>Massive activations</strong> refer to a small number of specific neurons that consistently output values that are orders of magnitude (100x or 1000x) larger than all other neurons in the network.</p>
+
+        <h3>Key characteristics</h3>
+        <ul>
+            <li>Mostly observed in dense (feed-forward) layers</li>
+            <li>Tend to appear in specific feature dimensions</li>
+            <li>Stay massive regardless of the input text &mdash; they fire at extreme magnitudes no matter what sequence is being processed</li>
+        </ul>
+
+        <h3>Problem: quantization difficulty</h3>
+
+        <p>Massive activations create significant challenges for <strong>model compression</strong>, particularly quantization. Consider what happens when we quantize to INT8 (8-bit integers), which maps all floating-point numbers to the range 0&ndash;255.</p>
+
+        <p>Say we have a weight vector with values like:</p>
+
+        <pre><code>[0.01, 0.2, ..., 1000.02]</code></pre>
+
+        <p>To store the outlier value of 1000.02 within the quantized range, the smaller values like 0.01 get squeezed down toward 0. This dramatically reduces the effective precision for the majority of weights, decreasing model accuracy.</p>
+
+        <p>The core tension is this: a single massive value forces the entire quantization range to stretch, compressing all normal-magnitude values into a tiny portion of the available bit range. You lose precision everywhere just to accommodate a handful of outliers.</p>
+
+        <h3>Solution: compress them separately</h3>
+
+        <p>Since massive activations are few in number and appear at fixed feature dimensions, we can handle them with a separate quantization scheme (e.g., keep them in higher precision like FP16) while quantizing the remaining activations normally. This preserves accuracy without sacrificing compression ratio significantly.</p>
+
+        <h3>Possible explanation: implicit bias terms</h3>
+
+        <p>One hypothesis is that massive activations act as <strong>bias terms</strong> that shift the model's internal focus. In a linear transformation <code>Ax + b</code>, the bias <code>b</code> shifts the output regardless of input. Similarly, these always-on massive activations may serve as learned constant offsets that the model uses to establish baseline attention patterns or feature representations, independent of the specific input being processed.</p>
+
+        <h2>Attention Sink</h2>
+
+        <p><strong>Attention sink</strong> refers to a phenomenon where the model allocates a massive amount of attention to the very first token (typically <code>&lt;sos&gt;</code> or <code>&lt;bos&gt;</code>), even though this token has <strong>no semantic meaning</strong> for the current context.</p>
+
+        <p>This has been consistently observed across many transformer-based language models. The initial token accumulates disproportionate attention weight across layers, acting as a "sink" that absorbs attention that has nowhere else meaningful to go.</p>
+
+        <h3>Problem: streaming LLM with sliding window</h3>
+
+        <p>Consider a streaming LLM scenario where we want the model to process an infinite length of text. A natural approach is to use a <strong>sliding window strategy</strong> for the KV cache, since the computational cost of full attention is O(n^2) for paying attention to all previous tokens.</p>
+
+        <pre><code>Full attention:    [t1, t2, t3, ..., tn] -- O(n^2) cost
+Sliding window:   [..., t_{i-w}, ..., t_i] -- O(w) cost per step</code></pre>
+
+        <p>However, this strategy <strong>will fail</strong> because as the window slides forward, it eventually drops the <code>&lt;sos&gt;</code> token from the cache. Since other tokens often pay a large amount of attention to <code>&lt;sos&gt;</code>, removing it destabilizes the model's attention distribution and degrades generation quality significantly.</p>
+
+        <h3>Solution: keep the first few tokens</h3>
+
+        <p>The fix is straightforward: always keep the first few tokens (including <code>&lt;sos&gt;</code>) in the KV cache while sliding the rest of the window. This is the approach taken by <strong>StreamingLLM</strong>:</p>
+
+        <pre><code>StreamingLLM cache: [t1, t2, ..., t_k] + [t_{i-w}, ..., t_i]
+                     ^^^^^^^^^^^^^^^^     ^^^^^^^^^^^^^^^^^^^
+                     always kept (sink)   sliding window</code></pre>
+
+        <p>By retaining these "attention sink" tokens, the model maintains stable attention patterns even over very long sequences, enabling true streaming inference without quality degradation.</p>
+
+        <h3>Possible explanation: attention dumping</h3>
+
+        <p>Why does attention sink happen? When a token does not need to pay much attention to other tokens (i.e., it already has enough context or the current position is relatively self-contained), it needs somewhere to "dump" the remaining attention probability mass. The <code>&lt;sos&gt;</code> token serves as a convenient target because it is a <strong>common token present in all sequences</strong> &mdash; every input starts with it, so the model learns early in training that it is always available as a safe default target.</p>
+
+        <p><strong>The attention sink is not a bug but an emergent strategy: the model learns to use a universally-present token as a no-op attention target when it has no useful information to attend to.</strong> I think this is one of those findings that makes you appreciate how resourceful gradient descent really is.</p>
+
+        <h2>Connection Between the Two</h2>
+
+        <p>Massive activations and attention sink are related phenomena. Both involve the model concentrating extreme values in specific, fixed locations:</p>
+
+        <ul>
+            <li><strong>Massive activations</strong>: extreme values in fixed feature dimensions of hidden states</li>
+            <li><strong>Attention sink</strong>: extreme attention weights on fixed positional tokens</li>
+        </ul>
+
+        <p>Both can be understood as the model's way of encoding global, input-independent information (biases, default behaviors) within an architecture that does not explicitly provide separate mechanisms for such signals.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Xiao et al., "Efficient Streaming Language Models with Attention Sinks" (2023) &mdash; introduces StreamingLLM</li>
+            <li>Sun et al., "Massive Activations in Large Language Models" (2024) &mdash; characterizes the massive activation phenomenon</li>
+            <li>Dettmers et al., "LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale" (2022) &mdash; mixed-precision decomposition for outlier features</li>
+        </ul>
+
+        <p>Also worth exploring: <strong>global attention</strong> mechanisms (as in Longformer and BigBird) that designate specific tokens to attend to all positions, which provides a more principled alternative to the emergent attention sink behavior.</p>
+    </div>
+</article>
+
+</body>
+</html>
