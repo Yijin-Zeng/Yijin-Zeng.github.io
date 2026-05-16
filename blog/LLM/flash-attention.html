@@ -140,7 +140,7 @@
 <body>
 
 <article class="post">
-    <a href="../index.html" class="post-back">&larr; Back to home</a>
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
 
     <header class="post-header">
         <h1 class="post-title">FlashAttention</h1>
@@ -150,7 +150,7 @@
     </header>
 
     <div class="post-content">
-        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../notes/LLM/FlashAttention.pdf">PDF</a>.</p>
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/LLM/FlashAttention.pdf">PDF</a>.</p>
         <p>FlashAttention is one of those ideas that seems obvious in hindsight but is genuinely clever. The key insight is that <strong>standard attention wastes memory by materializing the full N x N score matrix, but you can compute the exact same result block by block without ever storing it</strong>. The trick that makes this work is an online softmax update rule.</p>
 
         <h2>Standard Attention Recap</h2>
