@@ -151,65 +151,63 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/LLM/Perplexity.pdf">PDF</a>.</p>
-        <p>Perplexity is one of those metrics that everyone uses but surprisingly few people can explain intuitively. It turns out the interpretation is beautiful: <strong>a perplexity of K means the model is, on average, as confused as if it were choosing uniformly among K equally likely words</strong>. Here is why.</p>
+        <p>Perplexity is one of those metrics that everyone uses but not all people can explain clearly.
+           Mathematically, perplexity is equivalent to cross-entropy loss in the sense that there is a one-to-one mapping between them.
+           However, perplexity can be interpreted more intuitively: <strong>a perplexity of K means the model is, on average, as confused 
+           as if it were choosing uniformly among K equally likely words</strong>.</p>
+
+        <h3>Cross-Entropy Loss</h3>
+        <p>To understand perplexity, we first need to recall the cross-entropy loss. For a sequence of N tokens, each with a vocabulary of possible classes, the cross-entropy loss is:</p>
+
+        <pre><code>Cross-Entropy = - sum_{i=1}^{N} sum_{j=1}^{K} I(y_i = j) * log(y_hat_j)</code></pre>
+
+        <p>Here <code>I(y_i = j)</code> is the indicator function (1 if the true token is j, 0 otherwise) and <code>y_hat_j</code> is the model's predicted probability for class j.</p>
+
 
         <h2>Definition</h2>
         <p>Perplexity is defined as the exponential of the average cross-entropy loss:</p>
 
         <pre><code>Perplexity = exp(Cross-Entropy Loss / N)</code></pre>
 
-        <p>where N is the number of predictions (tokens) in the sequence. To understand perplexity, we first need to recall the cross-entropy loss.</p>
-
-        <h3>Cross-Entropy Loss</h3>
-        <p>For a sequence of N tokens, each with a vocabulary of possible classes, the cross-entropy loss is:</p>
-
-        <pre><code>Cross-Entropy = - sum_{i=1}^{N} sum_{j=1}^{K} I(y_i = j) * log(y_hat_j)</code></pre>
-
-        <p>Here <code>I(y_i = j)</code> is the indicator function (1 if the true token is j, 0 otherwise) and <code>y_hat_j</code> is the model's predicted probability for class j. In practice, this simplifies to the negative log-probability the model assigns to the correct token at each position.</p>
+        <p>where N is the number of predictions (tokens) in the sequence.</p>
 
         <h2>Why Perplexity is More Interpretable</h2>
-        <p>The key advantage of perplexity over raw cross-entropy is interpretability. Consider two scenarios:</p>
+        <p>The key advantage of perplexity over raw cross-entropy is interpretability.</p>
 
-        <h3>Scenario 1: Raw cross-entropy is hard to explain</h3>
         <p>If someone tells you the cross-entropy loss is 3.056, it is difficult to develop an intuition for what that number means in practical terms. How good or bad is the model?</p>
 
-        <h3>Scenario 2: Perplexity has a natural interpretation</h3>
-        <p>A perplexity of 3.7 means the model is, on average, as confused as if it were choosing among 3.7 equally likely words at each position. That gives you a concrete mental model: perplexity is the effective number of choices the model is uncertain between.</p>
+        <p>A perplexity of 3.7 means the model is, on average, as confused as if it were choosing among 3.7 equally likely words at each position.</p>
 
         <h2>Proving the Interpretation</h2>
-        <p>Why does perplexity correspond to the number of equally likely choices? Here is the proof:</p>
+        <p>Why does perplexity correspond to the number of equally likely choices?</p>
 
         <p>Suppose there are K words in the vocabulary, and the model has no idea which one to pick, assigning each word equal probability 1/K. Then:</p>
 
         <pre><code>Cross-entropy for N predictions:
 
-= - sum_{i=1}^{N} sum_{j=1}^{K} I(y_i = j) * log(1/K)
+        = - sum_{i=1}^{N} sum_{j=1}^{K} I(y_i = j) * log(1/K)
 
-= - sum_{i=1}^{N} log(1/K)
+        = - sum_{i=1}^{N} log(1/K)
 
-= - sum_{i=1}^{N} (log(1) - log(K))
+        = - sum_{i=1}^{N} (log(1) - log(K))
 
-= sum_{i=1}^{N} log(K)
+        = sum_{i=1}^{N} log(K)
 
-= N * log(K)</code></pre>
+        = N * log(K)</code></pre>
 
         <p>Now computing perplexity:</p>
 
         <pre><code>Perplexity = exp(N * log(K) / N) = exp(log(K)) = K</code></pre>
 
-        <p>So when the model assigns uniform probability over K words, the perplexity is exactly K. This confirms the interpretation: perplexity equals the effective number of equally likely choices the model is deciding between.</p>
+        <p>So when the model assigns uniform probability over K words, the perplexity is exactly K.</p>
 
         <h2>Interpreting Changes in Perplexity</h2>
         <p>Another benefit of perplexity is that improvements become easy to communicate:</p>
 
-        <p>When cross-entropy goes down by 10%, what does that mean concretely? Hard to say. But if perplexity drops from 69 to 51, the interpretation is immediate: the model was previously confused among 69 equally likely words on average, and now it is only confused among 51. That is a clear, tangible improvement in the model's ability to narrow down its predictions.</p>
-
-        <h2>Summary</h2>
-        <ul>
-            <li><strong>Perplexity = exp(average cross-entropy loss)</strong> -- the effective number of equally likely tokens the model is choosing between</li>
-            <li><strong>Lower is better:</strong> perplexity of 1 means perfect certainty; higher means more confusion</li>
-            <li><strong>Why it matters:</strong> changes in perplexity are far easier to communicate than changes in cross-entropy</li>
-        </ul>
+        <p>When cross-entropy goes down by 10%, what does this mean concretely? Because cross-entropy
+            is high unlinear, decreasing 10% from 1000 to 900 is not the same as decreasing 10% from 100 to 90.
+            But if perplexity drops from 69 to 51, the interpretation is clearer: the model was previously confused among 69 equally likely words on average, 
+            and now it is only confused among 51.</p>
     </div>
 </article>
 
