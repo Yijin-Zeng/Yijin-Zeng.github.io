@@ -158,40 +158,45 @@
 
         <!-- SVG diagram illustrating the geometric intuition -->
         <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" style="display:block; margin: 24px auto; max-width: 400px;">
-            <!-- Circle -->
-            <circle cx="200" cy="160" r="127" fill="none" stroke="#2563eb" stroke-width="1.5" opacity="0.4"/>
-            <!-- Origin -->
-            <circle cx="200" cy="160" r="3" fill="#1a1a1a"/>
-            <text x="192" y="180" font-size="11" fill="#1a1a1a">O</text>
-            <!-- V1 vector -->
-            <line x1="200" y1="160" x2="325" y2="130" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
-            <text x="335" y="135" font-size="12" fill="#1a1a1a">V₁</text>
-            <!-- V2 vector -->
-            <line x1="200" y1="160" x2="280" y2="60" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
-            <text x="283" y="55" font-size="12" fill="#1a1a1a">V₂</text>
-            <!-- Angle theta -->
-            <path d="M 230 152 A 30 30 0 0 0 222 138" fill="none" stroke="#dc2626" stroke-width="1.2"/>
-            <text x="232" y="142" font-size="10" fill="#dc2626">&theta;</text>
-            <!-- LERP path (straight line) -->
-            <line x1="325" y1="130" x2="280" y2="60" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4,3"/>
-            <text x="314" y="88" font-size="10" fill="#dc2626">LERP</text>
-            <!-- SLERP arc -->
-            <path d="M 320 125 A 110 110 0 0 0 270 73" fill="none" stroke="#16a34a" stroke-width="2"/>
-            <text x="315" y="75" font-size="10" fill="#16a34a">SLERP</text>
-            <!-- NLERP dashed -->
-            <line x1="310" y1="119" x2="270" y2="73" stroke="#9333ea" stroke-width="1.2" stroke-dasharray="2,2"/>
-            <text x="268" y="104" font-size="10" fill="#9333ea">NLERP</text>
-            <!-- Unit circle points for V1', V2' -->
-            <circle cx="325" cy="130" r="3" fill="#2563eb"/>
-            <circle cx="280" cy="60" r="3" fill="#2563eb"/>
-            <!-- Arrow marker definition -->
-            <defs>
-                <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6" fill="none" stroke="#1a1a1a" stroke-width="1"/>
-                </marker>
-            </defs>
-        </svg>
-        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">Geometric comparison: LERP cuts straight through the interior, NLERP projects back onto the sphere but spaces points unevenly, and SLERP traces the arc at constant angular velocity.</p>
+    <!-- Circle -->
+    <circle cx="200" cy="160" r="127" fill="none" stroke="#2563eb" stroke-width="1.5" opacity="0.4"/>
+    
+    <!-- Origin -->
+    <circle cx="200" cy="160" r="3" fill="#1a1a1a"/>
+    <text x="192" y="180" font-size="11" fill="#1a1a1a">O</text>
+    
+    <!-- V1 vector -->
+    <line x1="200" y1="160" x2="325" y2="130" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="335" y="135" font-size="12" fill="#1a1a1a">V₁</text>
+    
+    <!-- V2 vector -->
+    <line x1="200" y1="160" x2="280" y2="60" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="283" y="55" font-size="12" fill="#1a1a1a">V₂</text>
+    
+    <!-- Angle theta -->
+    <path d="M 230 152 A 30 30 0 0 0 222 138" fill="none" stroke="#dc2626" stroke-width="1.2"/>
+    <text x="232" y="142" font-size="10" fill="#dc2626">&theta;</text>
+    
+    <!-- LERP path (straight line) -->
+    <line x1="325" y1="130" x2="280" y2="60" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4,3"/>
+    <text x="270" y="100" font-size="10" fill="#dc2626">LERP</text>
+    
+    <!-- SLERP arc (UPDATED HERE) -->
+    <path d="M 325 130 A 127 127 0 0 0 280 60" fill="none" stroke="#16a34a" stroke-width="2"/>
+    <text x="318" y="70" font-size="10" fill="#16a34a">SLERP and NLERP</text>
+    
+    <!-- Unit circle points for V1', V2' -->
+    <circle cx="325" cy="130" r="3" fill="#2563eb"/>
+    <circle cx="280" cy="60" r="3" fill="#2563eb"/>
+    
+    <!-- Arrow marker definition -->
+    <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+        </marker>
+    </defs>
+</svg>
+        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">Geometric intuition: Linear interpolation (LERP) will result the merged vector live on the red line (thus shrinkage); while NLERP and SLERP both resulting the merged vectors on the green arch (keeping the norm unchanged).</p>
 
         <h2>Method 1: LERP (Linear Interpolation)</h2>
         <p>The simplest approach is a direct weighted average of the two vectors:</p>
@@ -203,9 +208,9 @@
 
         <pre><code>||V||₂  &lt;  ||V₁||₂   or   ||V₂||₂</code></pre>
 
-        <p>Intuitively, when two vectors point in different directions, their weighted sum "cuts through" the interior of the space rather than staying on the surface of the sphere. For model weights, this shrinkage can degrade performance because the magnitudes of weight matrices carry important information about learned representations.</p>
+        <p>For model weights, this shrinkage can degrade performance because the magnitudes of weight matrices carry important information about learned representations.</p>
 
-        <p>The interpolated vector should generally have a norm on the same order as the originals. LERP fails to guarantee this.</p>
+        <p>Thus, the interpolated vector should generally have a norm on the same order as the originals.</p>
 
         <h2>Method 2: NLERP (Normalized LERP)</h2>
         <p>NLERP addresses the shrinkage problem by decoupling direction and magnitude, handling each separately:</p>
@@ -225,7 +230,7 @@
         <p>NLERP fixes the shrinkage problem, but it does not traverse the arc evenly. As &alpha; moves from 0 to 1, the interpolated direction does not cover equal angular distances in equal steps.</p>
 
         <h2>Method 3: SLERP (Spherical Linear Interpolation)</h2>
-        <p>SLERP is the gold standard for interpolation on a sphere. It moves along the great-circle arc at constant angular velocity, producing evenly-spaced intermediate points.</p>
+        <p>Compared with NLERP, SLERP moves along the arc at constant angular velocity, producing evenly-spaced intermediate points.</p>
 
         <h3>Step 1: Normalize both vectors</h3>
         <pre><code>V₁' &larr; V₁ / ||V₁||₂
@@ -251,21 +256,14 @@ V₂' &larr; V₂ / ||V₂||₂</code></pre>
 
         <ul>
             <li><strong>SLERP</strong> (&alpha;: 0 &rarr; 1): moves evenly along the circle. Equal increments of &alpha; produce equal angular steps. This gives a geometrically uniform interpolation.</li>
-            <li><strong>NLERP</strong> (&alpha;: 0 &rarr; 1): moves unevenly. The angular speed varies &mdash; it moves faster near the midpoint and slower near the endpoints. This is because normalizing a linear combination distorts the angular spacing.</li>
+            <li><strong>NLERP</strong> (&alpha;: 0 &rarr; 1): moves unevenly. The angular speed varies. It moves faster near the midpoint and slower near the endpoints. This is because normalizing a linear combination distorts the angular spacing.</li>
         </ul>
 
-        <p>Here we are: in practice, SLERP is preferred for model merging because the even angular traversal means the interpolation parameter &alpha; has a more predictable and uniform effect on the resulting model behavior.</p>
-
-        <h2>Practical Notes for Model Merging</h2>
-        <ul>
-            <li>SLERP is applied independently to each corresponding pair of weight matrices across the two models.</li>
-            <li>When &theta; is very small (vectors nearly parallel), SLERP degenerates numerically &mdash; fall back to LERP since shrinkage is negligible anyway.</li>
-            <li>The interpolation factor &alpha; controls how much of each model contributes: &alpha; = 0.5 gives an equal blend.</li>
-        </ul>
+        <p>In practice, SLERP is preferred for model merging because the even angular traversal means it would be (practially) easier to tune or learn the optimal interpolation parameter &alpha.</p>
 
         <h2>References</h2>
         <ul>
-            <li>Goddard, C. et al. (2024). "Arcee's MergeKit: A Toolkit for Merging Large Language Models." arXiv:2403.13257.</li>
+            <li>Wikipedia contributors. (2026, February 25). Spherical linear interpolation. In Wikipedia, The Free Encyclopedia. Retrieved 09:47, May 18, 2026, from https://en.wikipedia.org/w/index.php?title=Spherical_linear_interpolation&oldid=1340311860</li>
         </ul>
     </div>
 </article>
