@@ -151,17 +151,20 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/LLM/SLERP For Model Merging.pdf">PDF</a>.</p>
-        <p>Model merging is the idea of combining two fine-tuned models into one without retraining. The core operation is interpolating their weight matrices, and <strong>the naive approach (linear interpolation) has a subtle but important problem: it shrinks the magnitude of the result</strong>. SLERP fixes this by interpolating along the arc of a sphere instead of cutting through the interior.</p>
+        <p>Model merging is the idea of combining two models into one without retraining. The core operation is interpolating their weight matrices, 
+           and <strong>the naive approach (linear interpolation) has a subtle but important problem: it shrinks the magnitude (norm) of the result</strong>. 
+           As illustrated by the figrue below.
+           SLERP fixes this by interpolating along the arc of a sphere.</p>
 
         <!-- SVG diagram illustrating the geometric intuition -->
         <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" style="display:block; margin: 24px auto; max-width: 400px;">
             <!-- Circle -->
-            <circle cx="200" cy="160" r="110" fill="none" stroke="#2563eb" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="200" cy="160" r="127" fill="none" stroke="#2563eb" stroke-width="1.5" opacity="0.4"/>
             <!-- Origin -->
             <circle cx="200" cy="160" r="3" fill="#1a1a1a"/>
             <text x="192" y="180" font-size="11" fill="#1a1a1a">O</text>
             <!-- V1 vector -->
-            <line x1="200" y1="160" x2="330" y2="130" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <line x1="200" y1="160" x2="325" y2="130" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
             <text x="335" y="135" font-size="12" fill="#1a1a1a">V₁</text>
             <!-- V2 vector -->
             <line x1="200" y1="160" x2="280" y2="60" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#arrow)"/>
@@ -170,17 +173,17 @@
             <path d="M 230 152 A 30 30 0 0 0 222 138" fill="none" stroke="#dc2626" stroke-width="1.2"/>
             <text x="232" y="142" font-size="10" fill="#dc2626">&theta;</text>
             <!-- LERP path (straight line) -->
-            <line x1="330" y1="130" x2="280" y2="60" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4,3"/>
+            <line x1="325" y1="130" x2="280" y2="60" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4,3"/>
             <text x="314" y="88" font-size="10" fill="#dc2626">LERP</text>
             <!-- SLERP arc -->
-            <path d="M 310 119 A 110 110 0 0 0 270 73" fill="none" stroke="#16a34a" stroke-width="2"/>
+            <path d="M 320 125 A 110 110 0 0 0 270 73" fill="none" stroke="#16a34a" stroke-width="2"/>
             <text x="315" y="75" font-size="10" fill="#16a34a">SLERP</text>
             <!-- NLERP dashed -->
             <line x1="310" y1="119" x2="270" y2="73" stroke="#9333ea" stroke-width="1.2" stroke-dasharray="2,2"/>
             <text x="268" y="104" font-size="10" fill="#9333ea">NLERP</text>
             <!-- Unit circle points for V1', V2' -->
-            <circle cx="310" cy="119" r="3" fill="#2563eb"/>
-            <circle cx="270" cy="73" r="3" fill="#2563eb"/>
+            <circle cx="325" cy="130" r="3" fill="#2563eb"/>
+            <circle cx="280" cy="60" r="3" fill="#2563eb"/>
             <!-- Arrow marker definition -->
             <defs>
                 <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">

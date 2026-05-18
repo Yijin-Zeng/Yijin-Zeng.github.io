@@ -607,9 +607,10 @@
 
         .chapter-color-llm { background: #dc2626; }
         .chapter-color-ml { background: #2563eb; }
-        .chapter-color-math { background: #16a34a; }
+        .chapter-color-math { background: #eab308; }
         .chapter-color-cs { background: #ca8a04; }
         .chapter-color-leetcode { background: #9333ea; }
+        .chapter-color-statistics { background: #16a34a; }
 
         .chapter-body {
             display: none;
@@ -874,10 +875,10 @@
 
         .timeline-dot[data-topic="llm"] { background: #dc2626; }
         .timeline-dot[data-topic="machine-learning"] { background: #2563eb; }
-        .timeline-dot[data-topic="math"] { background: #16a34a; }
+        .timeline-dot[data-topic="math"] { background: #eab308; }
         .timeline-dot[data-topic="cs"] { background: #ca8a04; }
         .timeline-dot[data-topic="leetcode"] { background: #9333ea; }
-        .timeline-dot[data-topic="statistics"] { background: #ea580c; }
+        .timeline-dot[data-topic="statistics"] { background: #16a34a; }
 
         /* Footer */
         .footer {
@@ -1076,7 +1077,7 @@
                         <div class="stat-label">Packages</div>
                     </div>
                     <div class="stat-item" data-section="notes">
-                        <div class="stat-number" data-target="20">0</div>
+                        <div class="stat-number" data-target="21">0</div>
                         <div class="stat-label">Notes</div>
                     </div>
                     <div class="stat-item" data-section="projects">
@@ -1414,7 +1415,23 @@
                 </div>
             </div>
 
-            <!-- Chapter 3: Math -->
+            <!-- Chapter 3: Statistics -->
+            <div class="book-chapter">
+                <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="chapter-toggle">&#9654;</span>
+                    <span class="chapter-color chapter-color-statistics"></span>
+                    <span class="chapter-title">Statistics</span>
+                </div>
+                <div class="chapter-body">
+                    <div class="book-entry">
+                        <a href="blog/Statistics/change-point-detection.html">Change Point Detection Methods</a>
+                        <a class="entry-pdf" href="notes/Statistics/ReviewForCPD.pdf">[pdf]</a>
+                        <span class="entry-desc">Finding structural shifts in time series data</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Math -->
             <div class="book-chapter">
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
@@ -1435,7 +1452,7 @@
                 </div>
             </div>
 
-            <!-- Chapter 4: Computer Science -->
+            <!-- Chapter 5: Computer Science -->
             <div class="book-chapter">
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
@@ -1456,7 +1473,7 @@
                 </div>
             </div>
 
-            <!-- Chapter 5: Leetcode -->
+            <!-- Chapter 6: Leetcode -->
             <div class="book-chapter">
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
@@ -1501,6 +1518,7 @@
                 <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px;">2025</div>
                 <div class="timeline-bar">
                     <a href="blog/LLM/multi-head-attention-and-variants.html" class="timeline-dot" data-topic="llm" style="left: 0%"><span class="timeline-tooltip">Multi-Head Attention and Variants</span></a>
+                    <a href="blog/Statistics/change-point-detection.html" class="timeline-dot" data-topic="statistics" style="left: 23%"><span class="timeline-tooltip">Change Point Detection Methods</span></a>
                     <a href="blog/Leetcode/linked-list-cycle-ii.html" class="timeline-dot" data-topic="leetcode" style="left: 29%"><span class="timeline-tooltip">142. Linked List Cycle II</span></a>
                     <a href="blog/LLM/perplexity.html" class="timeline-dot" data-topic="llm" style="left: 58%"><span class="timeline-tooltip">Perplexity</span></a>
                     <a href="blog/LLM/linear-self-attention.html" class="timeline-dot" data-topic="llm" style="left: 87%"><span class="timeline-tooltip">Linear Self-Attention</span></a>
@@ -1777,13 +1795,14 @@
         { title: "SLERP for Model Merging", url: "blog/Machine Learning/slerp-model-merging.html", desc: "Spherical interpolation of weight matrices", topic: "Machine Learning", color: "#2563eb" },
         { title: "Contrastive Learning", url: "blog/Machine Learning/contrastive-learning.html", desc: "CLIP, pairwise loss, and triplet loss", topic: "Machine Learning", color: "#2563eb" },
         { title: "SHAP and LIME", url: "blog/Machine Learning/shap-and-lime.html", desc: "Model-agnostic feature attribution methods", topic: "Machine Learning", color: "#2563eb" },
-        { title: "Fourier Transform", url: "blog/Math/fourier-transform.html", desc: "Decomposing signals into frequency components", topic: "Mathematics", color: "#16a34a" },
-        { title: "Constrained Optimization", url: "blog/Math/constrained-optimization.html", desc: "Lagrange duality, KKT conditions, and strong duality", topic: "Mathematics", color: "#16a34a" },
+        { title: "Fourier Transform", url: "blog/Math/fourier-transform.html", desc: "Decomposing signals into frequency components", topic: "Mathematics", color: "#eab308" },
+        { title: "Constrained Optimization", url: "blog/Math/constrained-optimization.html", desc: "Lagrange duality, KKT conditions, and strong duality", topic: "Mathematics", color: "#eab308" },
         { title: "Bits and Bytes", url: "blog/Computer Science/bits-and-bytes.html", desc: "How floating-point numbers are stored in memory", topic: "Computer Science", color: "#d97706" },
         { title: "Binary Indexed Tree", url: "blog/Computer Science/binary-indexed-tree.html", desc: "O(log n) prefix sums and updates via bit manipulation", topic: "Computer Science", color: "#d97706" },
         { title: "Dijkstra's Algorithm", url: "blog/Leetcode/dijkstra-algorithm.html", desc: "Heap-based shortest path with correctness proof", topic: "Leetcode", color: "#7c3aed" },
         { title: "416. Partition Equal Subset Sum", url: "blog/Leetcode/partition-equal-subset-sum.html", desc: "Brute force → memoization → bottom-up DP", topic: "Leetcode", color: "#7c3aed" },
-        { title: "142. Linked List Cycle II", url: "blog/Leetcode/linked-list-cycle-ii.html", desc: "Floyd's algorithm: why reset-to-head works", topic: "Leetcode", color: "#7c3aed" }
+        { title: "142. Linked List Cycle II", url: "blog/Leetcode/linked-list-cycle-ii.html", desc: "Floyd's algorithm: why reset-to-head works", topic: "Leetcode", color: "#7c3aed" },
+        { title: "Change Point Detection Methods", url: "blog/Statistics/change-point-detection.html", desc: "Finding structural shifts in time series data", topic: "Statistics", color: "#16a34a" }
     ];
 
     function shuffleRandomCards() {

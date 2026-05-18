@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Point Detection Methods - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #fff7ed;
+            color: #c2410c;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Change Point Detection Methods</h1>
+        <div class="post-meta">
+            <span class="tag">Statistics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A detailed technical review with derivations is available as a <a href="../../notes/Statistics/ReviewForCPD.pdf">PDF</a>.</p>
+
+        <p>Change point detection is about spotting when something fundamental shifts in your data. <strong>Think of it like watching a heart rate monitor — most of the time it's steady, but when something happens (exercise, stress, rest), the pattern changes.</strong> These transition moments are what we're hunting for.</p>
+
+        <h2>Why Does This Matter?</h2>
+        <p>Change points show up everywhere:</p>
+        <ul>
+            <li><strong>Finance:</strong> when market volatility suddenly jumps</li>
+            <li><strong>Manufacturing:</strong> when a machine starts drifting out of spec</li>
+            <li><strong>Climate:</strong> when temperature trends break from historical patterns</li>
+            <li><strong>Networks:</strong> when traffic patterns shift due to an attack or outage</li>
+        </ul>
+
+        <p>The challenge is distinguishing real structural changes from random noise. That's where these methods come in.</p>
+
+        <h2>Single Change Point Methods</h2>
+        <p>These techniques assume there's <strong>at most one</strong> change point in your sequence. They're asking: "did something change, and if so, where?"</p>
+
+        <h3>1. Cumulative Sum (CUSUM)</h3>
+        <p>CUSUM is elegant in its simplicity. Imagine you're tracking daily temperature and you suspect the mean shifted at some point. CUSUM accumulates evidence of this shift.</p>
+
+        <p><strong>The intuition:</strong> If there's no change, positive and negative deviations from the mean should cancel out over time. But if the mean shifts upward at time τ, you'll start accumulating positive evidence that grows unbounded.</p>
+
+        <p>CUSUM compares two hypotheses at each candidate split point:</p>
+        <ul>
+            <li>Before the split: data comes from distribution F₁</li>
+            <li>After the split: data comes from distribution F₂</li>
+        </ul>
+
+        <p>It computes a statistic that measures how much the split "explains" versus the null hypothesis of no change. When this statistic exceeds a threshold, you declare a change point.</p>
+
+        <p><strong>When it works best:</strong> When you know the distributions (e.g., normal with different means) and the change is persistent, not just a temporary spike.</p>
+
+        <h3>2. Likelihood Ratio Test</h3>
+        <p>This is the statistically principled approach. You're asking: "what location for a change point maximizes the likelihood of observing this data?"</p>
+
+        <p><strong>The intuition:</strong> If there's truly a change at time τ, then modeling the data with a split at τ should fit much better than assuming no change at all. The likelihood ratio quantifies this improvement.</p>
+
+        <p>You scan through all possible split points, compute the likelihood for each, and pick the one that maximizes it. Then you test whether this maximum is statistically significant.</p>
+
+        <p><strong>The catch:</strong> You need to know (or estimate) the parameters of your distributions. Also, choosing the significance threshold is tricky — traditional methods are too conservative for large datasets.</p>
+
+        <h3>3. t-Test Based Detection</h3>
+        <p>This is CUSUM's practical cousin for when you don't know the distribution parameters.</p>
+
+        <p><strong>The intuition:</strong> At each candidate split point, compute the sample means before and after. If they're significantly different (via a t-test), that's evidence of a change.</p>
+
+        <p>You scan all possible splits and find the one with the largest t-statistic. If it exceeds a threshold, declare that point as your change point.</p>
+
+        <p><strong>Why it's useful:</strong> No need to know the true means or variances ahead of time. The data tells you.</p>
+
+        <p><strong>The trade-off:</strong> Setting the threshold is hard. Too low = false alarms. Too high = missed changes.</p>
+
+        <h3>4. Rank-Based Detection</h3>
+        <p>What if your data isn't even normally distributed? Rank-based methods don't care about the actual values — only their relative ordering.</p>
+
+        <p><strong>The intuition:</strong> If there's a change point, observations before and after should come from different distributions. This means if you compare any "before" observation with any "after" observation, one should tend to be systematically larger.</p>
+
+        <p>The method counts these pairwise comparisons using a sign function, builds a test statistic, and checks if it's extreme enough to declare a change.</p>
+
+        <p><strong>When it shines:</strong> Robustness. Outliers won't throw it off, and it works regardless of the underlying distribution shape. Perfect for messy real-world data.</p>
+
+        <h2>Multiple Change Points</h2>
+        <p>Real data rarely has just one change. Maybe a system gradually degrades through multiple stages, or a market goes through several regime shifts. These methods handle that complexity.</p>
+
+        <h3>1. Binary Segmentation</h3>
+        <p>This is the greedy, recursive approach.</p>
+
+        <p><strong>How it works:</strong></p>
+        <ol>
+            <li>Apply a single change point method to the entire sequence</li>
+            <li>If a change is detected, split the sequence there</li>
+            <li>Recursively apply the same process to each segment</li>
+            <li>Stop when no more significant changes are found</li>
+        </ol>
+
+        <p><strong>The appeal:</strong> Simple, fast, intuitive.</p>
+
+        <p><strong>The limitation:</strong> It's greedy. If the first split isn't optimal, all subsequent splits inherit that mistake. Works great when there's one dominant change, less so when there are multiple subtle shifts.</p>
+
+        <h3>2. Wild Binary Segmentation (WBS)</h3>
+        <p>This fixes binary segmentation's greedy problem with a clever twist: <strong>randomization</strong>.</p>
+
+        <p><strong>The insight:</strong> Instead of always testing the full sequence, randomly sample many subintervals and test each one for a change point. Then aggregate these local findings to identify global change points.</p>
+
+        <p>By testing many random windows, WBS avoids getting locked into a bad first decision. It's like getting multiple opinions before committing.</p>
+
+        <p><strong>When it wins:</strong> When you have multiple change points and they might be clustered together. The randomization helps it find all of them.</p>
+
+        <h3>3. Pruned Exact Linear Time (PELT)</h3>
+        <p>This is the efficiency champion. PELT solves an optimization problem: find the set of change points that minimizes a cost function (like total variance) plus a penalty for each change point added.</p>
+
+        <p><strong>The framework:</strong> You're balancing two competing goals:</p>
+        <ul>
+            <li><strong>Fit the data well</strong> (which suggests more change points)</li>
+            <li><strong>Keep the model simple</strong> (which suggests fewer change points)</li>
+        </ul>
+
+        <p>PELT uses dynamic programming to solve this exactly, but with a pruning trick that makes it run in linear time on average.</p>
+
+        <p><strong>The pruning insight:</strong> If adding a change point at time t doesn't improve the cost, then it will never be part of the optimal solution for any future time either. So you can discard it permanently.</p>
+
+        <p><strong>Why it's powerful:</strong> Optimal solution (not greedy), and fast enough for large datasets.</p>
+
+        <h3>4. Nonparametric Maximum Likelihood</h3>
+        <p>This approach asks: "what's the most likely configuration of change points, without assuming any particular distribution?"</p>
+
+        <p><strong>The idea:</strong> Use empirical cumulative distribution functions (which make no parametric assumptions) and maximize an integrated likelihood over all possible change point configurations.</p>
+
+        <p>It estimates not just where the change points are, but also how many there are, using information criteria like BIC.</p>
+
+        <p><strong>The strength:</strong> No distributional assumptions. Works for any data.</p>
+
+        <p><strong>The cost:</strong> Computationally intensive. The optimization problem is hard, requiring dynamic programming tricks to be feasible.</p>
+
+        <h3>5. Energy-Based Detection</h3>
+        <p>What if your data is multivariate — not just a single time series, but multiple variables tracked simultaneously?</p>
+
+        <p><strong>The energy statistic</strong> measures the distance between two multivariate distributions by comparing:</p>
+        <ul>
+            <li>The average distance between points in the two groups</li>
+            <li>The average distance within each group</li>
+        </ul>
+
+        <p>If the between-group distance is much larger than the within-group distance, the two segments likely come from different distributions.</p>
+
+        <p>You scan through candidate change points, compute the energy statistic for each split, and test for significance using permutation tests.</p>
+
+        <p><strong>Why it's useful:</strong> Handles multivariate data naturally. Nonparametric. Detects changes in any aspect of the distribution (mean, variance, correlation structure, etc.).</p>
+
+        <h2>Choosing a Method</h2>
+        <p>Here's a quick decision guide:</p>
+
+        <ul>
+            <li><strong>Know your distribution + expect one change?</strong> → CUSUM or Likelihood Ratio Test</li>
+            <li><strong>Unknown distribution + one change?</strong> → t-test or rank-based method</li>
+            <li><strong>Multiple changes + want speed?</strong> → Binary Segmentation or WBS</li>
+            <li><strong>Multiple changes + want optimality?</strong> → PELT</li>
+            <li><strong>Multivariate data?</strong> → Energy-based detection</li>
+            <li><strong>No assumptions at all?</strong> → Nonparametric maximum likelihood or rank-based methods</li>
+        </ul>
+
+        <h2>The Real Challenge: Thresholds</h2>
+        <p>Almost every method requires choosing a threshold for declaring a change. Set it too low, and you'll see changes everywhere (false positives). Set it too high, and you'll miss real changes (false negatives).</p>
+
+        <p>Common approaches:</p>
+        <ul>
+            <li><strong>Control false alarm rate:</strong> Use probabilistic bounds (like Bonferroni correction) to keep false positives rare</li>
+            <li><strong>Monte Carlo simulation:</strong> Generate data under the null hypothesis (no change) and see what threshold gives you the false alarm rate you want</li>
+            <li><strong>Cross-validation:</strong> If you have labeled data, tune the threshold to maximize detection accuracy</li>
+        </ul>
+
+        <p>There's no free lunch — you're always trading off between sensitivity and false alarms.</p>
+
+        <h2>Final Thoughts</h2>
+        <p>Change point detection is fundamentally about <strong>finding structure in sequences</strong>. Each method makes different trade-offs between assumptions, computational cost, and statistical power.</p>
+
+        <p>The best approach depends on your data and your priorities. But understanding the intuition behind each method helps you choose wisely — and interpret the results correctly.</p>
+    </div>
+</article>
+
+</body>
+</html>
