@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Change Point Detection Methods - Yijin Zeng</title>
+    <title>A concise review for change point detection methods - Yijin Zeng</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
 
@@ -147,30 +147,62 @@
     <a href="../../index.html" class="post-back">&larr; Back to home</a>
 
     <header class="post-header">
-        <h1 class="post-title">Change Point Detection Methods</h1>
+        <h1 class="post-title">A concise review for change point detection methods</h1>
         <div class="post-meta">
             <span class="tag">Statistics</span>
         </div>
     </header>
 
     <div class="post-content">
-        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A detailed technical review with derivations is available as a <a href="../../notes/Statistics/ReviewForCPD.pdf">PDF</a>.</p>
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A more formal, technical review is available as a <a href="../../notes/Statistics/ReviewForCPD.pdf">PDF</a>.</p>
 
-        <p>Change point detection is about spotting when something fundamental shifts in your data. <strong>Think of it like watching a heart rate monitor — most of the time it's steady, but when something happens (exercise, stress, rest), the pattern changes.</strong> These transition moments are what we're hunting for.</p>
+        <p>Change point detection is about spotting when something changes fundamentally in the data. 
+        Think of it like watching a heart rate monitor: most of the time it's steady, but when something happens, e.g. exercise, stress, rest, the pattern changes.
+        It is often very useful to detect these transition moments accurately, and quickly.</p>
 
         <h2>Why Does This Matter?</h2>
-        <p>Change points show up everywhere:</p>
+        <p>Change point detection is a very important topic in statistics and machine learning, because change points can show up everywhere, 
+           and we often want to detect them as quickly as possible. Consider the following fields and cases:
+        </p>
         <ul>
-            <li><strong>Finance:</strong> when market volatility suddenly jumps</li>
-            <li><strong>Manufacturing:</strong> when a machine starts drifting out of spec</li>
-            <li><strong>Climate:</strong> when temperature trends break from historical patterns</li>
-            <li><strong>Networks:</strong> when traffic patterns shift due to an attack or outage</li>
+            <li><strong>Finance:</strong> financial markets are notoriously volatile. This unpredictability comes from the inherent noise in the data, 
+                meaning that even if a model is 'true', there is still randomness. However, it also comes from 'change points', which are unexpected, 
+                permanent shifts in the underlying 'true model' over time. 
+                Detecing such change points is definitely a billion dolloars question. For a practical example of this problem, look at the
+                <a href="https://hub.crunchdao.com/competitions/structural-break"> ADIA Lab Structural Break Challenge </a>.
+            </li>
+
+            <li><strong>Manufacturing:</strong> during manufacturing, we want to know when a machine starts malfunctioning as quickly as possible. 
+                For instance, consider a production line calibrated to yield items weighing 100g (±10g). If a mechanical fault occurs, the machine 
+                might abruptly shift to producing 200g items.
+            </li>
+
+            <li><strong>Health:</strong> we can continuously monitor people's key health metrics (e.g. using Apple watch), like heart rate, blood pressure, and blood sugar to track their overall condition. 
+                A fundamental change in one of these metrics can signal the onset of a disease or a medical event that requires proactive intervention. </li>
+
         </ul>
 
-        <p>The challenge is distinguishing real structural changes from random noise. That's where these methods come in.</p>
+        <h2>Key challenges</h2>
+
+        <p>As in many other fields, change point detection is a balancing act. There are many inherent trade-offs we can encounter, most dominantly:</p>
+        <ul>
+            <li><strong>Detection Delay vs. False Alarm Rate:</strong> We almost always want to detect a shift as soon as it happens (low detection delay). At the same time, we want to avoid flagging changes when the system is actually stable (low false alarm rate). Unfortunately, these two goals conflict. A highly sensitive algorithm tends to generate more false alarms. Consider the extreme case of an algorithm that flags every single data point as a change point: it would detect real changes instantly, but its false alarm rate would be so high that the model is completely useless.</li>
+
+            <li><strong>Detection Delay vs. Computational Burden:</strong> Change point detection algorithms can become quite complex, 
+                e.g. methods based on neural networks or Gaussian processes. Generally, a more complex algorithm yields a lower detection delay, 
+                but requires significantly more computational power. Time and memory complexity are crucial considerations in change point detecion,
+                especially in scenarios where we can receive millions of data points per second, e.g. in cyber security.</li>
+        </ul>
+
+            </ul></p>
+
+        Below, we provide intuitive explanations for some of the most frequently used change point detection methods.
+        We divide them into two categories: single change point methods, which assume there is only one shift in the sequence, 
+        and multiple change point methods, which can handle sequences with several shifts. However, we shouldn't view these categories as completely separate, 
+        since many multiple change point methods are actually adaptations of single change point techniques.
 
         <h2>Single Change Point Methods</h2>
-        <p>These techniques assume there's <strong>at most one</strong> change point in your sequence. They're asking: "did something change, and if so, where?"</p>
+        <p>These techniques assume there's <strong>at most one</strong> change point in the sequence.</p>
 
         <h3>1. Cumulative Sum (CUSUM)</h3>
         <p>CUSUM is elegant in its simplicity. Imagine you're tracking daily temperature and you suspect the mean shifted at some point. CUSUM accumulates evidence of this shift.</p>
