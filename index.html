@@ -393,109 +393,79 @@
             margin-left: 12px;
         }
 
-        /* Projects */
-        .projects-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
+        /* Projects Timeline */
+        .projects-timeline {
+            position: relative;
+            padding-left: 60px;
         }
 
-        .project-card {
-            overflow: hidden;
-            border-radius: 8px;
-            transition: transform 0.3s, box-shadow 0.3s;
+        .projects-timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
         }
 
-        .project-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        .timeline-year {
+            margin-bottom: 48px;
         }
 
-        .project-image {
-            width: 100%;
-            height: 220px;
-            object-fit: cover;
-            display: block;
-            cursor: pointer;
-            border-radius: 8px;
-        }
-
-        .project-content {
-            padding: 24px 0;
-        }
-
-        .project-title {
+        .timeline-year-label {
+            font-family: 'JetBrains Mono', monospace;
             font-size: 1.3rem;
             font-weight: 600;
             color: var(--text);
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: color 0.2s;
+            margin-bottom: 32px;
+            margin-left: -40px;
         }
 
-        .project-title:hover {
+        .timeline-project {
+            position: relative;
+            margin-bottom: 32px;
+            padding-left: 24px;
+        }
+
+        .timeline-project::before {
+            content: '';
+            position: absolute;
+            left: -44px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--link);
+            border: 3px solid var(--bg);
+            box-shadow: 0 0 0 2px var(--link);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .timeline-project:hover::before {
+            transform: scale(1.3);
+            box-shadow: 0 0 0 3px var(--link);
+        }
+
+        .project-title-link {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.2s;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .project-title-link:hover {
             color: var(--link);
+            text-decoration: none;
         }
 
         .project-description {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            line-height: 1.8;
-            margin-bottom: 16px;
-        }
-
-        .project-link {
-            display: inline-block;
-            padding: 8px 16px;
-            background: var(--link);
-            color: white;
-            border-radius: 4px;
             font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .project-link:hover {
-            background: #1d4ed8;
-            text-decoration: none;
-        }
-
-        .other-projects-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-
-        .other-project {
-            padding: 20px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .other-project:hover {
-            background: var(--card-bg);
-            border-color: var(--link);
-        }
-
-        .other-project-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 8px;
-            transition: color 0.2s;
-        }
-
-        .other-project:hover .other-project-title {
-            color: var(--link);
-        }
-
-        .other-project-desc {
-            font-size: 0.85rem;
             color: var(--text-secondary);
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         /* Skills */
@@ -1423,10 +1393,25 @@
                     <span class="chapter-title">Statistics</span>
                 </div>
                 <div class="chapter-body">
-                    <div class="book-entry">
-                        <a href="blog/Statistics/change-point-detection.html">Change Point Detection Methods</a>
-                        <a class="entry-pdf" href="notes/Statistics/ReviewForCPD.pdf">[pdf]</a>
-                        <span class="entry-desc">Finding structural shifts in time series data</span>
+                    <div class="subtopic">
+                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
+                            <span class="subtopic-toggle">&#9654;</span>Change Point Detection
+                        </div>
+                        <div class="subtopic-entries">
+                            <div class="book-entry">
+                                <a href="blog/Statistics/change-point-detection.html">Change Point Detection Methods</a>
+                                <a class="entry-pdf" href="notes/Statistics/ReviewForCPD.pdf">[pdf]</a>
+                                <span class="entry-desc">Finding structural shifts in time series data</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="subtopic">
+                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
+                            <span class="subtopic-toggle">&#9654;</span>Hypothesis Testing
+                        </div>
+                        <div class="subtopic-entries">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1560,82 +1545,82 @@
     <!-- Projects -->
     <section id="projects" class="section">
         <div class="section-header">
-            <h2 data-zh="精选项目">Selected Projects</h2>
+            <h2 data-zh="项目">Projects</h2>
         </div>
 
-        <div class="projects-grid">
-        <div class="project-card">
-            <a href="https://github.com/Yijin-Zeng/Build-a-LLM-From-Scratch" target="_blank">
-                <img src="Photos/LLM.png" alt="Build a LLM From Scratch" class="project-image">
-            </a>
-            <div class="project-content">
-                <a href="https://github.com/Yijin-Zeng/Build-a-LLM-From-Scratch" target="_blank" style="text-decoration: none;">
-                    <div class="project-title">Build a LLM From Scratch</div>
-                </a>
-                <div class="project-description">
-                    A project where I built a GPT-2 from scratch in PyTorch. 
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 40px;">These are informal projects I built mainly for fun.</p>
+
+        <div class="projects-timeline">
+            <!-- 2026 -->
+            <div class="timeline-year">
+                <h3 class="timeline-year-label">2026</h3>
+
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/Build-a-LLM-From-Scratch" target="_blank" class="project-title-link">
+                        Build a LLM From Scratch
+                    </a>
+                    <div class="project-description">
+                        A project where I built a GPT-2 from scratch in PyTorch.
+                    </div>
+                </div>
+
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/Fine-Tuning-Qwen2.5-Coder-3B-Instruct" target="_blank" class="project-title-link">
+                        Fine-Tuning Qwen2.5 Coder with LoRA
+                    </a>
+                    <div class="project-description">
+                        A learning project for fine-tuning Qwen2.5-Coder-3B-Instruct using LoRA.
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="project-card">
-            <a href="https://github.com/Yijin-Zeng/HangmanGame" target="_blank">
-                <img src="Photos/HangmanGame.png" alt="Deep Learning Hangman Game" class="project-image">
-            </a>
-            <div class="project-content">
-                <a href="https://github.com/Yijin-Zeng/HangmanGame" target="_blank" style="text-decoration: none;">
-                    <div class="project-title">Deep Learning Hangman Game</div>
-                </a>
-                <div class="project-description">
-                    A fun project where I trained deep recurrent neural networks (RNNs) to play the word-guessing game.
-                </div>
-            </div>
-        </div>
+            <!-- 2025 -->
+            <div class="timeline-year">
+                <h3 class="timeline-year-label">2025</h3>
 
-        <div class="project-card">
-            <a href="https://github.com/Yijin-Zeng/Fine-Tuning-Qwen2.5-Coder-3B-Instruct" target="_blank">
-                <img src="Photos/LoRA.png" alt="Fine-Tuning Qwen2.5 Coder with LoRA" class="project-image">
-            </a>
-            <div class="project-content">
-                <a href="https://github.com/Yijin-Zeng/Fine-Tuning-Qwen2.5-Coder-3B-Instruct" target="_blank" style="text-decoration: none;">
-                    <div class="project-title">Fine-Tuning Qwen2.5 Coder with LoRA</div>
-                </a>
-                <div class="project-description">
-                    A learning project for fine-tuning Qwen2.5-Coder-3B-Instruct using LoRA.
-                </div>
-            </div>
-        </div>
-        </div>
-
-        <div style="margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--border);">
-            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 24px;">Other Projects</h3>
-            <div class="other-projects-grid">
-                <div class="other-project">
-                    <a href="https://github.com/Yijin-Zeng/WeatherForecasting" target="_blank" style="text-decoration: none;">
-                        <div class="other-project-title">Weather Forecasting</div>
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/HangmanGame" target="_blank" class="project-title-link">
+                        Deep Learning Hangman Game
                     </a>
-                    <div class="other-project-desc">Time series forecasting for weather prediction using machine learning models.</div>
+                    <div class="project-description">
+                        A fun project where I trained deep recurrent neural networks (RNNs) to play the word-guessing game.
+                    </div>
                 </div>
 
-                <div class="other-project">
-                    <a href="https://github.com/Yijin-Zeng/StockClustering" target="_blank" style="text-decoration: none;">
-                        <div class="other-project-title">Stock Clustering</div>
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/WeatherForecasting" target="_blank" class="project-title-link">
+                        Weather Forecasting
                     </a>
-                    <div class="other-project-desc">Cluster stocks using daily returns to produce balanced investment groups.</div>
+                    <div class="project-description">
+                        Time series forecasting for weather prediction using machine learning models.
+                    </div>
                 </div>
 
-                <div class="other-project">
-                    <a href="https://github.com/Yijin-Zeng/Signal-Predictive-Power-Evaluation" target="_blank" style="text-decoration: none;">
-                        <div class="other-project-title">Signal Predictive Power Evaluation</div>
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/StockClustering" target="_blank" class="project-title-link">
+                        Stock Clustering
                     </a>
-                    <div class="other-project-desc">Evaluate and analyze the predictive power of signals in financial data.</div>
+                    <div class="project-description">
+                        Cluster stocks using daily returns to produce balanced investment groups.
+                    </div>
                 </div>
 
-                <div class="other-project">
-                    <a href="https://github.com/Yijin-Zeng/E-CommerceOrderCancellationPrediction" target="_blank" style="text-decoration: none;">
-                        <div class="other-project-title">E-Commerce Order Cancellation Prediction</div>
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/Signal-Predictive-Power-Evaluation" target="_blank" class="project-title-link">
+                        Signal Predictive Power Evaluation
                     </a>
-                    <div class="other-project-desc">Predict order cancellation with highly imbalanced datasets for real-world impact.</div>
+                    <div class="project-description">
+                        Evaluate and analyze the predictive power of signals in financial data.
+                    </div>
+                </div>
+
+                <div class="timeline-project">
+                    <a href="https://github.com/Yijin-Zeng/E-CommerceOrderCancellationPrediction" target="_blank" class="project-title-link">
+                        E-Commerce Order Cancellation Prediction
+                    </a>
+                    <div class="project-description">
+                        Predict order cancellation with highly imbalanced datasets for real-world impact.
+                    </div>
                 </div>
             </div>
         </div>
