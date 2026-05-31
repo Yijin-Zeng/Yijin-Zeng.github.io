@@ -161,11 +161,26 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/LLM/Multi-head Attention And Variants.pdf">PDF</a>.</p>
-        <p>Multi-head attention is the backbone of every transformer, but during inference it creates a serious memory problem: <strong>the KV cache grows linearly with sequence length and scales with the number of heads</strong>. Grouped Query Attention (GQA) is the elegant fix used in most modern LLMs.</p>
+        
+        <p>Multi-head attention is the key component of every transformer, 
+           but during inference it can create a serious memory problem: 
+           <strong>the KV cache grows linearly with sequence length and scales with the number of heads</strong>. 
+           To alleviate such constraints, we can consider Grouped Query Attention (GQA).</p>
 
         <h2>Standard Multi-Head Attention</h2>
 
-        <p>In standard multi-head attention, the input <code>X</code> is projected into multiple independent sets of queries, keys, and values. Each set is called a "head," and each head computes its own attention independently.</p>
+        <p>In standard Multi-Head Attention, the input <code>X</code> is projected into multiple independent sets of queries, keys, and values.
+            Each set acts as a "head," and each head computes its own attention independently. 
+        </p>
+
+        <p>            <strong>Intuition:</strong>
+            The intuition behind Multi-Head Attention is that a single word representation 
+            can contain many different characteristics of the word (e.g., it could be a verb, it is in the past tense, and it has the semantic meaning of "play").
+            If we just used a single Scaled Dot-Product Attention layer, we would be forced to query all of these characteristics in one shot.
+            Consequently, when we compute the softmax scores, a dominant trait like the verb characteristic might outweigh the past tense, 
+            causing the tense to be ignored. The Multi-Head Attention layer, however, allows the model to apply many different projections of the 
+            word representation into different subspaces. Each subspace focuses on a subset of the word's characteristics, so the first head might focus on the verb part, 
+            the second head could focus on the past tense, and so on. This would allow the output of the Multi-Head Attention to represent more information more easily.</p>
 
         <h3>Per-Head Projections</h3>
         <p>For each head <code>i</code>, we project the input through learned weight matrices:</p>
@@ -270,13 +285,16 @@ V^i = X * W_V^i</code></pre>
             <li>The cache gets longer and longer as more tokens are generated, eventually becoming the dominant memory cost</li>
         </ul>
 
-        <p>The KV cache is essential for efficient inference (avoiding quadratic recomputation), but <strong>its memory footprint limits the batch size and maximum sequence length that can be served</strong>.</p>
+        <p>The KV cache is essential for efficient inference (avoiding quadratic recomputation), but <strong>its memory cost limits the batch size and maximum sequence length that can be served</strong>.</p>
 
         <h2>Solution: Grouped Query Attention (GQA)</h2>
 
-        <p>Grouped Query Attention (introduced by Ainslie et al., 2023) provides an elegant solution to the KV cache bottleneck. The core idea:</p>
-
-        <p><strong>Divide the query heads into groups. Each group of query heads shares a single key head and a single value head.</strong></p>
+        <p>Grouped Query Attention (introduced by Ainslie et al., 2023) provides a solution to the KV cache bottleneck. The core idea 
+            is divide the query heads into groups. Each group of query heads shares a single key head and a single value head.
+            Intuition behind the idea: having multiple different query is more important than having multiple different key and value.
+            When researchers analyzed standard Multi-Head Attention, they found that many of the Key and Value heads were practically identical. 
+            The model was learning the same representations multiple times.
+        </p>
 
         <h3>How GQA Works</h3>
 
@@ -382,7 +400,7 @@ V^i = X * W_V^i</code></pre>
 
         <h3>Special Cases</h3>
 
-        <p>GQA is a generalization that includes two well-known extremes:</p>
+        <p>GQA is a generalization that includes two extremes:</p>
 
         <ul>
             <li><strong>When g = h</strong> (one group per head): This is standard Multi-Head Attention &mdash; every query head has its own K and V.</li>
@@ -401,9 +419,8 @@ V^i = X * W_V^i</code></pre>
 
         <h3>References</h3>
         <ul>
-            <li>Vaswani et al., "Attention Is All You Need" (2017) &mdash; introduced multi-head attention</li>
-            <li>Shazeer, "Fast Transformer Decoding: One Write-Head is All You Need" (2019) &mdash; introduced Multi-Query Attention</li>
-            <li>Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints" (2023) &mdash; introduced Grouped Query Attention</li>
+            <li>Michel, P., Levy, O. and Neubig, G., 2019. Are sixteen heads really better than one?. Advances in neural information processing systems, 32.</li>
+            <li>Ainslie, J., Lee-Thorp, J., De Jong, M., Zemlyanskiy, Y., Lebrón, F. and Sanghai, S., 2023, December. Gqa: Training generalized multi-query transformer models from multi-head checkpoints. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (pp. 4895-4901).</li>
         </ul>
     </div>
 </article>

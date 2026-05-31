@@ -170,13 +170,13 @@
             <li>Snow</li>
             <li>Embedded closing brackets in Python code</li>
         </ol>
-        <p>These concepts are completely unrelated to each other, yet the same neuron fires for all of them.</p>
+        <p>These concepts could be semantically completely unrelated to each other, yet the same neuron fires for all of them.</p>
 
         <h3>What does "activated" mean?</h3>
 
         <p>When we say a neuron is "activated," we mean it produces a large output value. For example, it probably gives a value 16.2, where all other neurons outputs values around 0.
         There are two types of neuron can be activated. More often, we are saying the neurons in the <strong>feed forward layer</strong>.
-        In a decoder-only transformer, since the input is a sequence, we only care about the output for the last token of the sequence. We say a neuron is activated when its output value 
+        In a decoder-only transformer, since we predict next word using the contextual embedding of the last token, we only care about the output for the last token of the sequence. We say a neuron is activated when its output value 
         for the last token of the sequence is large. Another type of neuron can be activated is in <strong>attention layer</strong>.
         The output of the attention layer is a linear combination across heads:</p>
 
@@ -213,6 +213,31 @@ from transformer block
                 the embedding is looking (after key and query).</li>
             <li>The <strong>residual connection</strong> means the MLP layers learn to add information to the original contextual embedding, not replace it.</li>
         </ul>
+
+        <p> 
+            
+
+        <h3>Example</h3>
+<ul>
+        Consider the example where the model gets the input: 'the capital of France is'.
+        <li><strong>1. The Attention Layer: Context Gathering. </strong>
+        The masked self-attention layer goes to work first. The final token, "is", acts as a Query, looking back at all the preceding tokens (the Keys and Values) 
+        to build context. It will probably assign heavy attention weights to crucial words like "capital" and "France," while largely ignoring filler words like "the" and "of."
+
+        As a result, the vector embedding for "is" gets updated into a rich, compressed summary of the entire sequence. 
+        It now probably represents the combined concept: [Seeking: Capital city] + [Target country: France]. </li>
+
+        <li><strong> 2. The MLP Layer: Knowledge Retrieval. </strong>
+        Next, this updated vector is passed to the Multi-Layer Perceptron (MLP) as a Query. The MLP functions as a knowledge pool:
+
+        The Key (Layer 1): The expanded first layer receives the query and compares it against billions of patterns memorized during training (e.g., concepts for chocolate, cats, or Paris). It finds a match, and the specific neuron representing the concept of "Paris" fires. (Note: in dense models, neurons are polysemantic, meaning this firing neuron might also participate in other unrelated concepts).
+
+        The Value (Layer 2): The second layer acts as the value, retrieving the specific knowledge attached to that fired neuron. It injects the concept of "Paris" directly into the sequence's embeddings, giving the model the exact information it needs for the next word prediction.
+        
+    </li>
+       </ul> 
+        
+    </p>
 
         <h3>Where polysemanticity appears in the MLP</h3>
 
