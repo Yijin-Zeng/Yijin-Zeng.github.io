@@ -150,7 +150,7 @@
 <body>
 
 <article class="post">
-    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
 
     <header class="post-header">
         <h1 class="post-title">FFN and Mixture of Experts</h1>
@@ -160,7 +160,7 @@
     </header>
 
     <div class="post-content">
-        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/LLM/FFN and MoEs.pdf">PDF</a>.</p>
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/FFN and MoEs.pdf">PDF</a>.</p>
         <p>The idea behind Mixture of Experts is simple and powerful: <strong>instead of one large FFN that every token passes through, have many smaller "expert" FFNs and a learned router that picks which ones to use for each token</strong>. This gives you way more parameters (capacity) without proportionally increasing compute.</p>
 
         <h2>Background: The FFN in a Transformer Block</h2>

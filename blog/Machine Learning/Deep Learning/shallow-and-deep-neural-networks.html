@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shallow and Deep Neural Networks - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Shallow and Deep Neural Networks</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Shallow and Deep Neural Network.pdf">PDF</a>.</p>
+
+        <p>Neural networks with one hidden layer are normally called <strong>shallow</strong>, and those with multiple hidden layers are called <strong>deep</strong>. But why does depth matter? Can't a wide shallow network do everything a deep network can? Let's explore what makes deep networks special.</p>
+
+        <h2>Shallow Neural Networks</h2>
+
+        <p>A shallow neural network has exactly one hidden layer between the input and output. The architecture is simple:</p>
+
+        <ul>
+            <li>Input layer: your data <em>x</em></li>
+            <li>Hidden layer: <em>h</em> neurons that compute intermediate representations</li>
+            <li>Output layer: produces the final prediction</li>
+        </ul>
+
+        <p><strong>Mathematical formulation:</strong> For a shallow network with <em>h</em> hidden units, the computation looks like:</p>
+
+        <pre><code>h_i = θ_i0 + θ_i1 · x    for i = 1, ..., h
+y = β_0 + β_1 · a(h_1)</code></pre>
+
+        <p>where <em>a</em>(·) is the activation function (ReLU, sigmoid, etc.). The hidden layer computes linear combinations of the input, then the activation function decides if and how much each neuron should "fire."</p>
+
+        <h2>The Universal Approximation Theorem</h2>
+
+        <p>Here's the remarkable result: <strong>a shallow neural network can approximate any continuous function to any specified precision.</strong></p>
+
+        <p>This sounds amazing! If shallow networks are universal approximators, why bother going deep?</p>
+
+        <p><strong>The intuition:</strong> Think of building a function piece by piece. With enough neurons, you can create tons of tiny linear segments. By combining these with different activation functions—constant slopes, deviations, sigmoids—you can approximate arbitrarily complex curves. Each neuron contributes a "piece" of the function, and together they assemble the full approximation.</p>
+
+        <p>However, there's a catch: <strong>"can approximate" doesn't mean "efficiently approximates."</strong> The theorem says it's possible in theory, but it might require an impractically huge number of neurons.</p>
+
+        <h2>Linear Regions: Shallow vs. Deep</h2>
+
+        <p>Here's where things get interesting. Neural networks with ReLU activations create <strong>piecewise linear functions</strong>—the output is made up of multiple linear segments glued together at "kink" points.</p>
+
+        <h3>Shallow Networks</h3>
+        <p>For a shallow network:</p>
+        <ul>
+            <li>When input is <strong>1D</strong>, there are at most <strong>D + 1 linear regions</strong> (or at most one fold)</li>
+            <li>When input is in <strong>ℝ<sup>k</sup></strong> and there are <strong>D hidden units</strong>, there are at most <strong>2<sup>D</sup> linear regions</strong></li>
+        </ul>
+
+        <p>So if you have 10 hidden neurons, you can create at most 2<sup>10</sup> = 1,024 different linear regions. That sounds like a lot!</p>
+
+        <h3>Deep Networks</h3>
+        <p>Deep networks have multiple hidden layers, typically denoted <em>A</em>₁, <em>A</em>₂, ..., <em>A<sub>n</sub></em>. The computation flows through each layer:</p>
+
+        <pre><code>A_1 = a(θ_1^(1) + θ_11^(1) x)
+A_2 = a(θ_2^(2) + θ_21^(2) A_1 + ... + θ_2h^(2) A_1)
+...
+y = a(θ_y^(n+1) + θ_y1^(n+1) A_n)</code></pre>
+
+        <p>Equivalently, we can write this as nested compositions:</p>
+        <pre><code>y = a_m(β_m^T Ω_m a_2(β_2^T Ω_2 a(β_1^T Ω_1 x)) ...)</code></pre>
+
+        <p>Like shallow networks, <strong>deep networks can also approximate any continuous function</strong>. But here's the key insight:</p>
+
+        <blockquote>Given the same number of parameters, deep neural networks create <strong>exponentially more linear regions</strong> than shallow ones.</blockquote>
+
+        <h2>Why Depth Matters: A Simple Example</h2>
+
+        <p>Consider a simple network architecture. As we pass data through multiple layers with activation functions, each layer transforms the input space. The visualizations show how:</p>
+
+        <ul>
+            <li><strong>Layer 1</strong> creates initial linear segments</li>
+            <li><strong>Layer 2</strong> folds and transforms those segments further</li>
+            <li><strong>After activation</strong>, you get even more complex boundaries</li>
+        </ul>
+
+        <p>By the time you reach the final layer, <strong>the same number of parameters has carved the input space into many more regions</strong>. This is the power of composition—each layer doesn't just add regions, it multiplies them.</p>
+
+        <h2>The Practical Takeaway</h2>
+
+        <p>Both shallow and deep networks are universal approximators in theory. But in practice:</p>
+
+        <ul>
+            <li><strong>Shallow networks</strong> might need an enormous number of neurons to approximate complex functions accurately. This means more parameters, more memory, and more training data.</li>
+            <li><strong>Deep networks</strong> can represent the same functions with far fewer parameters by exploiting compositional structure. Each layer learns hierarchical features—edges, then textures, then objects—building complexity incrementally.</li>
+        </ul>
+
+        <p>Think of it like building with LEGO. A shallow network tries to build everything directly from individual bricks. A deep network builds small modules first, then combines those modules into bigger structures, then assembles those structures into the final object. <strong>The hierarchical approach is exponentially more efficient.</strong></p>
+
+        <p>This is why modern deep learning relies on depth. It's not that shallow networks can't work—they can, theoretically. But deep networks achieve the same expressiveness with dramatically fewer parameters, making them faster to train and better at generalizing from limited data.</p>
+    </div>
+</article>
+
+</body>
+</html>
