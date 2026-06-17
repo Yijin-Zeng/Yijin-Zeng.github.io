@@ -151,20 +151,48 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Training/RLHF.pdf">PDF</a>.</p>
-        <p>RLHF is what takes a language model from "can complete text" to "can follow instructions well." The full pipeline has three stages, and I find it interesting how each stage addresses a specific limitation of the previous one.</p>
+        <p>Reinforcement learning from human feedack (RLHF) is a techenique that can transfrom a foundation model from a word completing machine into a chatbot or an agent.</p>
 
         <h2>Starting Point: Pre-training and SFT</h2>
-        <p>Normally we start with a pre-trained language model. After pre-training, the model only learns to complete text -- it predicts the next token given a context. This is fundamentally different from answering a question. For example, given a question as input, the model might generate another question as a continuation, because that is what "completing text" looks like.</p>
+        <p>Normally we start with a pre-trained language model by letting the model predicting next tokens.
+           This stage uses a large amount of data and compute, and is where the model learn all the words, grammars, and knowledges to be
+           able to output valid sentences.</p>
+           
+           
+        <p>After pre-training, the model learns to complete text. In other words, it leans the distribution of the next token given all previous tokens. 
+           The word completing is very useful. For example, we can let the pre-trained model to finish a sentence that is half written, or a unfinished
+           stories. </p>
+           
+           
+        <p>However, in many cases, e.g. if we want to build a chatbot based on the pre-trained model, we want the
+           model being able to follow our instructions, and this is very different from completing a sentence. 
+           As an example, if we ask the model a question "how is the weather now?", we want the model to be able to
+           answer this question, e.g. 'it is sunny outside'. Instead, the model might generate another question as a 
+           continuation ('is it still raining now?'), because that is sometimes what completing text looks like.</p>
 
-        <p>To bridge this gap, we apply <strong>Supervised Fine-Tuning (SFT)</strong>: we take high-quality data and fine-tune the model on it. If we are building a chatbot, we prepare training samples in a question-answer (Q-A) format. This teaches the model to respond to prompts rather than simply continue text.</p>
+        <p>To transform the foundation model into a chatbot or an agent that can answer our questions,
+           or take actions, people often use a techenique known as <strong>Supervised Fine-Tuning (SFT)</strong>,
+           where high-quality data are cherry picked and then model is fine tuned on it. 
+           If we are building a chatbot, we normally prepare training samples in a question and answer format, often look like this:
+           {'system': 'You are a useful chatbot...',
+            'user': 'Can you tell me ...',
+            'assistant': 'Certainly! ...'}
+           This teaches the model to respond to prompts rather than simply continue text.</p>
 
-        <p>So after SFT, the model can answer questions -- but it still does not know what a "good" answer looks like from a human perspective. That is where RLHF comes in.</p>
+        <p>So after SFT, the model can answer questions, but 
+           it still does not know what a "good" answer looks like from a human perspective. For a given question,
+           there could be many different ways to answer it, and there is in many cases, no objective way to evaluate
+           how good those answers are. However, as humans, we decide which answer we prefer subjectively.
+           That is where RLHF comes in.</p>
 
         <h2>Stage 1: Training a Reward Model (Using Human Feedback)</h2>
-        <p>The goal of this stage is to build a scalar reward function that can score any output from the LLM. We denote the reward model as <code>r_&theta;</code>. It is usually initialized from a fine-tuned LLM (often the same model after SFT).</p>
+        <p>The goal of this stage is to build a scalar reward function that can score any output from the LLM. 
+            We denote the reward model as <code>r_&theta;</code>. It is usually initialized from a fine-tuned LLM (often the same model after SFT).</p>
 
         <h3>The Process</h3>
-        <p>We feed a prompt into the fine-tuned model and generate multiple candidate answers. For example, given a prompt, the model produces answers A, B, and C. Human annotators then rank these answers by quality (e.g., A &gt; B &gt; C).</p>
+        <p>We feed a prompt into the fine-tuned model and generate multiple candidate answers. For example, given a prompt, the model produces answers A, B, and C. 
+            Human annotators then rank these answers by quality (e.g., A &gt; B &gt; C). The idea here to let annotators to rank, rather than scoring each one, is because
+            humans might not be good at to give exact scores, but are good at pairwise ranking.</p>
 
         <!-- Diagram: Reward model training flow -->
         <pre><code>                          +--> Answer A --|
@@ -174,34 +202,40 @@ Prompt --> Fine-tuned LLM +--> Answer B --|---> Ranked by humans (e.g. A > B > C
                           +--> Answer C --|</code></pre>
 
         <h3>The Loss Function</h3>
-        <p>For each pair of responses where one is preferred over the other (e.g., A is preferred over B), the reward model is trained using a pairwise loss:</p>
+        <p>For each pair of responses where one is preferred over the other (e.g., A is preferred over B), the reward model is trained (fine tuned) using a pairwise loss:</p>
 
-        <pre><code>Loss = -log(r_&theta;(A) - r_&theta;(B))</code></pre>
+        <pre><code>Loss = -log(sigmoid(r_&theta;(A) - r_&theta;(B))), where A is preferred over B</code></pre>
 
-        <p>More precisely, this is the negative log-sigmoid of the difference in scores, encouraging the reward model to assign a higher score to the preferred response. This is known as the Bradley-Terry model for pairwise comparisons.</p>
+        <p>More precisely, this is the negative log-sigmoid of the difference in scores, encouraging the reward model to assign a higher score to the preferred response. </p>
 
-        <p>After training the reward model, we can evaluate the output of any answer given by the LLM (e.g., score it 4.2). But here is the thing -- we cannot directly use this score to tune the model because backpropagation through a discrete sampling step is not possible. It is quite surprising to me that this is where RL becomes necessary: the reward signal exists but there is no differentiable path from it back to the model weights, so we have to treat the whole thing as a policy optimization problem.</p>
+        <p>After training the reward model, we can evaluate the output of any answer given by the LLM (e.g., score it 4.2). 
+           However, what does 4.2 means? is it good or bad? and how should we use this score to refine our model?
+           This is why we need reinforcement learning (RL) at this point.</p>
 
         <h2>Stage 2: Proximal Policy Optimization (PPO)</h2>
-        <p>Now we use the reward model to actually improve the language model's policy via RL. This stage introduces two additional models on top of the policy (the LLM being trained):</p>
+        <p>Now we consider how to use the reward model to actually improve the language model's policy via RL. 
+           This stage introduces two additional models on top of the policy (the LLM being trained):</p>
 
         <ul>
-            <li><strong>Score model (reward model r_&theta;)</strong> -- the frozen reward model from Stage 1 that scores outputs</li>
-            <li><strong>Value model</strong> -- estimates the expected score of the LLM's output; normally initialized as a copy of the model after SFT</li>
+            <li><strong>Score model (reward model r_&theta;)</strong>: the frozen reward model from Stage 1 that scores outputs. We take the score from this model as the ground truth.</li>
+            <li><strong>Value model</strong>: estimates the expected score of the LLM's output given all current tokens; normally initialized as a copy of the model after SFT (so at the begining, would be very bad at scoring, but will be updated and improved gradually).
+            The value model is a tool for credit assignment, we need to decide how each token contributes to the score.
+            </li>
         </ul>
 
         <h3>The Process</h3>
 
-        <pre><code>                                    +---> Score model ---> a score (frozen at this stage)
+        <pre><code>                                    +---> Score model ---> a score for the whole output (frozen at this stage)
                                     |
 Prompt ---> Model ---> Output ------+
                                     |
-                                    +---> Value model ---> estimated score (updated)</code></pre>
+                                    +---> Value model ---> estimated score given all tokens so far, so at each token there will be one score
+                                    (updated accoring to how close the estimated score for each token and score, e.g. MSE)</code></pre>
 
         <p>The decision logic at each step:</p>
         <ul>
-            <li>If <code>score &gt; estimated_score</code>: the output was better than expected, so increase the probability of that output</li>
-            <li>Otherwise: decrease the probability of that output</li>
+            <li>If <code>score &gt; estimated_score</code>: the output was better than expected, so increase the probability for the token (taking gradients, and then move the weights along the gradients to decrases the loss for the token)</li>
+            <li>Otherwise: decrease the probability of that token (still taking gradients, but move in opposite direction to increase the loss for the token)</li>
         </ul>
 
         <h3>The Advantage</h3>
@@ -209,42 +243,53 @@ Prompt ---> Model ---> Output ------+
 
         <pre><code>A = advantage = score - estimated_score</code></pre>
 
-        <p>This tells us how much better (or worse) the actual output was compared to what we expected. A positive advantage means "do more of this"; a negative advantage means "do less of this."</p>
+        <p>This tells us how much better (or worse) the actual output was compared to what we expected. A positive advantage for a token encouraging the model to output it more often, while a negative advantage discouraging the model.
+           Below, we discuss how the weights of the model is updated.
+        </p>
 
         <h3>Vanilla Policy Gradient</h3>
-        <p>The simplest approach: compute the gradient of the log-probability of the output (treating the answer as correct), then update the weights:</p>
+        <p>We can simply compute the gradient of the log-probability of the output (treating the answer as correct), then update the weights:</p>
 
-        <pre><code>weights = weights - &delta; * gradients</code></pre>
+        <pre><code>weights = weights - delta * gradients</code></pre>
 
-        <p>Where <code>&delta;</code> is proportional to the advantage:</p>
+        <p>Where <code>delta</code> is proportional to the advantage:</p>
         <ul>
             <li>If <code>A &gt; 0</code>: increase the probability of this output</li>
             <li>If <code>A &lt; 0</code>: decrease the probability of this output</li>
         </ul>
 
         <h3>The Problem with Vanilla Policy Gradient</h3>
-        <p>The gradient can change the weights <strong>too much</strong> in a single step. This leads to <strong>catastrophic forgetting</strong> -- the model may collapse or lose previously learned capabilities after a large update.</p>
+        <p>In Vanilla Policy Gradient, the gradient can change the weights too much in a single step. 
+           This can lead to catastrophic forgetting (a notorious problem in RL and continual learning), i.e. the model may collapse or lose previously learned capabilities.</p>
 
-        <h3>PPO: Clipped Policy Gradient</h3>
-        <p>PPO solves this by clipping the gradient of the policy gradient descent. The central concept is the <strong>probability ratio</strong> for a token <code>w</code>:</p>
+        <h3>Proximal Policy Optimization (PPO) - Clipping</h3>
+            <p>PPO solves the instability of massive updates by constraining the 
+            <strong>probability ratio</strong> of the objective function. This ratio for a specific token <code>w</code> is defined as:</p>
 
-        <pre><code>r = prob(w after updating according to policy gradient) / prob(w before updating)</code></pre>
+        <pre><code>r = prob(w under the current, updating policy) / prob(w under the old, frozen policy)</code></pre>
 
-        <p>PPO constrains this ratio to stay within a small band around 1:</p>
+        <p>The objective function for PPO is then calculated by multiplying this ratio by the token's Advantage (<code>A</code>):</p>
 
-        <pre><code>1 - &epsilon; &lt; r &lt; 1 + &epsilon;</code></pre>
+        <pre><code>L_CLIP = - min(r * A, clip(r, 1 - epsilon, 1 + epsilon) * A)</code></pre>
 
-        <p>Typically <code>&epsilon; = 0.2</code>, meaning the probability of any token can change by at most 20% in either direction per update. This ensures the model improves steadily without making destructive jumps.</p>
+        <p>Notice how PPO restricts the ratio between
 
-        <p>The name says it all: PPO keeps the updated policy "proximal" (close) to the old policy. Small, stable steps prevent catastrophic forgetting while still allowing the model to learn from the reward signal. Without the clipping, the model can collapse after a single bad update.</p>
+        <pre><code>[1 - epsilon, 1 + epsilon] (typically, <code>epsilon = 0.2</code>).</code></pre>
 
-        <h2>Summary: The Full RLHF Pipeline</h2>
-        <ol>
-            <li><strong>Pre-training</strong> -- learn general text completion from a large corpus</li>
-            <li><strong>SFT</strong> -- fine-tune on high-quality Q-A data to learn the instruction-following format</li>
-            <li><strong>Reward Model Training</strong> -- collect human rankings, train a model to score outputs</li>
-            <li><strong>PPO</strong> -- use the reward model to guide policy updates, with clipping to ensure stability</li>
-        </ol>
+        <p>For example, if the advantage A is positive (means we want to increase the probability for the token),
+           then without clipping at all, we have L_CLIP = - r * A, in order to minimize this loss, the weights
+           will be moved to maximize r, which means the to increase the probability of the token after updating the weights.
+           Since A is positive, this is what we want, however the risk here without any clipping is that the weights might move
+           too much and causing catastrophic forgetting problem.
+        </p>
+
+        <p>With clipping, if r is smaller than 1 - epsilon, then we have L_CLIP = (1 - epsilon) * A,
+            a constant that does not depend on the model weights anymore. So the weights would stop moving
+            because there is no gradients.
+        </p>
+
+        <p>Overall, by clipping the ratio within the objective function, the loss curve does not change if the probability of the token tries to change by more than 20% in a single step. 
+            This naturally causes the gradients to drop to zero, stopping the weights from moving further. Hence mitigating the catastrophic forgetting problem.</p>
 
         <h2>References</h2>
         <ul>

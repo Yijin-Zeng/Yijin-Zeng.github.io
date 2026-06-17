@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backpropagation: From Scratch to Batch - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Backpropagation: From Scratch to Batch</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Backpropogation.pdf">PDF</a>.</p>
+
+        <p>Backpropagation is the algorithm that makes neural networks work. It's how we compute gradients efficiently through the chain rule -- without it, training deep networks would be impossibly slow. Let's implement it from scratch, starting with a single training example and then extending to batches.</p>
+
+        <h2>Setup: Numerator Layout</h2>
+
+        <p>Before we dive in, let's establish a convention. We'll stick to <strong>numerator layout</strong> for derivatives, which means if <em>z = x<sup>T</sup>y</em>, then:</p>
+
+        <pre><code>∂z/∂x = y<sup>T</sup>    and    ∂z/∂y = x<sup>T</sup></code></pre>
+
+        <p>This convention is crucial because it keeps dimensions consistent and makes the chain rule cleaner. More importantly: <strong>always use columns ONLY in the denominator</strong> to preserve the chain rule. This will become clear as we derive the gradients.</p>
+
+        <h2>A Simple Neural Network</h2>
+
+        <p>Let's build a simple two-layer network:</p>
+
+        <ul>
+            <li><strong>Input:</strong> x ∈ ℝⁿ (a column vector)</li>
+            <li><strong>Intermediate layer:</strong> m = xΔ₁ + b₁, then z = ReLU(m)</li>
+            <li><strong>Output:</strong> ŷ = zΔ₂ + b₂</li>
+            <li><strong>Loss:</strong> L(y, ŷ) = (ŷ - y)²</li>
+        </ul>
+
+        <p>Here's the architecture visually:</p>
+
+        <pre><code>x₁ ──┐
+x₂ ──┤
+ ⋮   ├──→ m ──→ ReLU ──→ z ──→ ŷ
+xₙ ──┘</code></pre>
+
+        <p>The dimensions work out like this:</p>
+
+        <ul>
+            <li>x ∈ ℝⁿˣ¹</li>
+            <li>Δ₁ ∈ ℝⁿˣᵐ (transforms n-dimensional input to m-dimensional hidden layer)</li>
+            <li>m, z ∈ ℝᵐˣ¹</li>
+            <li>Δ₂ ∈ ℝᵐˣ¹ (transforms m-dimensional hidden to scalar output)</li>
+            <li>ŷ, y ∈ ℝ (scalar output)</li>
+        </ul>
+
+        <h2>Forward Pass</h2>
+
+        <p>The forward pass computes the prediction step by step:</p>
+
+        <pre><code>m = xΔ₁ + b₁
+z = ReLU(m) = max(0, m)
+ŷ = zΔ₂ + b₂
+L = (ŷ - y)²</code></pre>
+
+        <p>Straightforward. Now comes the interesting part -- computing gradients.</p>
+
+        <h2>Backward Pass: Deriving Gradients</h2>
+
+        <p>To train the network with gradient descent, we need ∂L/∂Δ₂, ∂L/∂b₂, ∂L/∂Δ₁, and ∂L/∂b₁. Let's derive each one using the chain rule.</p>
+
+        <h3>Gradient w.r.t. Δ₂</h3>
+
+        <p>Start with the loss and apply the chain rule:</p>
+
+        <pre><code>∂L/∂Δ₂ = (∂L/∂ŷ) · (∂ŷ/∂Δ₂)
+       = 2(ŷ - y) · z<sup>T</sup></code></pre>
+
+        <p>The second term comes from ŷ = zΔ₂ + b₂. When we take ∂ŷ/∂Δ₂, we get z<sup>T</sup> (remember: denominator layout means Δ₂ is a column in the denominator, so we transpose z).</p>
+
+        <h3>Gradient w.r.t. b₂</h3>
+
+        <p>Similarly:</p>
+
+        <pre><code>∂L/∂b₂ = (∂L/∂ŷ) · (∂ŷ/∂b₂)
+       = 2(ŷ - y) · 1
+       = 2(ŷ - y)</code></pre>
+
+        <p>This one's easier since ∂ŷ/∂b₂ = 1.</p>
+
+        <h3>Gradient w.r.t. Δ₁</h3>
+
+        <p>Now it gets more interesting. The chain rule needs to go through multiple layers:</p>
+
+        <pre><code>∂L/∂Δ₁ = (∂L/∂ŷ) · (∂ŷ/∂z) · (∂z/∂m) · (∂m/∂Δ₁)</code></pre>
+
+        <p>Let's break this down:</p>
+
+        <ul>
+            <li>∂L/∂ŷ = 2(ŷ - y) (scalar)</li>
+            <li>∂ŷ/∂z = Δ₂<sup>T</sup> ∈ ℝ¹ˣᵐ (since ŷ = zΔ₂ + b₂)</li>
+            <li>∂z/∂m = diag(𝟙{Mⱼ > 0}) ∈ ℝᵐˣᵐ (ReLU derivative)</li>
+            <li>∂m/∂Δ₁: here's where dimensions matter!</li>
+        </ul>
+
+        <p>Since m = xΔ₁ + b₁, we have Mⱼ = Σᵢ xᵢΔ₁(i,j). Taking the derivative:</p>
+
+        <pre><code>∂Mⱼ/∂Δ₁ = (0<sup>T</sup>, 0<sup>T</sup>, ..., x<sup>T</sup>, ..., 0<sup>T</sup>)  where x<sup>T</sup> is in column j</code></pre>
+
+        <p>This gives us:</p>
+
+        <pre><code>∂m/∂Δ₁ =
+┌                ┐
+│ x<sup>T</sup>            │ ∈ ℝᵐˣⁿᵐ
+│    ⋱           │
+│       x<sup>T</sup>       │
+└                ┘</code></pre>
+
+        <p>Putting it all together (this is where the magic happens):</p>
+
+        <pre><code>∂L/∂Δ₁ = 2(ŷ - y) · Δ₂<sup>T</sup> · diag(𝟙{Mⱼ > 0}) · (block diagonal of x<sup>T</sup>)</code></pre>
+
+        <p>After matrix multiplication, this simplifies to:</p>
+
+        <pre><code>∂L/∂Δ₁(i,k) = 2(ŷ - y) · xᵢ · Δ₂(k) · 𝟙{Mₖ > 0}</code></pre>
+
+        <p>Or in matrix form:</p>
+
+        <pre><code>∂L/∂Δ₁ = 2(ŷ - y) · x · (Δ₂ ⊙ 𝟙{M > 0})<sup>T</sup></code></pre>
+
+        <p>where ⊙ denotes element-wise multiplication.</p>
+
+        <h3>Gradient w.r.t. b₁</h3>
+
+        <p>Finally:</p>
+
+        <pre><code>∂L/∂b₁ = (∂L/∂ŷ) · (∂ŷ/∂z) · (∂z/∂m) · (∂m/∂b₁)
+       = 2(ŷ - y) · Δ₂<sup>T</sup> · diag(𝟙{M > 0}) · I
+       = 2(ŷ - y) · (Δ₂ ⊙ 𝟙{M > 0})</code></pre>
+
+        <h2>The Chain Rule in Practice</h2>
+
+        <p>Here's the key insight: <strong>the chain rule flows backwards through the network</strong>. We start from the loss and propagate gradients layer by layer:</p>
+
+        <ol>
+            <li>Compute ∂L/∂ŷ at the output</li>
+            <li>Multiply by ∂ŷ/∂z to get gradients w.r.t. the hidden layer</li>
+            <li>Pass through the ReLU derivative</li>
+            <li>Multiply by ∂m/∂Δ₁ to get gradients w.r.t. the first layer weights</li>
+        </ol>
+
+        <p>This is backpropagation -- literally propagating errors backward through the network.</p>
+
+        <h2>Extending to Batches</h2>
+
+        <p>Training on single examples is inefficient. In practice, we process batches of B examples at once. How do we extend our gradients?</p>
+
+        <h3>Option 1: 3D Tensors</h3>
+
+        <p>Make X ∈ ℝ¹ˣⁿ into X ∈ ℝᴮˣ¹ˣⁿ, a 3D tensor. NumPy would return tensors for all operations. This works but can be awkward to implement.</p>
+
+        <h3>Option 2: Matrix Batches (Cleaner)</h3>
+
+        <p>Make X ∈ ℝ¹ˣⁿ into X ∈ ℝᴮˣⁿ. Now each row is one training example. We need to update our chain rule accordingly.</p>
+
+        <p>The forward pass becomes:</p>
+
+        <pre><code>M = XΔ₁ + 1ᴮb₁<sup>T</sup>    (M ∈ ℝᴮˣᵐ)
+Z = ReLU(M)
+Ŷ = ZΔ₂ + b₂1ᴮₓ₁    (Ŷ ∈ ℝᴮˣ¹)</code></pre>
+
+        <p>The loss is now summed over all examples:</p>
+
+        <pre><code>L(Y, Ŷ) = (Y - Ŷ)<sup>T</sup>(Y - Ŷ)</code></pre>
+
+        <h3>Batch Gradients</h3>
+
+        <p>The gradients now involve sums over the batch:</p>
+
+        <p><strong>For Δ₂:</strong></p>
+
+        <pre><code>∂L/∂Δ₂ = (∂L/∂Ŷ) · (∂Ŷ/∂Δ₂)
+       = 2(Ŷ - Y)<sup>T</sup> · Z    ∈ ℝᵐˣ¹</code></pre>
+
+        <p><strong>For b₂:</strong></p>
+
+        <pre><code>∂L/∂b₂ = (∂L/∂Ŷ) · (∂Ŷ/∂b₂)
+       = 2(Ŷ - Y)<sup>T</sup> · 1ₘₓ₁    (sum over batch)</code></pre>
+
+        <p>Note that ∂Ŷ/∂b₂ = 1ᴮₓ₁ (each example contributes 1), so we sum across the batch.</p>
+
+        <p><strong>For Δ₁:</strong></p>
+
+        <pre><code>∂L/∂Δ₁ = (∂L/∂Ŷ) · (∂Ŷ/∂Z) · (∂Z/∂M) · (∂M/∂Δ₁)</code></pre>
+
+        <p>The key difference is in ∂M/∂Δ₁. For each example k in the batch:</p>
+
+        <pre><code>∂Mₖⱼ/∂Δ₁(i,k) = {  0       if i≠j
+                   { Xₖ,ᵢ    if i=j</code></pre>
+
+        <p>After working through the chain rule (which involves some careful index juggling), we get:</p>
+
+        <pre><code>∂L/∂Δ₁ = Σₖ₌₁ᴮ Xₖᵢ · Δ₂(lₖ,j) · 𝟙{Mₖⱼ > 0}</code></pre>
+
+        <p>Or more compactly:</p>
+
+        <pre><code>∂L/∂Δ₁ = X<sup>T</sup> · [2(Ŷ - Y) · Δ₂<sup>T</sup> ⊙ 𝟙{M > 0}]</code></pre>
+
+        <p><strong>For b₁:</strong></p>
+
+        <pre><code>∂L/∂b₁ = Σₖ [2(Ŷₖ - Yₖ) · (Δ₂ ⊙ 𝟙{Mₖ > 0})]</code></pre>
+
+        <h2>Implementation Tips</h2>
+
+        <p>When implementing this in NumPy:</p>
+
+        <ul>
+            <li><strong>Always check dimensions.</strong> If something doesn't match, you've probably made a transpose error or forgotten to sum over the batch dimension.</li>
+            <li><strong>Use broadcasting carefully.</strong> Adding biases to batches relies on NumPy's broadcasting rules -- make sure you understand when b gets added to each row vs each column.</li>
+            <li><strong>Vectorize everything.</strong> Avoid loops over the batch dimension -- matrix operations handle this automatically.</li>
+            <li><strong>Test with numerical gradients.</strong> Compute (f(x + ε) - f(x - ε)) / (2ε) and compare to your analytical gradients. They should match to high precision.</li>
+        </ul>
+
+        <h2>Why This Matters</h2>
+
+        <p>Understanding backpropagation at this level is crucial because:</p>
+
+        <ul>
+            <li>It's the foundation of all modern deep learning frameworks (PyTorch, TensorFlow, JAX)</li>
+            <li>Debugging gradient issues requires knowing exactly how gradients flow</li>
+            <li>Custom loss functions, architectures, and layers all need correct gradient implementations</li>
+            <li>Efficiency tricks (gradient accumulation, mixed precision training) manipulate these gradients</li>
+        </ul>
+
+        <p>Once you understand how to derive and implement these gradients from scratch, frameworks like PyTorch become much less magical -- they're just automating this same process with automatic differentiation.</p>
+
+        <h2>Summary</h2>
+
+        <p>Backpropagation is just the chain rule applied systematically:</p>
+
+        <ol>
+            <li>Start from the loss</li>
+            <li>Multiply gradients backwards through each layer</li>
+            <li>Accumulate gradients from all paths (for parameters used in multiple places)</li>
+            <li>For batches, sum gradients across examples</li>
+        </ol>
+
+        <p>The key to getting it right: <strong>respect the chain rule, keep dimensions consistent, and always use column vectors in the denominator.</strong> Do that, and the gradients will flow.</p>
+    </div>
+</article>
+
+</body>
+</html>
