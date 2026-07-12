@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Adversarial Networks (GANs) - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Generative Adversarial Networks (GANs)</h1>
+        <div class="post-meta">
+            <span class="tag">Generative AI</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/GAN.pdf">PDF</a>.</p>
+
+        <p>Before diffusion models took over, GANs were the way to generate realistic images — and the idea behind them is almost suspiciously simple:
+           train a <strong>generator</strong> to produce images that cannot be distinguished from real images by a trained <strong>discriminator</strong>.
+           Two networks, playing a game against each other. What I find more interesting than the idea itself is <strong>why GANs are so notoriously hard to train</strong> —
+           the two classic failure modes (mode collapse and vanishing gradients) both fall out of a careful look at the loss function, and that analysis is the real point of this note.</p>
+
+        <h2>The Setup</h2>
+        <p>The pipeline looks like this:</p>
+
+        <pre><code>                                              real images x_i
+                                                     \
+noise z_i --> generator g(z_i;θ) --> fake images x*_i --> discriminator f(x;φ) --> classify real vs fake
+   |                                                              |
+normally random sample                    back-propagate: discriminator gets better at
+from standard Gaussian                    distinguishing fake and real images; the
+                                          generator, on the other hand, makes this harder</code></pre>
+
+        <p>The discriminator is simply a <strong>binary classifier</strong>, so its loss is the usual cross-entropy (with <code>y_i = 1</code> if the image is real, <code>0</code> otherwise):</p>
+
+        <pre><code>φ̂ = argmin_φ  Σ_i −( y_i log f(x_i;φ) + (1−y_i) log(1 − f(x*_i;φ)) )</code></pre>
+
+        <p>The generator wants to generate samples that are hard for the discriminator, so we choose <code>θ</code> to <strong>maximize</strong> this loss:</p>
+
+        <pre><code>θ̂ = argmax_θ  min_φ ( −Σ_i log f(x_i;φ) − Σ_j log(1 − f(g(z_j;θ);φ)) )</code></pre>
+
+        <p>This is a <strong>minmax problem</strong>: we want the loss to be large (images to look real) even for the <strong>best possible classifier</strong>. In practice we alternate: update <code>φ</code> with the cross-entropy loss above, then update <code>θ</code> with <code>L(θ) = Σ log(1 − f(x*_i;φ))</code>, i.e. decrease the likelihood of being caught by the discriminator.</p>
+
+        <p>The idea is straightforward. However, it is notoriously difficult to train GANs — many tricks (Batch Norm, leaky ReLU, etc.) have to be used together to train stably. There are at least two reasons why:</p>
+        <ul>
+            <li><strong>Mode collapse</strong>: the generator only generates a small subset of the training data — in the most extreme case, one image, regardless of <code>z_i</code>.</li>
+            <li><strong>Vanishing gradients</strong>: there is no gradient left to update the generator.</li>
+        </ul>
+
+        <p>Why would these happen? To understand this, we need to investigate the loss function.</p>
+
+        <h2>What the Loss Actually Measures</h2>
+        <p>Weight the discriminator loss by sample sizes and take expectations, so sums become integrals over the real distribution <code>p(x)</code> and the generated distribution <code>q(x)</code>:</p>
+
+        <pre><code>L(φ) ≈ −E_{x~p} log f(x;φ) − E_{x*~q} log(1 − f(x*;φ))
+     = −∫ p(x) log f(x;φ) dx − ∫ q(x*) log(1 − f(x*;φ)) dx*</code></pre>
+
+        <p>Then consider how the <strong>optimal discriminator</strong> would classify images. This is just the generative way of classifying (i.e. the same Bayes reasoning behind LDA or naive Bayes):</p>
+
+        <pre><code>p(x̃ is real | x̃) = p(x̃ is real)·p(x̃) / ( p(x̃ is real)·p(x̃) + p(x̃ is generated)·q(x̃) )</code></pre>
+
+        <p>Suppose we feed the discriminator the same number of real and fake images, so both priors are 1/2. Then:</p>
+
+        <pre><code>p(x̃ is real | x̃) = p(x̃) / (p(x̃) + q(x̃))</code></pre>
+
+        <p>Plug this back into <code>L(φ)</code>. After pulling out a factor of 2 inside each log (this is the small algebraic trick that makes everything click), the loss with the optimal classifier becomes:</p>
+
+        <pre><code>L(φ) = −½ KL( p(x) ‖ (p(x)+q(x))/2 )  −  ½ KL( q(x) ‖ (p(x)+q(x))/2 )  +  2 log 2
+              \_____________________/       \_____________________/
+                  coverage term                  quality term</code></pre>
+
+        <p>This is (up to constants) the <strong>Jensen–Shannon divergence</strong> between <code>p</code> and <code>q</code>, and the two KL terms have lovely interpretations:</p>
+        <ul>
+            <li><strong>Coverage term</strong>: when <code>p(x)</code> is large, <code>(p(x)+q(x))/2</code> should be large — i.e. there should be <strong>generated samples around real samples</strong>.</li>
+            <li><strong>Quality term</strong>: when <code>q(x)</code> is large, <code>(p(x)+q(x))/2</code> should be large — i.e. there should be <strong>real samples around generated samples</strong>.</li>
+        </ul>
+
+        <p>So the optimal discriminator cares about both coverage and quality. Picture three densities on a line: the broad one is the real distribution; a sharp spike sitting inside it has good quality but poor coverage; a flat smear across everything has good coverage but poor quality. A good generator needs both.</p>
+
+        <h2>Failure Mode 1: Mode Collapse</h2>
+        <p>Here is the catch: the generator is trained using <strong>only the quality term</strong> (its loss only involves <code>q</code> through the discriminator's output on generated samples). So the generator prefers <strong>quality over coverage</strong>. The only place the generator can learn to generate diverse images is through the discriminator:</p>
+        <ul>
+            <li>The <strong>optimal</strong> discriminator does force diversity — pushing the quality term to 0 requires <code>q(x) = p(x)</code>.</li>
+            <li>A <strong>sub-optimal</strong> discriminator, however, may learn to classify each image independently (it has no memory across samples), so it ignores diversity. E.g. the neural net may rely on features of each individual image for classifying, not their distributions. This is just how a neural net would normally behave.</li>
+        </ul>
+
+        <p>One potential solution is to introduce a <strong>batch-aware layer</strong> in the discriminator (minibatch discrimination). How is the batch score calculated? Take the feature vector of input <code>x_i</code>, multiply it by a 3D tensor <code>W ∈ R^(d×A×B)</code> to get a matrix <code>M_i</code> of shape <code>A×B</code>. Then row <code>k</code> of the batch score is computed by comparing <code>x_i</code> against every other sample in the batch:</p>
+
+        <pre><code>C(x_i,k , x_j,k) = exp( −‖ M_i,k − M_j,k ‖₁ )     (L1 distance of row k)
+
+S_i,k = Σ_{j=1}^{B} C(x_i,k , x_j,k)              (B = batch size)</code></pre>
+
+        <p>The batch score <code>(S_i,1, ..., S_i,A)</code> is appended to the original feature vector. It is small if all images in the batch are different and large if they are similar — and each component may focus on different features for similarity, so the generator cannot fool the discriminator easily, e.g. by simply changing the background color. There are different ways to do this, but the key is to <strong>enforce that the discriminator cares about coverage (diversity)</strong>.</p>
+
+        <h2>Failure Mode 2: Vanishing Gradients</h2>
+        <p>This one is easier. If the discriminator is trained too well, it separates the generated and real images perfectly:</p>
+
+        <pre><code>Σ_i log( 1 − f(g(z_i;θ);φ) ) = 0   -->  no gradient for the generator to update</code></pre>
+
+        <p>And here is the deeper reason. The optimal discriminator is measuring the KL divergences of <code>q(x)</code> and <code>p(x)</code> (against their mixture). When the two distributions are <strong>disjoint</strong>, shifting the generated distribution a little closer to the real one does not change those KL terms at all — there is no gradient. KL divergence is simply insensitive to how far apart two non-overlapping distributions are.</p>
+
+        <p>Think of it another way: the discriminator maps inputs to high-dimensional feature vectors and applies a sigmoid over a separating boundary. If we move the generated samples closer to the real samples but they are still separable, the sigmoid output is still saturated at 0 (that <code>1/(1+e^(−t))</code> is pushed all the way to the flat region), and the loss does not move.</p>
+
+        <p><strong>Solution: replace the KL divergence</strong> — which brings us to Wasserstein GANs.</p>
+
+        <h2>Wasserstein GAN</h2>
+        <p>GAN training, as we showed, minimizes the JSD, and this leads to gradient vanishing when the discriminator is too good, because KL divergence is insensitive to two distributions when they are mostly non-overlapping. The <strong>Wasserstein distance</strong> fixes exactly this: it measures the distance between two distributions <strong>even if they are non-overlapping</strong>.</p>
+
+        <pre><code>W(p, q) = min_π  ∫∫ c(x,y) dπ(x,y)
+          s.t.  ∫ π(x,y) dy = p(x),   ∫ π(x,y) dx = q(y)</code></pre>
+
+        <p>i.e. <code>π(x,y)</code> is a coupling of <code>p</code> and <code>q</code> — intuitively, the cheapest way to transport mass from one distribution to the other. The magic is the <strong>dual form</strong>:</p>
+
+        <pre><code>W(p, q) = max_f ( E_{x~p} f(x) − E_{y~q} f(y) )
+          s.t. the Lipschitz constant of f ≤ 1
+               (i.e. |J_ij| ≤ 1, where J is the Jacobian matrix)</code></pre>
+
+        <p>This turns the distance into an optimization over a function <code>f</code> — and that function can be a neural network. The WGAN target, with real images <code>x ~ p(x)</code> and generated images <code>x* ~ q(x*)</code>, approximating expectations over a mini-batch:</p>
+
+        <pre><code>min_θ  max_φ  ( 1/B Σ_i f(x_i;φ)  −  1/B Σ_i f(g(z_i;θ);φ) )</code></pre>
+
+        <p>The discriminator <code>f</code> (now usually called a critic — no sigmoid, no classification) must have Lipschitz constant ≤ 1. In practice this is enforced by adding a <strong>penalty to the discriminator's loss when its gradient norm exceeds 1</strong> (the gradient penalty). Because the Wasserstein distance keeps giving meaningful gradients even when the two distributions are disjoint, the vanishing gradient problem largely goes away.</p>
+
+        <h2>Summary</h2>
+        <ul>
+            <li>A GAN is a <strong>minmax game</strong>: the generator tries to fool the best possible binary classifier.</li>
+            <li>With the optimal discriminator, the loss decomposes into a <strong>coverage term</strong> and a <strong>quality term</strong> — the JSD between real and generated distributions.</li>
+            <li><strong>Mode collapse</strong> happens because the generator only optimizes quality; diversity must be enforced through the discriminator, e.g. with batch-aware layers.</li>
+            <li><strong>Vanishing gradients</strong> happen because KL/JSD is blind to the gap between disjoint distributions; a too-good discriminator kills the training signal.</li>
+            <li><strong>WGAN</strong> swaps in the Wasserstein distance (via its dual form, with a Lipschitz constraint) so gradients survive even when distributions don't overlap.</li>
+        </ul>
+
+        <h2>My Take</h2>
+        <p>It is quite satisfying to me that both classic GAN failure modes are not engineering mysteries but <strong>direct consequences of the loss function</strong>. Mode collapse is baked in from the start — the generator's objective literally does not contain a coverage term, so of course it trades diversity for quality unless the discriminator forces it not to. And vanishing gradients come down to a property of KL divergence that you could state in one sentence: it doesn't care how far apart two disjoint distributions are.</p>
+
+        <p>What I take away from this is a general lesson: when a model trains badly, before reaching for tricks (Batch Norm, leaky ReLU, learning rate schedules...), it is worth asking what the loss is actually measuring at the optimum. The WGAN fix is a great example — the architecture barely changes, but replacing the divergence changes the geometry of the whole training problem. That said, WGAN is not a free lunch either: enforcing the Lipschitz constraint is its own can of worms, and the gradient penalty is an approximation rather than a guarantee.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Goodfellow, I. et al. (2014). Generative Adversarial Networks. <em>NeurIPS</em>.</li>
+            <li>Arjovsky, M., Chintala, S., &amp; Bottou, L. (2017). Wasserstein GAN. <em>ICML</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

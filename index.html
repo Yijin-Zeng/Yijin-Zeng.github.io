@@ -579,8 +579,7 @@
         .chapter-color-ml { background: #2563eb; }
         .chapter-color-math { background: #eab308; }
         .chapter-color-cs { background: #ca8a04; }
-        .chapter-color-leetcode { background: #9333ea; }
-        .chapter-color-statistics { background: #16a34a; }
+        .chapter-color-genai { background: #16a34a; }
 
         .chapter-body {
             display: none;
@@ -847,8 +846,7 @@
         .timeline-dot[data-topic="machine-learning"] { background: #2563eb; }
         .timeline-dot[data-topic="math"] { background: #eab308; }
         .timeline-dot[data-topic="cs"] { background: #ca8a04; }
-        .timeline-dot[data-topic="leetcode"] { background: #9333ea; }
-        .timeline-dot[data-topic="statistics"] { background: #16a34a; }
+        .timeline-dot[data-topic="genai"] { background: #16a34a; }
 
         /* Footer */
         .footer {
@@ -1047,7 +1045,7 @@
                         <div class="stat-label">Packages</div>
                     </div>
                     <div class="stat-item" data-section="notes">
-                        <div class="stat-number" data-target="26">0</div>
+                        <div class="stat-number" data-target="41">0</div>
                         <div class="stat-label">Notes</div>
                     </div>
                     <div class="stat-item" data-section="projects">
@@ -1271,37 +1269,29 @@
                 <div class="chapter-body">
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Attention Mechanisms
-                        </div>
-                        <div class="subtopic-entries">
-                            <div class="book-entry">
-                                <a href="blog/LLM/Attention Mechanisms/multi-head-attention-and-variants.html">Multi-Head Attention and Variants</a>
-                                <a class="entry-pdf" href="notes/LLM/Attention Mechanisms/Multi-head Attention And Variants.pdf">[pdf]</a>
-                                <span class="entry-desc">KV cache bottleneck and grouped query attention</span>
-                            </div>
-                            <div class="book-entry">
-                                <a href="blog/LLM/Attention Mechanisms/linear-self-attention.html">Linear Self-Attention</a>
-                                <a class="entry-pdf" href="notes/LLM/Attention Mechanisms/Linear Self Attention.pdf">[pdf]</a>
-                                <span class="entry-desc">O(n²) → O(n) by reordering matrix multiplication</span>
-                            </div>
-                            <div class="book-entry">
-                                <a href="blog/LLM/Attention Mechanisms/flash-attention.html">FlashAttention</a>
-                                <a class="entry-pdf" href="notes/LLM/Attention Mechanisms/FlashAttention.pdf">[pdf]</a>
-                                <span class="entry-desc">IO-aware exact attention via block-wise computation</span>
-                            </div>
-                            <div class="book-entry">
-                                <a href="blog/LLM/Attention Mechanisms/massive-attention-and-attention-sink.html">Massive Activations and Attention Sink</a>
-                                <a class="entry-pdf" href="notes/LLM/Attention Mechanisms/Massive Attention And Attention Sink.pdf">[pdf]</a>
-                                <span class="entry-desc">Why LLMs dump attention onto the first token</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="subtopic">
-                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
                             <span class="subtopic-toggle">&#9654;</span>Architecture
                         </div>
                         <div class="subtopic-entries">
+                            <div class="book-entry">
+                                <a href="blog/LLM/Architecture/multi-head-attention-and-variants.html">Multi-Head Attention and Variants</a>
+                                <a class="entry-pdf" href="notes/LLM/Architecture/Multi-head Attention And Variants.pdf">[pdf]</a>
+                                <span class="entry-desc">KV cache bottleneck and grouped query attention</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/LLM/Architecture/linear-self-attention.html">Linear Self-Attention</a>
+                                <a class="entry-pdf" href="notes/LLM/Architecture/Linear Self Attention.pdf">[pdf]</a>
+                                <span class="entry-desc">O(n²) → O(n) by reordering matrix multiplication</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/LLM/Architecture/flash-attention.html">FlashAttention</a>
+                                <a class="entry-pdf" href="notes/LLM/Architecture/FlashAttention.pdf">[pdf]</a>
+                                <span class="entry-desc">IO-aware exact attention via block-wise computation</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/LLM/Architecture/massive-attention-and-attention-sink.html">Massive Activations and Attention Sink</a>
+                                <a class="entry-pdf" href="notes/LLM/Architecture/Massive Attention And Attention Sink.pdf">[pdf]</a>
+                                <span class="entry-desc">Why LLMs dump attention onto the first token</span>
+                            </div>
                             <div class="book-entry">
                                 <a href="blog/LLM/Architecture/ffn-and-moes.html">FFN and Mixture of Experts</a>
                                 <a class="entry-pdf" href="notes/LLM/Architecture/FFN and MoEs.pdf">[pdf]</a>
@@ -1317,56 +1307,27 @@
 
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Training
+                            <span class="subtopic-toggle">&#9654;</span>Training &amp; Inference
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
-                                <a href="blog/LLM/Training/rlhf.html">RLHF</a>
-                                <a class="entry-pdf" href="notes/LLM/Training/RLHF.pdf">[pdf]</a>
+                                <a href="blog/LLM/Training & Inference/rlhf.html">RLHF</a>
+                                <a class="entry-pdf" href="notes/LLM/Training & Inference/RLHF.pdf">[pdf]</a>
                                 <span class="entry-desc">Reward modelling → PPO for instruction following</span>
                             </div>
                             <div class="book-entry">
-                                <a href="blog/LLM/Training/direct-preference-optimization.html">Direct Preference Optimization</a>
-                                <a class="entry-pdf" href="notes/LLM/Training/Direct Preference Optimization.pdf">[pdf]</a>
+                                <a href="blog/LLM/Training & Inference/direct-preference-optimization.html">Direct Preference Optimization</a>
+                                <a class="entry-pdf" href="notes/LLM/Training & Inference/Direct Preference Optimization.pdf">[pdf]</a>
                                 <span class="entry-desc">Alignment as supervised classification, no reward model needed</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="subtopic">
-                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Inference
-                        </div>
-                        <div class="subtopic-entries">
                             <div class="book-entry">
-                                <a href="blog/LLM/Inference/speculative-decoding.html">Speculative Decoding</a>
-                                <a class="entry-pdf" href="notes/LLM/Inference/Speculative Decoding.pdf">[pdf]</a>
+                                <a href="blog/LLM/Training & Inference/speculative-decoding.html">Speculative Decoding</a>
+                                <a class="entry-pdf" href="notes/LLM/Training & Inference/Speculative Decoding.pdf">[pdf]</a>
                                 <span class="entry-desc">Draft model + parallel verification, lossless speedup</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="subtopic">
-                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Interpretability
-                        </div>
-                        <div class="subtopic-entries">
                             <div class="book-entry">
-                                <a href="blog/LLM/Interpretability/polysemanticity-and-superposition.html">Polysemanticity and Superposition</a>
-                                <a class="entry-pdf" href="notes/LLM/Interpretability/Polysemanticity And Superposition.pdf">[pdf]</a>
-                                <span class="entry-desc">Why neurons fire for unrelated concepts</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="subtopic">
-                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Retrieval & Merging
-                        </div>
-                        <div class="subtopic-entries">
-                            <div class="book-entry">
-                                <a href="blog/LLM/Retrieval & Merging/rag.html">Retrieval-Augmented Generation (RAG)</a>
-                                <a class="entry-pdf" href="notes/LLM/Retrieval & Merging/RAG.pdf">[pdf]</a>
+                                <a href="blog/LLM/Training & Inference/rag.html">Retrieval-Augmented Generation (RAG)</a>
+                                <a class="entry-pdf" href="notes/LLM/Training & Inference/RAG.pdf">[pdf]</a>
                                 <span class="entry-desc">Chunking, embedding, and HNSW retrieval</span>
                             </div>
                         </div>
@@ -1374,12 +1335,17 @@
 
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Safety
+                            <span class="subtopic-toggle">&#9654;</span>Interpretability &amp; Safety
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
-                                <a href="blog/LLM/Safety/text-watermarking.html">Text Watermarking</a>
-                                <a class="entry-pdf" href="notes/LLM/Safety/Text Watermarking.pdf">[pdf]</a>
+                                <a href="blog/LLM/Interpretability & Safety/polysemanticity-and-superposition.html">Polysemanticity and Superposition</a>
+                                <a class="entry-pdf" href="notes/LLM/Interpretability & Safety/Polysemanticity And Superposition.pdf">[pdf]</a>
+                                <span class="entry-desc">Why neurons fire for unrelated concepts</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/LLM/Interpretability & Safety/text-watermarking.html">Text Watermarking</a>
+                                <a class="entry-pdf" href="notes/LLM/Interpretability & Safety/Text Watermarking.pdf">[pdf]</a>
                                 <span class="entry-desc">Detecting AI-generated text via statistical signals</span>
                             </div>
                         </div>
@@ -1402,7 +1368,7 @@
                         <div class="subtopic-entries">
                             <div class="book-entry">
                                 <a href="blog/Machine Learning/Deep Learning/backpropagation.html">Backpropagation: From Scratch to Batch</a>
-                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Backpropogation.pdf">[pdf]</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Backpropagation.pdf">[pdf]</a>
                                 <span class="entry-desc">Chain rule, numerator layout, and batch gradients</span>
                             </div>
                             <div class="book-entry">
@@ -1420,6 +1386,36 @@
                                 <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/SLERP For Model Merging.pdf">[pdf]</a>
                                 <span class="entry-desc">Spherical interpolation of weight matrices</span>
                             </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Deep Learning/from-sgd-to-adam.html">From SGD to Adam</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Adam.pdf">[pdf]</a>
+                                <span class="entry-desc">Why each piece of Adam exists</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Deep Learning/adam-and-adamw.html">Adam and AdamW</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Adam and AdamW.pdf">[pdf]</a>
+                                <span class="entry-desc">Why L2 loss breaks Adam, and AdamW's fix</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Deep Learning/sgd-and-implicit-regularization.html">SGD and Implicit Regularization</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/SGD and Implicit Regularization.pdf">[pdf]</a>
+                                <span class="entry-desc">Why gradient descent secretly regularizes itself</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Deep Learning/parameter-initialization.html">Parameter Initialization</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Parameter Initialization.pdf">[pdf]</a>
+                                <span class="entry-desc">Why He initialization keeps variance stable</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Deep Learning/residual-connections.html">Residual Connections</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Residual Connections.pdf">[pdf]</a>
+                                <span class="entry-desc">Why one extra addition makes depth trainable</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Deep Learning/bias-variance-trade-off-and-double-descent.html">Bias-Variance Trade-off and Double Descent</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Deep Learning/Bias Variance Trade-off And Double Descent.pdf">[pdf]</a>
+                                <span class="entry-desc">Why bigger models can generalize better</span>
+                            </div>
                         </div>
                     </div>
 
@@ -1433,59 +1429,84 @@
                                 <a class="entry-pdf" href="notes/Machine Learning/Classic ML/SHAP and LIME.pdf">[pdf]</a>
                                 <span class="entry-desc">Model-agnostic feature attribution methods</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chapter 3: Statistics -->
-            <div class="book-chapter">
-                <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
-                    <span class="chapter-toggle">&#9654;</span>
-                    <span class="chapter-color chapter-color-statistics"></span>
-                    <span class="chapter-title">Statistics</span>
-                </div>
-                <div class="chapter-body">
-                    <div class="subtopic">
-                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Change Point Detection
-                        </div>
-                        <div class="subtopic-entries">
                             <div class="book-entry">
-                                <a href="blog/Statistics/change-point-detection.html">A concise review for change point detection methods</a>
-                                <a class="entry-pdf" href="notes/Statistics/ReviewForCPD.pdf">[pdf]</a>
-                                <span class="entry-desc">Finding structural shifts in time series data</span>
+                                <a href="blog/Machine Learning/Classic ML/gaussian-mixture-model-and-em-algorithm.html">Gaussian Mixture Model and EM Algorithm</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Classic ML/Gaussian Mixture Model and EM Algorithm.pdf">[pdf]</a>
+                                <span class="entry-desc">Why K-means fails and EM fixes it</span>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="subtopic">
-                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Hypothesis Testing
-                        </div>
-                        <div class="subtopic-entries">
-                        </div>
+            <!-- Chapter 3: Generative AI -->
+            <div class="book-chapter">
+                <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="chapter-toggle">&#9654;</span>
+                    <span class="chapter-color chapter-color-genai"></span>
+                    <span class="chapter-title">Generative AI</span>
+                </div>
+                <div class="chapter-body">
+                    <div class="book-entry">
+                        <a href="blog/Generative AI/gan.html">Generative Adversarial Networks (GANs)</a>
+                        <a class="entry-pdf" href="notes/Generative AI/GAN.pdf">[pdf]</a>
+                        <span class="entry-desc">Minmax games, mode collapse, and why Wasserstein helps</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Generative AI/conditional-and-style-gan.html">Conditional and Style GAN</a>
+                        <a class="entry-pdf" href="notes/Generative AI/Conditional and Style GAN.pdf">[pdf]</a>
+                        <span class="entry-desc">Controlling what a GAN generates</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Generative AI/vae.html">Variational Autoencoders (VAE)</a>
+                        <a class="entry-pdf" href="notes/Generative AI/VAE.pdf">[pdf]</a>
+                        <span class="entry-desc">From Gaussian mixtures to the ELBO</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Generative AI/normalizing-flow.html">Normalizing Flow</a>
+                        <a class="entry-pdf" href="notes/Generative AI/Normalizing Flow.pdf">[pdf]</a>
+                        <span class="entry-desc">Exact likelihoods via invertible transformations</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Generative AI/diffusion.html">Diffusion Models</a>
+                        <a class="entry-pdf" href="notes/Generative AI/Diffusion.pdf">[pdf]</a>
+                        <span class="entry-desc">From pure noise to images, derived fully</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Chapter 4: Math -->
+            <!-- Chapter 4: Math & Statistics -->
             <div class="book-chapter">
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
                     <span class="chapter-color chapter-color-math"></span>
-                    <span class="chapter-title">Math</span>
+                    <span class="chapter-title">Math &amp; Statistics</span>
                 </div>
                 <div class="chapter-body">
                     <div class="book-entry">
-                        <a href="blog/Math/fourier-transform.html">Fourier Transform</a>
-                        <a class="entry-pdf" href="notes/Math/Fourier Transform.pdf">[pdf]</a>
+                        <a href="blog/Math & Statistics/fourier-transform.html">Fourier Transform</a>
+                        <a class="entry-pdf" href="notes/Math & Statistics/Fourier Transform.pdf">[pdf]</a>
                         <span class="entry-desc">The winding machine intuition → integral formula</span>
                     </div>
                     <div class="book-entry">
-                        <a href="blog/Math/constrained-optimization.html">Constrained Optimization</a>
-                        <a class="entry-pdf" href="notes/Math/Constraint Optimization Problem.pdf">[pdf]</a>
+                        <a href="blog/Math & Statistics/constrained-optimization.html">Constrained Optimization</a>
+                        <a class="entry-pdf" href="notes/Math & Statistics/Constraint Optimization Problem.pdf">[pdf]</a>
                         <span class="entry-desc">Lagrange duality, KKT conditions, and strong duality</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Math & Statistics/linear-programming.html">Linear Programming</a>
+                        <a class="entry-pdf" href="notes/Math & Statistics/Linear Programming.pdf">[pdf]</a>
+                        <span class="entry-desc">Corner points, geometry, and the simplex algorithm</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Math & Statistics/wasserstein-distance.html">Wasserstein Distance</a>
+                        <a class="entry-pdf" href="notes/Math & Statistics/Wasserstein Distance.pdf">[pdf]</a>
+                        <span class="entry-desc">Earth mover's view of comparing distributions</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Math & Statistics/change-point-detection.html">A concise review for change point detection methods</a>
+                        <a class="entry-pdf" href="notes/Math & Statistics/ReviewForCPD.pdf">[pdf]</a>
+                        <span class="entry-desc">Finding structural shifts in time series data</span>
                     </div>
                 </div>
             </div>
@@ -1498,46 +1519,55 @@
                     <span class="chapter-title">Computer Science</span>
                 </div>
                 <div class="chapter-body">
-                    <div class="book-entry">
-                        <a href="blog/Computer Science/disjoint-set-union.html">Disjoint Set Union</a>
-                        <a class="entry-pdf" href="notes/Computer Science/Disjoint Set Union.pdf">[pdf]</a>
-                        <span class="entry-desc">Nearly O(1) connectivity queries with union-find</span>
+                    <div class="subtopic">
+                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
+                            <span class="subtopic-toggle">&#9654;</span>Fundamentals
+                        </div>
+                        <div class="subtopic-entries">
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Fundamentals/disjoint-set-union.html">Disjoint Set Union</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Fundamentals/Disjoint Set Union.pdf">[pdf]</a>
+                                <span class="entry-desc">Nearly O(1) connectivity queries with union-find</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Fundamentals/bits-and-bytes.html">Bits and Bytes</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Fundamentals/Bits And Bytes.pdf">[pdf]</a>
+                                <span class="entry-desc">How floating-point numbers are stored in 32 bits</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Fundamentals/binary-indexed-tree.html">Binary Indexed Tree</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Fundamentals/Binary Indexed Tree.pdf">[pdf]</a>
+                                <span class="entry-desc">O(log n) prefix sums and updates via bit manipulation</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Fundamentals/huffman-encoding.html">Huffman Encoding</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Fundamentals/Huffman Encoding.pdf">[pdf]</a>
+                                <span class="entry-desc">Building optimal prefix codes for lossless compression</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Fundamentals/dijkstra-algorithm.html">Dijkstra's Algorithm</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Fundamentals/Dijkstra Algorithm.pdf">[pdf]</a>
+                                <span class="entry-desc">Heap-based shortest path with correctness proof</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="book-entry">
-                        <a href="blog/Computer Science/bits-and-bytes.html">Bits and Bytes</a>
-                        <a class="entry-pdf" href="notes/Computer Science/Bits And Bytes.pdf">[pdf]</a>
-                        <span class="entry-desc">How floating-point numbers are stored in 32 bits</span>
-                    </div>
-                    <div class="book-entry">
-                        <a href="blog/Computer Science/binary-indexed-tree.html">Binary Indexed Tree</a>
-                        <a class="entry-pdf" href="notes/Computer Science/Binary Indexed Tree.pdf">[pdf]</a>
-                        <span class="entry-desc">O(log n) prefix sums and updates via bit manipulation</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Chapter 6: Leetcode -->
-            <div class="book-chapter">
-                <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
-                    <span class="chapter-toggle">&#9654;</span>
-                    <span class="chapter-color chapter-color-leetcode"></span>
-                    <span class="chapter-title">Leetcode</span>
-                </div>
-                <div class="chapter-body">
-                    <div class="book-entry">
-                        <a href="blog/Leetcode/dijkstra-algorithm.html">Dijkstra's Algorithm</a>
-                        <a class="entry-pdf" href="notes/Leetcode/Dijkstra Algorithm.pdf">[pdf]</a>
-                        <span class="entry-desc">Heap-based shortest path with correctness proof</span>
-                    </div>
-                    <div class="book-entry">
-                        <a href="blog/Leetcode/partition-equal-subset-sum.html">416. Partition Equal Subset Sum</a>
-                        <a class="entry-pdf" href="notes/Leetcode/416 Partition Equal Subset Sum.pdf">[pdf]</a>
-                        <span class="entry-desc">Brute force → memoization → bottom-up DP</span>
-                    </div>
-                    <div class="book-entry">
-                        <a href="blog/Leetcode/linked-list-cycle-ii.html">142. Linked List Cycle II</a>
-                        <a class="entry-pdf" href="notes/Leetcode/142 Linked List Cycle II.pdf">[pdf]</a>
-                        <span class="entry-desc">Floyd's algorithm: why reset-to-head works</span>
+                    <div class="subtopic">
+                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
+                            <span class="subtopic-toggle">&#9654;</span>Leetcode Style Question
+                        </div>
+                        <div class="subtopic-entries">
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Leetcode Style Question/partition-equal-subset-sum.html">416. Partition Equal Subset Sum</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Leetcode Style Question/416 Partition Equal Subset Sum.pdf">[pdf]</a>
+                                <span class="entry-desc">Brute force → memoization → bottom-up DP</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Computer Science/Leetcode Style Question/linked-list-cycle-ii.html">142. Linked List Cycle II</a>
+                                <a class="entry-pdf" href="notes/Computer Science/Leetcode Style Question/142 Linked List Cycle II.pdf">[pdf]</a>
+                                <span class="entry-desc">Floyd's algorithm: why reset-to-head works</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1560,11 +1590,11 @@
             <div style="margin-bottom: 24px;">
                 <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px;">2025</div>
                 <div class="timeline-bar">
-                    <a href="blog/LLM/Attention Mechanisms/multi-head-attention-and-variants.html" class="timeline-dot" data-topic="llm" style="left: 16.67%"><span class="timeline-tooltip">Multi-Head Attention and Variants</span></a>
-                    <a href="blog/Statistics/change-point-detection.html" class="timeline-dot" data-topic="statistics" style="left: 33.33%"><span class="timeline-tooltip">Change Point Detection Methods</span></a>
-                    <a href="blog/Leetcode/linked-list-cycle-ii.html" class="timeline-dot" data-topic="leetcode" style="left: 50%"><span class="timeline-tooltip">142. Linked List Cycle II</span></a>
+                    <a href="blog/LLM/Architecture/multi-head-attention-and-variants.html" class="timeline-dot" data-topic="llm" style="left: 16.67%"><span class="timeline-tooltip">Multi-Head Attention and Variants</span></a>
+                    <a href="blog/Math & Statistics/change-point-detection.html" class="timeline-dot" data-topic="math" style="left: 33.33%"><span class="timeline-tooltip">Change Point Detection Methods</span></a>
+                    <a href="blog/Computer Science/Leetcode Style Question/linked-list-cycle-ii.html" class="timeline-dot" data-topic="cs" style="left: 50%"><span class="timeline-tooltip">142. Linked List Cycle II</span></a>
                     <a href="blog/LLM/Architecture/perplexity.html" class="timeline-dot" data-topic="llm" style="left: 66.67%"><span class="timeline-tooltip">Perplexity</span></a>
-                    <a href="blog/LLM/Attention Mechanisms/linear-self-attention.html" class="timeline-dot" data-topic="llm" style="left: 83.33%"><span class="timeline-tooltip">Linear Self-Attention</span></a>
+                    <a href="blog/LLM/Architecture/linear-self-attention.html" class="timeline-dot" data-topic="llm" style="left: 83.33%"><span class="timeline-tooltip">Linear Self-Attention</span></a>
                 </div>
                 <div class="timeline-labels">
                     <span>Dec 1</span>
@@ -1575,27 +1605,42 @@
             <div>
                 <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px;">2026</div>
                 <div class="timeline-bar">
-                    <a href="blog/Machine Learning/Classic ML/shap-and-lime.html" class="timeline-dot" data-topic="machine-learning" style="left: 5%"><span class="timeline-tooltip">SHAP and LIME</span></a>
-                    <a href="blog/LLM/Architecture/ffn-and-moes.html" class="timeline-dot" data-topic="llm" style="left: 10%"><span class="timeline-tooltip">FFN and Mixture of Experts</span></a>
-                    <a href="blog/Leetcode/partition-equal-subset-sum.html" class="timeline-dot" data-topic="leetcode" style="left: 15%"><span class="timeline-tooltip">416. Partition Equal Subset Sum</span></a>
-                    <a href="blog/LLM/Attention Mechanisms/massive-attention-and-attention-sink.html" class="timeline-dot" data-topic="llm" style="left: 20%"><span class="timeline-tooltip">Massive Attention and Attention Sink</span></a>
-                    <a href="blog/LLM/Training/rlhf.html" class="timeline-dot" data-topic="llm" style="left: 25%"><span class="timeline-tooltip">RLHF</span></a>
-                    <a href="blog/Math/fourier-transform.html" class="timeline-dot" data-topic="math" style="left: 30%"><span class="timeline-tooltip">Fourier Transform</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/slerp-model-merging.html" class="timeline-dot" data-topic="machine-learning" style="left: 35%"><span class="timeline-tooltip">SLERP for Model Merging</span></a>
-                    <a href="blog/LLM/Attention Mechanisms/flash-attention.html" class="timeline-dot" data-topic="llm" style="left: 40%"><span class="timeline-tooltip">FlashAttention</span></a>
-                    <a href="blog/Leetcode/dijkstra-algorithm.html" class="timeline-dot" data-topic="leetcode" style="left: 45%"><span class="timeline-tooltip">Dijkstra's Algorithm</span></a>
-                    <a href="blog/LLM/Retrieval & Merging/rag.html" class="timeline-dot" data-topic="llm" style="left: 47.5%"><span class="timeline-tooltip">RAG</span></a>
-                    <a href="blog/LLM/Training/direct-preference-optimization.html" class="timeline-dot" data-topic="llm" style="left: 50%"><span class="timeline-tooltip">Direct Preference Optimization</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/contrastive-learning.html" class="timeline-dot" data-topic="machine-learning" style="left: 52.5%"><span class="timeline-tooltip">Contrastive Learning</span></a>
-                    <a href="blog/LLM/Interpretability/polysemanticity-and-superposition.html" class="timeline-dot" data-topic="llm" style="left: 57%"><span class="timeline-tooltip">Polysemanticity and Superposition</span></a>
-                    <a href="blog/LLM/Safety/text-watermarking.html" class="timeline-dot" data-topic="llm" style="left: 62%"><span class="timeline-tooltip">Text Watermarking</span></a>
-                    <a href="blog/Computer Science/bits-and-bytes.html" class="timeline-dot" data-topic="cs" style="left: 67%"><span class="timeline-tooltip">Bits and Bytes</span></a>
-                    <a href="blog/LLM/Inference/speculative-decoding.html" class="timeline-dot" data-topic="llm" style="left: 72%"><span class="timeline-tooltip">Speculative Decoding</span></a>
-                    <a href="blog/Computer Science/binary-indexed-tree.html" class="timeline-dot" data-topic="cs" style="left: 77%"><span class="timeline-tooltip">Binary Indexed Tree</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/shallow-and-deep-neural-networks.html" class="timeline-dot" data-topic="machine-learning" style="left: 83%"><span class="timeline-tooltip">Shallow and Deep Neural Networks</span></a>
-                    <a href="blog/Math/constrained-optimization.html" class="timeline-dot" data-topic="math" style="left: 88%"><span class="timeline-tooltip">Constrained Optimization</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/backpropagation.html" class="timeline-dot" data-topic="machine-learning" style="left: 93%"><span class="timeline-tooltip">Backpropagation</span></a>
-                    <a href="blog/Computer Science/disjoint-set-union.html" class="timeline-dot" data-topic="cs" style="left: 98%"><span class="timeline-tooltip">Disjoint Set Union</span></a>
+                    <a href="blog/Machine Learning/Classic ML/shap-and-lime.html" class="timeline-dot" data-topic="machine-learning" style="left: 2.5%"><span class="timeline-tooltip">SHAP and LIME</span></a>
+                    <a href="blog/LLM/Architecture/ffn-and-moes.html" class="timeline-dot" data-topic="llm" style="left: 5.24%"><span class="timeline-tooltip">FFN and Mixture of Experts</span></a>
+                    <a href="blog/Computer Science/Leetcode Style Question/partition-equal-subset-sum.html" class="timeline-dot" data-topic="cs" style="left: 7.99%"><span class="timeline-tooltip">416. Partition Equal Subset Sum</span></a>
+                    <a href="blog/LLM/Architecture/massive-attention-and-attention-sink.html" class="timeline-dot" data-topic="llm" style="left: 10.73%"><span class="timeline-tooltip">Massive Attention and Attention Sink</span></a>
+                    <a href="blog/LLM/Training & Inference/rlhf.html" class="timeline-dot" data-topic="llm" style="left: 13.47%"><span class="timeline-tooltip">RLHF</span></a>
+                    <a href="blog/Math & Statistics/fourier-transform.html" class="timeline-dot" data-topic="math" style="left: 16.21%"><span class="timeline-tooltip">Fourier Transform</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/slerp-model-merging.html" class="timeline-dot" data-topic="machine-learning" style="left: 18.96%"><span class="timeline-tooltip">SLERP for Model Merging</span></a>
+                    <a href="blog/LLM/Architecture/flash-attention.html" class="timeline-dot" data-topic="llm" style="left: 21.7%"><span class="timeline-tooltip">FlashAttention</span></a>
+                    <a href="blog/Computer Science/Fundamentals/dijkstra-algorithm.html" class="timeline-dot" data-topic="cs" style="left: 24.44%"><span class="timeline-tooltip">Dijkstra's Algorithm</span></a>
+                    <a href="blog/LLM/Training & Inference/rag.html" class="timeline-dot" data-topic="llm" style="left: 27.19%"><span class="timeline-tooltip">RAG</span></a>
+                    <a href="blog/LLM/Training & Inference/direct-preference-optimization.html" class="timeline-dot" data-topic="llm" style="left: 29.93%"><span class="timeline-tooltip">Direct Preference Optimization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/contrastive-learning.html" class="timeline-dot" data-topic="machine-learning" style="left: 32.67%"><span class="timeline-tooltip">Contrastive Learning</span></a>
+                    <a href="blog/LLM/Interpretability & Safety/polysemanticity-and-superposition.html" class="timeline-dot" data-topic="llm" style="left: 35.41%"><span class="timeline-tooltip">Polysemanticity and Superposition</span></a>
+                    <a href="blog/LLM/Interpretability & Safety/text-watermarking.html" class="timeline-dot" data-topic="llm" style="left: 38.16%"><span class="timeline-tooltip">Text Watermarking</span></a>
+                    <a href="blog/Computer Science/Fundamentals/bits-and-bytes.html" class="timeline-dot" data-topic="cs" style="left: 40.9%"><span class="timeline-tooltip">Bits and Bytes</span></a>
+                    <a href="blog/LLM/Training & Inference/speculative-decoding.html" class="timeline-dot" data-topic="llm" style="left: 43.64%"><span class="timeline-tooltip">Speculative Decoding</span></a>
+                    <a href="blog/Computer Science/Fundamentals/binary-indexed-tree.html" class="timeline-dot" data-topic="cs" style="left: 46.39%"><span class="timeline-tooltip">Binary Indexed Tree</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/shallow-and-deep-neural-networks.html" class="timeline-dot" data-topic="machine-learning" style="left: 49.13%"><span class="timeline-tooltip">Shallow and Deep Neural Networks</span></a>
+                    <a href="blog/Math & Statistics/constrained-optimization.html" class="timeline-dot" data-topic="math" style="left: 51.87%"><span class="timeline-tooltip">Constrained Optimization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/backpropagation.html" class="timeline-dot" data-topic="machine-learning" style="left: 54.61%"><span class="timeline-tooltip">Backpropagation</span></a>
+                    <a href="blog/Computer Science/Fundamentals/disjoint-set-union.html" class="timeline-dot" data-topic="cs" style="left: 57.36%"><span class="timeline-tooltip">Disjoint Set Union</span></a>
+                    <a href="blog/Generative AI/gan.html" class="timeline-dot" data-topic="genai" style="left: 60.1%"><span class="timeline-tooltip">Generative Adversarial Networks</span></a>
+                    <a href="blog/Generative AI/conditional-and-style-gan.html" class="timeline-dot" data-topic="genai" style="left: 62.84%"><span class="timeline-tooltip">Conditional and Style GAN</span></a>
+                    <a href="blog/Generative AI/vae.html" class="timeline-dot" data-topic="genai" style="left: 65.59%"><span class="timeline-tooltip">Variational Autoencoders</span></a>
+                    <a href="blog/Generative AI/normalizing-flow.html" class="timeline-dot" data-topic="genai" style="left: 68.33%"><span class="timeline-tooltip">Normalizing Flow</span></a>
+                    <a href="blog/Generative AI/diffusion.html" class="timeline-dot" data-topic="genai" style="left: 71.07%"><span class="timeline-tooltip">Diffusion Models</span></a>
+                    <a href="blog/Machine Learning/Classic ML/gaussian-mixture-model-and-em-algorithm.html" class="timeline-dot" data-topic="machine-learning" style="left: 73.81%"><span class="timeline-tooltip">Gaussian Mixture Model and EM</span></a>
+                    <a href="blog/Math & Statistics/linear-programming.html" class="timeline-dot" data-topic="math" style="left: 76.56%"><span class="timeline-tooltip">Linear Programming</span></a>
+                    <a href="blog/Math & Statistics/wasserstein-distance.html" class="timeline-dot" data-topic="math" style="left: 79.3%"><span class="timeline-tooltip">Wasserstein Distance</span></a>
+                    <a href="blog/Computer Science/Fundamentals/huffman-encoding.html" class="timeline-dot" data-topic="cs" style="left: 82.04%"><span class="timeline-tooltip">Huffman Encoding</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/from-sgd-to-adam.html" class="timeline-dot" data-topic="machine-learning" style="left: 84.79%"><span class="timeline-tooltip">From SGD to Adam</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/adam-and-adamw.html" class="timeline-dot" data-topic="machine-learning" style="left: 87.53%"><span class="timeline-tooltip">Adam and AdamW</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/sgd-and-implicit-regularization.html" class="timeline-dot" data-topic="machine-learning" style="left: 90.27%"><span class="timeline-tooltip">SGD and Implicit Regularization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/parameter-initialization.html" class="timeline-dot" data-topic="machine-learning" style="left: 93.01%"><span class="timeline-tooltip">Parameter Initialization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/residual-connections.html" class="timeline-dot" data-topic="machine-learning" style="left: 95.76%"><span class="timeline-tooltip">Residual Connections</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/bias-variance-trade-off-and-double-descent.html" class="timeline-dot" data-topic="machine-learning" style="left: 98.5%"><span class="timeline-tooltip">Bias-Variance Trade-off and Double Descent</span></a>
                 </div>
                 <div class="timeline-labels">
                     <span>Jan</span>
@@ -1830,32 +1875,47 @@
 
     // Random explore cards
     var allNotes = [
-        { title: "Multi-Head Attention and Variants", url: "blog/LLM/Attention Mechanisms/multi-head-attention-and-variants.html", desc: "KV cache bottleneck and grouped query attention", topic: "LLM", color: "#dc2626" },
-        { title: "Linear Self-Attention", url: "blog/LLM/Attention Mechanisms/linear-self-attention.html", desc: "O(n²) → O(n) by reordering matrix multiplication", topic: "LLM", color: "#dc2626" },
-        { title: "FlashAttention", url: "blog/LLM/Attention Mechanisms/flash-attention.html", desc: "IO-aware exact attention via block-wise computation", topic: "LLM", color: "#dc2626" },
-        { title: "Massive Attention and Attention Sink", url: "blog/LLM/Attention Mechanisms/massive-attention-and-attention-sink.html", desc: "Why LLMs dump attention onto the first token", topic: "LLM", color: "#dc2626" },
+        { title: "Multi-Head Attention and Variants", url: "blog/LLM/Architecture/multi-head-attention-and-variants.html", desc: "KV cache bottleneck and grouped query attention", topic: "LLM", color: "#dc2626" },
+        { title: "Linear Self-Attention", url: "blog/LLM/Architecture/linear-self-attention.html", desc: "O(n²) → O(n) by reordering matrix multiplication", topic: "LLM", color: "#dc2626" },
+        { title: "FlashAttention", url: "blog/LLM/Architecture/flash-attention.html", desc: "IO-aware exact attention via block-wise computation", topic: "LLM", color: "#dc2626" },
+        { title: "Massive Attention and Attention Sink", url: "blog/LLM/Architecture/massive-attention-and-attention-sink.html", desc: "Why LLMs dump attention onto the first token", topic: "LLM", color: "#dc2626" },
         { title: "FFN and Mixture of Experts", url: "blog/LLM/Architecture/ffn-and-moes.html", desc: "Sparse expert routing for more capacity, same compute", topic: "LLM", color: "#dc2626" },
         { title: "Perplexity", url: "blog/LLM/Architecture/perplexity.html", desc: "What perplexity actually means as a metric", topic: "LLM", color: "#dc2626" },
-        { title: "RLHF", url: "blog/LLM/Training/rlhf.html", desc: "Reward modelling → PPO for instruction following", topic: "LLM", color: "#dc2626" },
-        { title: "Direct Preference Optimization", url: "blog/LLM/Training/direct-preference-optimization.html", desc: "Alignment as supervised classification, no reward model needed", topic: "LLM", color: "#dc2626" },
-        { title: "Speculative Decoding", url: "blog/LLM/Inference/speculative-decoding.html", desc: "Draft model + parallel verification, lossless speedup", topic: "LLM", color: "#dc2626" },
-        { title: "Polysemanticity and Superposition", url: "blog/LLM/Interpretability/polysemanticity-and-superposition.html", desc: "Why neurons fire for unrelated concepts", topic: "LLM", color: "#dc2626" },
-        { title: "RAG", url: "blog/LLM/Retrieval & Merging/rag.html", desc: "Chunking, embedding, and HNSW retrieval", topic: "LLM", color: "#dc2626" },
-        { title: "Text Watermarking", url: "blog/LLM/Safety/text-watermarking.html", desc: "Detecting AI-generated text via statistical signals", topic: "LLM", color: "#dc2626" },
+        { title: "RLHF", url: "blog/LLM/Training & Inference/rlhf.html", desc: "Reward modelling → PPO for instruction following", topic: "LLM", color: "#dc2626" },
+        { title: "Direct Preference Optimization", url: "blog/LLM/Training & Inference/direct-preference-optimization.html", desc: "Alignment as supervised classification, no reward model needed", topic: "LLM", color: "#dc2626" },
+        { title: "Speculative Decoding", url: "blog/LLM/Training & Inference/speculative-decoding.html", desc: "Draft model + parallel verification, lossless speedup", topic: "LLM", color: "#dc2626" },
+        { title: "Polysemanticity and Superposition", url: "blog/LLM/Interpretability & Safety/polysemanticity-and-superposition.html", desc: "Why neurons fire for unrelated concepts", topic: "LLM", color: "#dc2626" },
+        { title: "RAG", url: "blog/LLM/Training & Inference/rag.html", desc: "Chunking, embedding, and HNSW retrieval", topic: "LLM", color: "#dc2626" },
+        { title: "Text Watermarking", url: "blog/LLM/Interpretability & Safety/text-watermarking.html", desc: "Detecting AI-generated text via statistical signals", topic: "LLM", color: "#dc2626" },
         { title: "Backpropagation", url: "blog/Machine Learning/Deep Learning/backpropagation.html", desc: "Chain rule, numerator layout, and batch gradients", topic: "Machine Learning", color: "#2563eb" },
         { title: "Shallow and Deep Neural Networks", url: "blog/Machine Learning/Deep Learning/shallow-and-deep-neural-networks.html", desc: "Universal approximation and exponential expressiveness", topic: "Machine Learning", color: "#2563eb" },
         { title: "SLERP for Model Merging", url: "blog/Machine Learning/Deep Learning/slerp-model-merging.html", desc: "Spherical interpolation of weight matrices", topic: "Machine Learning", color: "#2563eb" },
         { title: "Contrastive Learning", url: "blog/Machine Learning/Deep Learning/contrastive-learning.html", desc: "CLIP, pairwise loss, and triplet loss", topic: "Machine Learning", color: "#2563eb" },
+        { title: "From SGD to Adam", url: "blog/Machine Learning/Deep Learning/from-sgd-to-adam.html", desc: "Why each piece of Adam exists", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Adam and AdamW", url: "blog/Machine Learning/Deep Learning/adam-and-adamw.html", desc: "Why L2 loss breaks Adam, and AdamW's fix", topic: "Machine Learning", color: "#2563eb" },
+        { title: "SGD and Implicit Regularization", url: "blog/Machine Learning/Deep Learning/sgd-and-implicit-regularization.html", desc: "Why gradient descent secretly regularizes itself", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Parameter Initialization", url: "blog/Machine Learning/Deep Learning/parameter-initialization.html", desc: "Why He initialization keeps variance stable", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Residual Connections", url: "blog/Machine Learning/Deep Learning/residual-connections.html", desc: "Why one extra addition makes depth trainable", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Bias-Variance Trade-off and Double Descent", url: "blog/Machine Learning/Deep Learning/bias-variance-trade-off-and-double-descent.html", desc: "Why bigger models can generalize better", topic: "Machine Learning", color: "#2563eb" },
         { title: "SHAP and LIME", url: "blog/Machine Learning/Classic ML/shap-and-lime.html", desc: "Model-agnostic feature attribution methods", topic: "Machine Learning", color: "#2563eb" },
-        { title: "Fourier Transform", url: "blog/Math/fourier-transform.html", desc: "Decomposing signals into frequency components", topic: "Mathematics", color: "#eab308" },
-        { title: "Constrained Optimization", url: "blog/Math/constrained-optimization.html", desc: "Lagrange duality, KKT conditions, and strong duality", topic: "Mathematics", color: "#eab308" },
-        { title: "Disjoint Set Union", url: "blog/Computer Science/disjoint-set-union.html", desc: "Nearly O(1) connectivity queries with union-find", topic: "Computer Science", color: "#d97706" },
-        { title: "Bits and Bytes", url: "blog/Computer Science/bits-and-bytes.html", desc: "How floating-point numbers are stored in memory", topic: "Computer Science", color: "#d97706" },
-        { title: "Binary Indexed Tree", url: "blog/Computer Science/binary-indexed-tree.html", desc: "O(log n) prefix sums and updates via bit manipulation", topic: "Computer Science", color: "#d97706" },
-        { title: "Dijkstra's Algorithm", url: "blog/Leetcode/dijkstra-algorithm.html", desc: "Heap-based shortest path with correctness proof", topic: "Leetcode", color: "#7c3aed" },
-        { title: "416. Partition Equal Subset Sum", url: "blog/Leetcode/partition-equal-subset-sum.html", desc: "Brute force → memoization → bottom-up DP", topic: "Leetcode", color: "#7c3aed" },
-        { title: "142. Linked List Cycle II", url: "blog/Leetcode/linked-list-cycle-ii.html", desc: "Floyd's algorithm: why reset-to-head works", topic: "Leetcode", color: "#7c3aed" },
-        { title: "Change Point Detection Methods", url: "blog/Statistics/change-point-detection.html", desc: "Finding structural shifts in time series data", topic: "Statistics", color: "#16a34a" }
+        { title: "Gaussian Mixture Model and EM Algorithm", url: "blog/Machine Learning/Classic ML/gaussian-mixture-model-and-em-algorithm.html", desc: "Why K-means fails and EM fixes it", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Generative Adversarial Networks", url: "blog/Generative AI/gan.html", desc: "Minmax games, mode collapse, and why Wasserstein helps", topic: "Generative AI", color: "#16a34a" },
+        { title: "Conditional and Style GAN", url: "blog/Generative AI/conditional-and-style-gan.html", desc: "Controlling what a GAN generates", topic: "Generative AI", color: "#16a34a" },
+        { title: "Variational Autoencoders", url: "blog/Generative AI/vae.html", desc: "From Gaussian mixtures to the ELBO", topic: "Generative AI", color: "#16a34a" },
+        { title: "Normalizing Flow", url: "blog/Generative AI/normalizing-flow.html", desc: "Exact likelihoods via invertible transformations", topic: "Generative AI", color: "#16a34a" },
+        { title: "Diffusion Models", url: "blog/Generative AI/diffusion.html", desc: "From pure noise to images, derived fully", topic: "Generative AI", color: "#16a34a" },
+        { title: "Fourier Transform", url: "blog/Math & Statistics/fourier-transform.html", desc: "Decomposing signals into frequency components", topic: "Math & Statistics", color: "#eab308" },
+        { title: "Constrained Optimization", url: "blog/Math & Statistics/constrained-optimization.html", desc: "Lagrange duality, KKT conditions, and strong duality", topic: "Math & Statistics", color: "#eab308" },
+        { title: "Linear Programming", url: "blog/Math & Statistics/linear-programming.html", desc: "Corner points, geometry, and the simplex algorithm", topic: "Math & Statistics", color: "#eab308" },
+        { title: "Wasserstein Distance", url: "blog/Math & Statistics/wasserstein-distance.html", desc: "Earth mover's view of comparing distributions", topic: "Math & Statistics", color: "#eab308" },
+        { title: "Disjoint Set Union", url: "blog/Computer Science/Fundamentals/disjoint-set-union.html", desc: "Nearly O(1) connectivity queries with union-find", topic: "Computer Science", color: "#d97706" },
+        { title: "Bits and Bytes", url: "blog/Computer Science/Fundamentals/bits-and-bytes.html", desc: "How floating-point numbers are stored in memory", topic: "Computer Science", color: "#d97706" },
+        { title: "Binary Indexed Tree", url: "blog/Computer Science/Fundamentals/binary-indexed-tree.html", desc: "O(log n) prefix sums and updates via bit manipulation", topic: "Computer Science", color: "#d97706" },
+        { title: "Huffman Encoding", url: "blog/Computer Science/Fundamentals/huffman-encoding.html", desc: "Building optimal prefix codes for lossless compression", topic: "Computer Science", color: "#d97706" },
+        { title: "Dijkstra's Algorithm", url: "blog/Computer Science/Fundamentals/dijkstra-algorithm.html", desc: "Heap-based shortest path with correctness proof", topic: "Computer Science", color: "#d97706" },
+        { title: "416. Partition Equal Subset Sum", url: "blog/Computer Science/Leetcode Style Question/partition-equal-subset-sum.html", desc: "Brute force → memoization → bottom-up DP", topic: "Computer Science", color: "#d97706" },
+        { title: "142. Linked List Cycle II", url: "blog/Computer Science/Leetcode Style Question/linked-list-cycle-ii.html", desc: "Floyd's algorithm: why reset-to-head works", topic: "Computer Science", color: "#d97706" },
+        { title: "Change Point Detection Methods", url: "blog/Math & Statistics/change-point-detection.html", desc: "Finding structural shifts in time series data", topic: "Math & Statistics", color: "#eab308" }
     ];
 
     function shuffleRandomCards() {

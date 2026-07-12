@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGD and Implicit Regularization - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">SGD and Implicit Regularization</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/SGD and Implicit Regularization.pdf">PDF</a>.</p>
+
+        <p>Here is something that bothered me for a while: we train huge neural networks with SGD, no explicit regularizer in sight, and they still generalize well. Where does the regularization come from? It is quite surprising to me when I first learned the answer -- <strong>gradient descent itself is not actually optimizing the loss function you wrote down</strong>. Because of the discrete step size, it is secretly optimizing a slightly different loss, and that hidden modification acts like a regularizer. This post works out what that hidden loss looks like, first for plain gradient descent, then for SGD -- where the mini-batch noise turns out to be a feature, not a bug.</p>
+
+        <h2>Discrete Steps Can't Follow the Loss Landscape Perfectly</h2>
+
+        <p>Suppose we have a model parametrized by φ and a loss function L(φ). Discrete gradient descent updates the parameters as:</p>
+
+        <pre><code>φ₁ = φ₀ - η∇L(φ₀)</code></pre>
+
+        <p>Now imagine the step size could be infinitesimal. Then the parameters would slide down the loss landscape perfectly, following the curve at every point. We cannot physically do this, but we can write it down -- it's called <strong>continuous gradient descent</strong> (i.e. gradient flow). Instead of discrete steps, the parameters flow continuously over time t:</p>
+
+        <pre><code>dφ/dt = -∇L(φ(t))</code></pre>
+
+        <p>So the gradient descent method only minimizes L(φ) "directly" in the limit η → 0. With a finite step size, each update jumps across the landscape rather than following it -- picture the contour plot of the loss: the continuous path curves smoothly toward the minimum, while the discrete path zig-zags across the contours. Same destination in easy cases, but clearly not the same trajectory. Which raises the question: if discrete gradient descent isn't following L(φ), what <em>is</em> it following?</p>
+
+        <h2>The Loss Gradient Descent Is Actually Optimizing</h2>
+
+        <p>Here's the trick (this style of argument is called <strong>backward error analysis</strong>): instead of saying "gradient descent approximately optimizes L(φ)", we flip it around and say gradient descent <strong>exactly</strong> follows the gradient flow of a slightly different loss L̃(φ). The goal is to find this modified loss -- the loss where discrete and continuous gradient descent work exactly the same, i.e.</p>
+
+        <pre><code>-η∇L̃(φ₀) = ∫₀^η dφ/dt · dt    (with φ(0) = φ₀)</code></pre>
+
+        <p>Let us assume the gradient of this modified flow is the original gradient plus a correction term of order η:</p>
+
+        <pre><code>dφ(t)/dt = -∇L(φ) + η·g(φ)    evaluated at φ = φ(t)</code></pre>
+
+        <p>where g is the unknown correction we need to solve for. Now Taylor-expand φ(t + η) around φ(t), taking t to be the point where φ(t) = φ₀:</p>
+
+        <pre><code>φ(t+η) = φ(t) + η·dφ/dt + (η²/2)·d²φ/dt² + O(η³)</code></pre>
+
+        <p>Dropping the O(η³) remainder and substituting the flow equation (the second derivative comes from differentiating the flow once more through the chain rule):</p>
+
+        <pre><code>φ(t+η) ≈ φ₀ + η(-∇L(φ₀) + η·g(φ₀)) + (η²/2)(-∇²L(φ₀)·dφ/dt + ...)
+       ≈ φ₀ - η∇L(φ₀) + η²( g(φ₀) + ½·∇²L(φ₀)·∇L(φ₀) )</code></pre>
+
+        <p>Note that φ₀ - η∇L(φ₀) is exactly the update discrete gradient descent makes. So for the continuous flow to land in the same place as the discrete step, the η² term must vanish:</p>
+
+        <pre><code>g(φ₀) + ½·∇²L(φ₀)·∇L(φ₀) = 0    =>    g(φ₀) = -½·∇²L(φ₀)·∇L(φ₀)</code></pre>
+
+        <p>where ∇²L is the Hessian matrix. Plug this back into the flow, and a bit of matrix calculus (∇²L·∇L is exactly ½ the gradient of ||∇L||²) gives the modified loss:</p>
+
+        <pre><code>L̃(φ) ≈ L(φ) + (η/4)·||∇L(φ)||²</code></pre>
+
+        <p>Here we are. Gradient descent with step size η behaves as if it were doing perfect gradient flow on the original loss <strong>plus a penalty on the squared gradient norm</strong>, scaled by the learning rate.</p>
+
+        <h2>What Does This Penalty Actually Do?</h2>
+
+        <p>The implication: <strong>discrete gradient descent prefers places where the gradient norm is smaller</strong>. A minimum sitting in a wide, gentle basin has small gradients all around it; a minimum at the bottom of a narrow ravine is surrounded by steep walls, i.e. large gradients. The ||∇L||² penalty makes the flat basin look more attractive -- which connects directly to the folklore that <strong>flat minima generalize better than sharp ones</strong>.</p>
+
+        <p>One caveat worth being honest about. At any exact minimum, ∇L = 0, so the penalty is zero there -- the <em>value</em> of every minimum is unchanged, and the minimum positions of the continuous and discrete dynamics coincide. What changes is the <em>path</em>: the penalty reshapes the landscape along the way, so discrete gradient descent may end up in a different minimum than the idealized flow would. The regularization acts on the journey, not the destination. Also notice the penalty scales with η -- a larger learning rate means stronger implicit regularization, which is one reason cranking the learning rate down to something tiny doesn't always help generalization (something I found genuinely counterintuitive the first time).</p>
+
+        <h2>Now Add Mini-Batches: Implicit Regularization in SGD</h2>
+
+        <p>SGD doesn't compute the full gradient -- it uses one mini-batch at a time, cycling through B batches per epoch, each contributing its own gradient ∇L_b. Rhetorical question: does the noise from mini-batching just make the analysis above messier, or does it do something interesting? Running the same backward error analysis over one epoch of SGD gives:</p>
+
+        <pre><code>L̃_SGD(φ) = L(φ) + (η/4)·||∇L||² + (η/4B)·Σ_{b=1}^{B} ||∇L_b - ∇L||²</code></pre>
+
+        <p>where B is the total number of batches. The first two terms are exactly what gradient descent had. But SGD picks up an <strong>extra regularization term</strong>: the average squared deviation of each batch gradient from the total gradient -- essentially the <strong>variance of the mini-batch gradients</strong>.</p>
+
+        <p>So compared with full-batch gradient descent, <strong>SGD prefers positions where the gradient is stable</strong>, i.e. where the gradient computed on each batch agrees with the total gradient. Think about what that means for generalization: if a minimum only looks good because a few batches (a few subsets of the data) pull hard toward it while the others disagree, SGD is penalized for going there. It favors solutions that every part of the dataset roughly agrees on -- which is more or less the definition of a solution that isn't overfitting to particular examples. The gradient noise everyone treats as the price of cheap updates is quietly doing regularization work for free.</p>
+
+        <p>This also gives a cleaner way to think about the batch-size folklore: smaller batches mean noisier gradients, hence a larger variance term, hence stronger implicit regularization -- one reason very large batch training tends to need other tricks (learning rate scaling, explicit regularization) to match the generalization of small-batch training.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li><strong>Gradient descent with finite η does not optimize L(φ)</strong> -- it exactly follows the gradient flow of a modified loss L̃(φ) ≈ L(φ) + (η/4)||∇L||². This is backward error analysis: don't ask how wrong the algorithm is, ask what problem it solves exactly.</li>
+            <li>The ||∇L||² penalty means discrete gradient descent <strong>prefers flat regions</strong>, and the effect scales with the learning rate -- big steps regularize harder.</li>
+            <li>The minima themselves don't move; the <strong>path</strong> does, so discrete and continuous dynamics may end up in different minima.</li>
+            <li>SGD adds a further term, (η/4B)·Σ_b ||∇L_b - ∇L||² -- it <strong>penalizes disagreement between batch gradients and the full gradient</strong>, pushing toward solutions the whole dataset agrees on.</li>
+            <li>Mini-batch noise isn't just tolerable, it's useful: <strong>the noise is the regularizer</strong>.</li>
+        </ul>
+
+        <h2>My Take</h2>
+
+        <p>What I like most about this analysis is the reframing. My instinct used to be that discreteness and noise are imperfections -- things standing between us and the "true" optimization we'd do with infinite compute and infinitesimal steps. The backward error analysis view says the opposite: those imperfections define a different, arguably better objective, and the ||∇L||² and gradient-variance penalties fall out of a two-line Taylor expansion. It also demystifies a lot of practitioner folklore for me -- why large learning rates and small batches often generalize better was always stated as an empirical fact, and here is a concrete mechanism sitting behind it. The caveat I keep in mind: this is an O(η²) approximation, so for the large learning rates people actually use, it's a guide to intuition rather than a precise description. Still, "SGD prefers minima where every batch agrees" is the kind of one-sentence takeaway I wish someone had told me years ago.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Barrett, D. G. T., &amp; Dherin, B. (2021). Implicit Gradient Regularization. <em>International Conference on Learning Representations (ICLR)</em>.</li>
+            <li>Smith, S. L., Dherin, B., Barrett, D. G. T., &amp; De, S. (2021). On the Origin of Implicit Regularization in Stochastic Gradient Descent. <em>International Conference on Learning Representations (ICLR)</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

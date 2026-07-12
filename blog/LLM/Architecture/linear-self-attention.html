@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Self-Attention - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Linear Self-Attention</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/Linear Self Attention.pdf">PDF</a>.</p>
+        <p>The trick behind linear self-attention is almost embarrassingly simple: <strong>instead of computing (QK^T)V which creates the expensive s x s matrix, compute Q(K^T V) which never does</strong>. This changes complexity from O(s^2) to O(s) — just by changing the order of matrix multiplication. Of course, there is a catch: you need to replace softmax with something that allows this reordering.</p>
+
+        <h2>Recap: Standard Self-Attention</h2>
+        <p>The standard self-attention mechanism computes:</p>
+
+        <pre><code>Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) V</code></pre>
+
+        <p>The shapes of the matrices are:</p>
+        <ul>
+            <li>Q: (seq, d_k)</li>
+            <li>K: (seq, d_k)</li>
+            <li>V: (seq, d_v)</li>
+        </ul>
+
+        <h3>Computational Complexity</h3>
+        <p>Let <code>s</code> denote the sequence length, <code>d</code> the model dimension (d_k or d_v).</p>
+        <ul>
+            <li>Computing QK^T: O(s^2 d) -- but since d is fixed and relatively small (e.g. 1024), this is effectively <strong>O(s^2)</strong></li>
+            <li>Multiplying (QK^T) V: O(s^2 d) -- again effectively <strong>O(s^2)</strong></li>
+        </ul>
+
+        <p>The key problem is QK^T. Sequence length s can be very long, while d is fixed and relatively small. The s^2 term dominates and makes standard attention prohibitively expensive for long sequences.</p>
+
+        <h2>The Solution: Linear Self-Attention</h2>
+        <p>Linear self-attention replaces the softmax with a feature mapping function and changes the order of computation:</p>
+
+        <pre><code>LinearAttention(Q, K, V) = phi(Q) (phi(K)^T V) / (phi(Q) (phi(K)^T 1))</code></pre>
+
+        <p>There are three key ideas here:</p>
+
+        <h3>1. Change the Order of Multiplication</h3>
+        <p>In standard attention, we compute (Q K^T) V -- multiplying Q and K first produces an s x s matrix, then we multiply by V. In linear attention, we compute Q (K^T V) -- multiplying K and V first:</p>
+
+        <pre><code>Standard:  (Q . K^T) . V
+           O(s^2) + O(s^2 d)  =  O(s^2)
+
+Linear:    Q . (K^T . V)
+           O(s d^2) + O(s d)  =  O(s)</code></pre>
+
+        <p>Since d is fixed and small relative to s, the linear version scales as O(s) rather than O(s^2). This is the fundamental insight -- by rearranging the associativity of matrix multiplication, we avoid ever forming the s x s attention matrix.</p>
+
+        <h3>2. The Feature Mapping phi</h3>
+        <p>We cannot simply reorder the multiplication in standard attention because softmax is applied to QK^T as a whole (it normalizes across columns for each row). Instead, we replace softmax with a feature mapping <code>phi</code> applied independently to Q and K, which allows the reordering.</p>
+
+        <p>A common choice for phi is:</p>
+
+        <pre><code>phi(x) = ELU(x) + 1
+
+where ELU(x) = { x           if x > 0
+               { alpha(e^x - 1)  otherwise    (normally alpha = 1)</code></pre>
+
+        <p>Why this choice? Three reasons:</p>
+        <ol>
+            <li><strong>Forces all values to be positive.</strong> Since ELU(x) >= -1 for all x (with alpha=1), adding 1 ensures phi(x) >= 0. This is important because we want the feature-mapped values to act like unnormalized attention weights, which must be non-negative.</li>
+            <li><strong>Introduces non-linearity.</strong> Softmax is non-linear; a purely linear replacement would lose expressiveness. ELU + 1 preserves non-linear transformation of the inputs.</li>
+            <li><strong>Approximates the softmax kernel.</strong> Recall that in standard attention, the (i, j) entry of the attention matrix is proportional to exp(q_i . k_j). When we use feature mappings, phi(Q) phi(K)^T gives us entry phi(q_i) . phi(k_j). With the exponential in ELU, this loosely approximates the product of exponentials: e^(q_i,1) * e^(k_j,1) + ... + e^(q_i,d) * e^(k_j,d), which is related to exp(q_i . k_j) via a kernel decomposition.</li>
+        </ol>
+
+        <h3>3. The Normalization Denominator</h3>
+        <p>The denominator <code>phi(Q)(phi(K)^T 1)</code> serves as the normalizing factor, analogous to how softmax normalizes attention weights to sum to 1. Expanding it:</p>
+
+        <pre><code>phi(Q)(phi(K)^T 1) = [phi(q_i) . phi(k_j)]  summed over j
+                   = sum_j  phi(q_i) . phi(k_j)</code></pre>
+
+        <p>This is the sum of all "attention weights" for query i, ensuring the output is a proper weighted average of the values, just like standard attention.</p>
+
+        <h2>Summary</h2>
+        <ul>
+            <li>Linear attention computes Q(K^T V) instead of (QK^T)V, avoiding the s x s matrix entirely -- O(s) instead of O(s^2)</li>
+            <li>A feature mapping phi (e.g., ELU + 1) replaces softmax to enable this reordering while keeping values non-negative</li>
+            <li>The denominator normalizes the output to be a proper weighted average, analogous to softmax normalization</li>
+        </ul>
+
+        <p>The honest trade-off: linear attention is much faster for long sequences, but the approximation of softmax by the feature mapping means some expressive power is lost. In practice, linear attention works well for many tasks where sequence length is the bottleneck, but standard attention still wins on tasks requiring sharp, precise attention patterns.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Katharopoulos et al., "Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention" (ICML 2020)</li>
+            <li>Vaswani et al., "Attention Is All You Need" (NeurIPS 2017)</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

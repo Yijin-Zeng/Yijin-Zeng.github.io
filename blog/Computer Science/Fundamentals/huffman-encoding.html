@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huffman Encoding - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Huffman Encoding</h1>
+        <div class="post-meta">
+            <span class="tag">Computer Science</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Computer Science/Fundamentals/Huffman Encoding.pdf">PDF</a>.</p>
+
+        <p>Every time you unzip a file and get back exactly what you put in, something slightly magical has happened: the file was stored using fewer bits than the original, yet nothing was lost. How is that even possible? <strong>Huffman encoding</strong> is one of the classic answers, and it (or a close cousin) is still sitting inside zip files, JPEG, and MP3 today.</p>
+
+        <p>Suppose we want to send a message — say the word "Shannon" — from our computer to a robot. The encoder turns the message into bits (e.g. <code>S → 100</code>, <code>h → 001</code>, <code>a → 000</code>, ...), the bits travel over the wire, and the decoder on the robot's side recovers the message <strong>exactly</strong>. That "exactly" is what makes it <strong>lossless</strong> — i.e. <code>message = decompress(compress(message))</code>. The problem Huffman encoding tries to solve is then:</p>
+
+        <p><strong>How do we use as few bits as possible to encode a message losslessly?</strong></p>
+
+        <h2>The Naive Way: Equal-Length Codes</h2>
+
+        <p>If we have 2<sup>n</sup> unique symbols, a naive way is to give each symbol an equal-length binary string. With four symbols a, b, c, d:</p>
+
+        <pre><code>a → 00    b → 01    c → 10    d → 11</code></pre>
+
+        <p>But what if we know the frequencies of symbols in the message? Say:</p>
+
+        <pre><code>a: 50%    b: 25%    c: 12.5%    d: 12.5%</code></pre>
+
+        <p>The intuition is immediate: <strong>if a appears more often, we may want to use fewer bits to represent it.</strong> This is the same trick Morse code played long before computers — "e" gets a single dot.</p>
+
+        <p>What are we actually minimizing? The total length is n (number of symbols) times the <strong>expected length per symbol</strong>:</p>
+
+        <pre><code>E = p(a)·L(a) + p(b)·L(b) + p(c)·L(c) + p(d)·L(d)</code></pre>
+
+        <p>With the equal-length code, E = 0.5×2 + 0.25×2 + 0.125×2 + 0.125×2 = <strong>2 bits per symbol</strong>. Can we do better?</p>
+
+        <h2>The Catch: You Can't Just Shorten Codes</h2>
+
+        <p>Here's the difficulty: we want to use as few bits as possible, but we want lossless compression, so we can't be too greedy. Say we cut a's code from <code>00</code> down to <code>0</code>:</p>
+
+        <pre><code>a → 0    b → 01    c → 10    d → 11</code></pre>
+
+        <p>Now how do we decode <code>01011</code>? It could be <code>0|10|11 → acd</code>, or it could be <code>01|0|11 → bad</code>. Ambiguous — the compression is no longer lossless.</p>
+
+        <p>This gives us the <strong>key requirement</strong>: if a symbol takes bit string b₁b₂...bₖ, then no other symbol's code can start with the whole b₁b₂...bₖ (e.g. b₁b₂...bₖ0 is not allowed). In other words, <strong>a symbol's code cannot be a prefix of any other symbol's code</strong> — this is called a prefix code.</p>
+
+        <h2>A First Attempt: Shannon-Fano Coding</h2>
+
+        <p>Shannon-Fano coding builds a prefix code top-down:</p>
+
+        <ol>
+            <li>Rank symbols by probability from low to high: c (12.5%), d (12.5%), b (25%), a (50%).</li>
+            <li>Divide the sum of probabilities into half — one half goes left, one half goes right.</li>
+            <li>Repeat within each half until every branch has a single symbol.</li>
+        </ol>
+
+        <pre><code>              (root)
+             0/    \1
+        {c,d,b}     a          ← 50% | 50% split
+        0/    \1
+    {c,d}      b               ← 25% | 25% split
+    0/  \1
+    c    d
+
+a → 1    b → 01    c → 000    d → 001</code></pre>
+
+        <p>Notice in this tree, no symbol is a prefix of another — every symbol sits at a <strong>leaf</strong>. To decode any bit string, simply walk down the tree: 0 means go left, 1 means go right, and when you hit a leaf you emit that symbol and jump back to the root. So <code>001|1|01|001</code> decodes unambiguously to <code>c a b d</code>.</p>
+
+        <p>And the expected length improves:</p>
+
+        <pre><code>E = 1×0.5 + 2×0.25 + 3×0.125 + 3×0.125 = 1.75</code></pre>
+
+        <p>We went from 2 bits to <strong>1.75 bits per symbol</strong>, and we can still decode exactly. Nice. Are we done?</p>
+
+        <h2>Why Shannon-Fano Is Not Optimal</h2>
+
+        <p>It is quite surprising to me when I first know that Shannon-Fano — Shannon's own scheme! — is <strong>not optimal in general</strong>. To construct an optimal encoding, let's stare at the tree again and make two observations.</p>
+
+        <p><strong>Observation 1: the number of bits for a symbol equals its depth in the tree.</strong> So for any two symbols a and b, if p(a) &lt; p(b), then in an optimal tree we must have depth(a) ≥ depth(b). In particular, if p₁ ≤ p₂ ≤ ... ≤ pₖ, the <strong>symbols with the lowest probabilities must be on the bottom layer of the tree</strong> — and we can always arrange the two smallest, p₁ and p₂, to be siblings there.</p>
+
+        <p><strong>Observation 2: the expected length equals the sum of probabilities at each internal node of the tree.</strong> In our example: 50% + 50% + 25% + 25% + 12.5% + 12.5% = 1.75 — exactly E. Why? A symbol at depth k appears in (i.e. contributes its probability to) k nodes on its way down.</p>
+
+        <p>Put together, these give a recurrence for the optimal expected length L:</p>
+
+        <pre><code>L(p₁, p₂, ..., pₖ) = p₁ + p₂ + L(p₁+p₂, p₃, ..., pₖ),   where p₁ ≤ p₂ ≤ ... ≤ pₖ</code></pre>
+
+        <p>Read it out loud: merging the two least likely symbols costs us p₁ + p₂ (they each get one bit deeper), and the rest of the problem is the <strong>same problem, one symbol smaller</strong> — the merged pair now acts as a single symbol with probability p₁ + p₂. That's the whole algorithm. Huffman builds the tree <strong>bottom-up by repeatedly merging the two least likely symbols</strong>, whereas Shannon-Fano splits top-down and can make splits that no rearrangement can fix.</p>
+
+        <h2>A Worked Example Where Huffman Wins</h2>
+
+        <p>Take five symbols with these probabilities:</p>
+
+        <pre><code>D: 0.15    E: 0.16    A: 0.17    C: 0.17    B: 0.35</code></pre>
+
+        <p><strong>Step 1:</strong> merge the two smallest, D and E → node DE with 0.31. Now we have A (0.17), C (0.17), DE (0.31), B (0.35).</p>
+
+        <p><strong>Step 2:</strong> merge A and C → node AC with 0.34. Now we have DE (0.31), AC (0.34), B (0.35).</p>
+
+        <p><strong>Step 3:</strong> merge DE and AC → node DEAC with 0.65. Now we have B (0.35), DEAC (0.65).</p>
+
+        <p><strong>Step 4:</strong> merge DEAC and B → the root. The finished tree:</p>
+
+        <pre><code>            (root)
+           0/    \1
+       DEAC       B          B → 1
+       0.65      0.35        D → 000
+      0/    \1               E → 001
+    DE       AC              A → 010
+   0/ \1    0/ \1            C → 011
+   D   E    A   C
+ 0.15 0.16 0.17 0.17</code></pre>
+
+        <p>Expected length, using Observation 2 (or just counting depths):</p>
+
+        <pre><code>L = 0.35 + 0.65×3 = 0.35 + 1.95 = 2.3</code></pre>
+
+        <p>Now compare with Shannon-Fano on the same probabilities. Ranking D, E, A, C, B and splitting the halves top-down gives <code>B → 11, D → 000, E → 001, A → 01, C → 10</code>, with:</p>
+
+        <pre><code>L = 2×0.35 + 3×0.15 + 3×0.16 + 2×0.17 + 2×0.17 = 2.31</code></pre>
+
+        <p>Here we are: <strong>2.3 vs 2.31</strong>. The gap is tiny in this example, but it's real — and Huffman is provably optimal among symbol-by-symbol prefix codes, while Shannon-Fano is not. Two least-likely symbols merged at a time, all the way up, and you cannot do better.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>Lossless compression means <code>message = decompress(compress(message))</code> — the decoder recovers the message <strong>exactly</strong>.</li>
+            <li>The quantity to minimize is the <strong>expected code length per symbol</strong>, E = Σ p(s)·L(s); frequent symbols should get short codes.</li>
+            <li>The key constraint is the <strong>prefix property</strong>: no symbol's code can be a prefix of another's, otherwise decoding is ambiguous.</li>
+            <li>Codes live on a binary tree: code length = depth, and expected length = sum of probabilities over the tree's internal nodes.</li>
+            <li>Huffman's move: <strong>repeatedly merge the two least likely symbols</strong>, since L(p₁,...,pₖ) = p₁ + p₂ + L(p₁+p₂, p₃,...,pₖ). This is optimal; top-down Shannon-Fano is not.</li>
+        </ul>
+
+        <h2>My Take</h2>
+
+        <p>What I love about this note is how far you get with just two observations about a tree. The recurrence L(p₁,...,pₖ) = p₁ + p₂ + L(p₁+p₂,...) looks almost too simple to be the whole story, and yet it turns "find the optimal code" — a search over exponentially many trees — into a greedy loop you could implement with a heap in ten lines. It's also a nice reminder that the obvious top-down approach (Shannon-Fano: keep splitting in half, feels so natural) can be quietly wrong, while the right answer works bottom-up from the least important symbols. The caveat worth remembering: Huffman is only optimal when you must give each symbol a whole number of bits. If your probabilities aren't powers of 1/2, arithmetic coding can squeeze out a bit more — but that's a note for another day.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Huffman, D. A. (1952). A Method for the Construction of Minimum-Redundancy Codes. <em>Proceedings of the IRE</em>, 40(9), 1098-1101.</li>
+            <li>Shannon, C. E. (1948). A Mathematical Theory of Communication. <em>Bell System Technical Journal</em>, 27(3), 379-423.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conditional and Style GAN - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Conditional and Style GAN</h1>
+        <div class="post-meta">
+            <span class="tag">Generative AI</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Conditional and Style GAN.pdf">PDF</a>.</p>
+
+        <p>Once a GAN is trained, we can sample <code>z ~ N(0, I)</code>, pass it through the generator, and get a high quality image. Great — except we <strong>cannot control what image we get</strong>.
+           Suppose we trained on images of animals and now we want a dog. Our only option is to keep sampling <code>z</code> over and over until one of the outputs happens to be a dog. That's embarrassingly inefficient, and it's the problem this whole note is about.</p>
+
+        <pre><code>                                        x_i (real image)
+                                            \
+z_i --> [ g(z; θ) ] --> x*_i  --------> [ f(x; φ) ] --> P(x is real)
+ |                    (generated image,
+latent variable,       cannot control it)
+~ N(0, I)</code></pre>
+
+        <h2>Why Can't Each Dimension of z Control One Thing?</h2>
+        <p>A natural question I had: in a standard GAN, why doesn't each feature of <code>z</code> control one part of the image? Say <code>z₁</code> for color, <code>z₂</code> for background, and so on. Then controlling generation would be trivial.</p>
+
+        <p>Here's the argument for why this <strong>can't</strong> be true: if each dimension independently controlled one attribute, then <strong>all possible combinations of attributes would be equally likely</strong> — and many combinations violate how the real world works.
+           A concrete example: suppose <code>z₁</code> controls gender and <code>z₂</code> controls beard, independently. Then "male + beard" and "female + beard" would be generated with equal probability. The second one is much less realistic, so a generator that produces realistic images simply cannot let those two dimensions act independently. The features <strong>have to be entangled</strong>.</p>
+
+        <p>The way I think about it: the latent variable <code>z</code> encodes all the information for generating the image, and the generator acts as a <strong>decoder</strong>. It decodes <code>z</code> into an image without any disentanglement of features.</p>
+
+        <p>One nice property survives, though: the latent space in a GAN is <strong>smooth</strong>. Interpolate between two latent codes and the image morphs smoothly:</p>
+
+        <pre><code>z₁ --> generator --> image A
+ |
+ z' --> generator --> smooth change from A to B   (latent space interpolation)
+ |
+z₂ --> generator --> image B</code></pre>
+
+        <p>But because features are highly entangled, changing <strong>one component</strong> of <code>z</code> changes <strong>many parts</strong> of the image at once. Smooth, yes. Controllable, no.</p>
+
+        <h2>Conditional GAN: Just Tell It What You Want</h2>
+        <p>The most direct fix is to pass the desired attribute in explicitly. Alongside <code>z_i</code>, we feed the generator an attribute vector <code>c_i</code> — e.g. a class embedding. If we want a cat, we pass the embedding for the cat category.</p>
+
+        <pre><code>z_i, c_i --> [ g(z, c; θ) ] --> (x*_i, c_i) --> [ f(x, c; φ) ] --> P(pair (x, c) is real)
+                                                     ^
+                                       real pairs (x_j, c_j) also fed in:
+                                       a real image of a cat always comes
+                                       with the attribute vector for cat</code></pre>
+
+        <p>The key change is on the discriminator side: it no longer judges the image alone, it judges the <strong>pair</strong> <code>(x, c)</code>. A realistic image of a dog paired with the attribute vector for cat comes from a different joint distribution than real pairs — so the discriminator can catch it. Now the generator has to produce an image that is not just realistic, but <strong>realistic and consistent with the given attribute</strong>.</p>
+
+        <h3>Auxiliary Classifier GAN</h3>
+        <p>A variant on the same idea. The generator still takes <code>(z_i, c_i)</code> with <code>c_i</code> a class embedding, but the discriminator now has two heads: <code>P(x is real)</code> and <code>P(x belongs to each class)</code>. The discriminator learns to minimize <code>L_adversarial + L_classification</code>, while the generator learns to minimize <code>-L_adversarial + L_classification</code> — i.e. fool the realness head, but cooperate with the classification head so the generated image is recognizably the right class.</p>
+
+        <h3>InfoGAN: Make the Model Discover the Attributes</h3>
+        <p>Conditional GAN needs labeled attributes. InfoGAN asks: what if we don't have labels? We concatenate <code>(z_i, c_i)</code> where <code>c_i</code> is drawn <strong>randomly</strong> — it could come from:</p>
+        <ul>
+            <li>a categorical distribution, where each category represents a class;</li>
+            <li>a list of class embeddings;</li>
+            <li>a uniform distribution <code>U[0, 1]</code> — this could end up controlling, say, rotation angle.</li>
+        </ul>
+
+        <pre><code>(z_i, c_i) --> [ g(z, c; θ) ] --> x*_i --> [ f(x; φ) ] --> P(x is real)
+                                                       --> estimate c_i  (reconstruct c)</code></pre>
+
+        <p>The discriminator gets a second job: <strong>reconstruct the random vector <code>c</code> from the generated image</strong>, and both the generator and discriminator minimize this reconstruction loss. This is the clever part: because <code>c</code> needs to be reconstructed, the generator is <strong>forced to encode important information into the image</strong> so that <code>c</code> can be recovered from it — things like class, style, posture. Meanwhile <code>z</code> ends up deciding the unimportant features. Nobody told the model what <code>c</code> should mean; the training objective made it mean something.</p>
+
+        <h2>Style GAN: Restructure the Generator Itself</h2>
+        <p>StyleGAN goes further and redesigns the generator around controllability. Three ingredients:</p>
+
+        <pre><code>            noise 4x4x1        noise 4x4x1        noise 8x8x1
+            x learnable        x learnable        x learnable
+            scaling (1x1x512)  scaling            scaling
+                 |                  |                  |
+trainable        v                  v                  v
+constant --> [4x4x512] --------> [4x4x512] ------> [8x8x512] --> ... --> image
+input            ^                  ^                  ^
+                 | scale+offset     | scale+offset     | scale+offset
+                 | per channel      | per channel      | per channel
+              (1x1x1024)         (1x1x1024)         (1x1x1024)
+                 |                  |                  |
+              wM₁+b₁             wM₂+b₂             wM₃+b₃   (linear transforms)
+                 \__________________|__________________/
+                                    |
+        z ~ N(0,I) --> dense layers (e.g. 7) --> w (1x1x512, "intermediate variable")</code></pre>
+
+        <ul>
+            <li><strong>Style</strong>: the latent <code>z ~ N(0, I)</code> is first mapped through a stack of dense layers (e.g. 7) into an <strong>intermediate variable <code>w</code></strong>. At every resolution level, a linear transform <code>wM + b</code> turns <code>w</code> into per-channel scale and offset values that modulate the feature maps.</li>
+            <li><strong>Noise</strong>: at each level, spatial noise (e.g. <code>4x4x1</code>) is added per channel, multiplied by a <strong>learnable scaling factor</strong> (<code>1x1x512</code>).</li>
+            <li><strong>Constant input</strong>: the pipeline doesn't even start from <code>z</code> — it starts from a <strong>trainable constant</strong> tensor. All the variation comes in through <code>w</code> and the noise.</li>
+        </ul>
+
+        <h3>Why Is the Noise Scaling 4x4x1 Times a Learnable 1x1x512, Not Just 4x4x512?</h3>
+        <p>This detail bugged me until I saw the insight: each channel may control one detail of the image — darkness, pores, hairs, etc. All spatial positions within a channel need a <strong>consistent signal</strong> to work together and make a realistic combination — which is why the noise itself is <code>4x4x1</code>, shared across channels spatially. But different features may need <strong>different levels of noise</strong> (hair needs more randomness than overall darkness, say), so we give each channel its own learnable scaling factor.</p>
+
+        <h3>Why Map z to w First?</h3>
+        <p><code>z</code> is Gaussian noise, and as we argued at the start, it is hard for the model to use one dimension of a Gaussian to control one feature — everything is entangled. The mapping network lets the model learn a <strong>new distribution for <code>w</code> that fits well with real world images</strong>, and in doing so it can <strong>untangle</strong> the features.</p>
+
+        <p>After training, we can actually edit <code>w</code> to control the output. How do we find, say, the component of <code>w</code> that controls gender? Empirically:</p>
+
+        <pre><code>z₁ ... zₙ --> generator --> images of male    --> w₁ ... wₙ
+                        --> images of female  --> w*₁ ... w*ₙ
+
+gender vector  w̃ = w̄ - w̄*     (difference of averages)
+
+w        --> generator --> an image of a female
+w + w̃   --> generator --> an image of a male     (operation in latent space)</code></pre>
+
+        <p>It is quite surprising to me that this simple <strong>vector arithmetic in latent space</strong> actually works — average the <code>w</code>'s of male images, subtract the average of female images, and you get a direction you can add to any <code>w</code> to change gender.</p>
+
+        <h3>Why Would Style GAN Work?</h3>
+        <p>There's an implicit assumption underneath all of this, and I find it a genuinely interesting claim about neural networks: <strong>if there are many ways for a neural network to solve a problem, it has a bias to pick the easy one</strong>. The architecture makes the disentangled solution the easy one — modulate global attributes through <code>w</code>, sprinkle randomness through per-layer noise — so that's what training converges to. It's an inductive-bias argument, not a proof; but it holds up remarkably well in practice.</p>
+
+        <p>The division of labor that emerges:</p>
+        <ul>
+            <li><strong>Intermediate variable <code>w</code> (global)</strong>: it controls every layer, so a change of any part of <code>w</code> affects the whole image — gender, pose, identity.</li>
+            <li><strong>Per-layer noise (local)</strong>: it controls details that make an image look more realistic but don't matter that much — e.g. the exact position of hairs. A change of random noise plays out at the pixel level.</li>
+        </ul>
+
+        <h2>My Take</h2>
+        <p>What ties this note together for me is the entanglement argument at the beginning. Once you accept that a realistic generator <strong>cannot</strong> have independently meaningful latent dimensions (because independent dimensions imply all attribute combinations are equally likely, including physically implausible ones), the three fixes each make sense as a different bargain: Conditional GAN buys control with labels, InfoGAN manufactures control by forcing a code to be reconstructable, and StyleGAN restructures the generator so that disentanglement becomes the path of least resistance.</p>
+
+        <p>StyleGAN's "networks pick the easy solution" assumption is the part I keep coming back to. It's hand-wavy, unproven, and it works — which is a pretty accurate summary of a lot of deep learning. The caveat is that none of these methods gives you guaranteed disentanglement; you still have to go hunting in latent space (like the gender-vector trick) to find out what the model actually learned.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Mirza, M. and Osindero, S. (2014). Conditional Generative Adversarial Nets. <em>arXiv:1411.1784</em>.</li>
+            <li>Karras, T., Laine, S. and Aila, T. (2019). A Style-Based Generator Architecture for Generative Adversarial Networks. <em>CVPR</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

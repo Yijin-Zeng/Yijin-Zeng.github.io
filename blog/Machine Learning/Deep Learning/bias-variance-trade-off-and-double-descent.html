@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bias-Variance Trade-off and Double Descent - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Bias-Variance Trade-off and Double Descent</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Bias Variance Trade-off And Double Descent.pdf">PDF</a>.</p>
+
+        <p>Give a neural network enough capacity and it will fit your training data perfectly -- every single point, zero training error. And yet modern LLMs, which are massively over-parameterized (often with far more parameters than training examples), generalize remarkably well. If you took a classical statistics course, this should bother you. It bothered me. The classical theory says a model that interpolates every training point should be a disaster on test data. So why isn't it?</p>
+
+        <p>To answer that, we first need the classical story: where does generalization error actually come from?</p>
+
+        <h2>Where Test Error Comes From: Three Pieces</h2>
+
+        <p>Suppose the data is generated as:</p>
+
+        <pre><code>y = f(x) + ε</code></pre>
+
+        <p>where f(x) is the <strong>generating function</strong> (the true function we want to learn) and ε is <strong>inherent noise</strong> with variance σ². The generalization error of a fitted model f̂(x; D) (trained on dataset D) decomposes into exactly three parts:</p>
+
+        <ul>
+            <li><strong>Inherent noise:</strong> comes from the data itself. Even if we fit f perfectly, this error cannot be reduced. It's the floor.</li>
+            <li><strong>Bias:</strong> the difference between the <strong>expected prediction</strong> E<sub>D</sub>[f̂(x; D)] and the underlying real value f(x). How wrong are we on average?</li>
+            <li><strong>Variance:</strong> how much predictions wiggle when we retrain on different training sets. Same x, different D, different answer.</li>
+        </ul>
+
+        <h2>The Derivation (It's Shorter Than You'd Think)</h2>
+
+        <p>The expected test error at a point x, averaging over both the training set D and the noise ε:</p>
+
+        <pre><code>E_{D,ε}[(f̂(x;D) - y)²]
+  = E_{D,ε}[(f̂(x;D) - f(x) - ε)²]
+  = E_{D,ε}[(f̂(x;D) - f(x))² + ε² + 2ε(f̂(x;D) - f(x))]
+  = E_D[(f̂(x;D) - f(x))²] + E[ε²] + 0       ← cross term dies: E[ε] = 0</code></pre>
+
+        <p>Now the classic trick: add and subtract the expected prediction E<sub>D</sub>[f̂(x;D)] inside the square.</p>
+
+        <pre><code>E_D[(f̂(x;D) - E_D[f̂(x;D)] + E_D[f̂(x;D)] - f(x))²] + σ²
+
+  = E_D[(f̂(x;D) - E_D[f̂(x;D)])²]              ← variance
+  + (f(x) - E_D[f̂(x;D)])²                       ← bias²
+  + E_D[2(f̂(x;D) - E_D[f̂(x;D)])(E_D[f̂(x;D)] - f(x))]   ← = 0
+  + σ²                                            ← inherent noise</code></pre>
+
+        <p>The cross term vanishes again (E<sub>D</sub>[f̂ - E<sub>D</sub>f̂] = 0), and we're left with:</p>
+
+        <pre><code>Expected test error = Var_D(f̂(x;D)) + (f(x) - E_D[f̂(x;D)])² + σ²
+                    =    variance    +        bias²          + noise</code></pre>
+
+        <p>Two cross terms, both zero, and the whole decomposition falls out. I find it satisfying that something this fundamental needs nothing beyond "add and subtract the mean".</p>
+
+        <h3>A side question I like: can you estimate the three pieces in practice?</h3>
+
+        <p>Given enough data (as many as we want), is it possible to decompose a model's actual prediction error into variance, bias, and inherent noise? <strong>Variance is easy</strong>: randomly resample the training data, refit the model each time, and estimate the variance of the predictions directly. The hard part is splitting the remainder into bias and inherent noise -- they're glued together in the error.</p>
+
+        <p>The trick: consider a model that always has <strong>zero bias</strong> -- a model that simply predicts y, the data itself. Its error contains only variance and inherent noise, and since we can estimate its variance by resampling, the inherent noise falls out. Subtract that from any other model's error and the bias is what's left. I thought this was a neat move when I first saw it.</p>
+
+        <h2>The Classical Picture: A U-Shaped Curve</h2>
+
+        <p>The inherent noise cannot be reduced, so all we can do is find a model with <strong>low bias and low variance</strong>. And this is hard, because of the famous trade-off: as model complexity grows, bias falls but variance rises.</p>
+
+        <pre><code>error
+  │\
+  │ \  bias + variance
+  │  \      _____/
+  │   \    /
+  │    \__/  ← sweet spot (set model complexity here)
+  │  bias↓      variance↑
+  └──────────────────────→ model complexity
+   underfitting | overfitting</code></pre>
+
+        <p>So we cannot simply crank model complexity to the sky and expect a good result. The key is to strike the balance. The standard toolbox:</p>
+
+        <ul>
+            <li><strong>To decrease bias:</strong> increase model complexity, or choose a correct model class in the first place (a linear model will never fit an exponential function, no matter how much data you feed it).</li>
+            <li><strong>To decrease variance:</strong> get more training data, decrease model complexity, add regularization, or use ensembles -- random forests are a nice example: each tree may keep or even <strong>increase</strong> bias, but averaging slashes the variance.</li>
+        </ul>
+
+        <h2>Except... The Figure Is Incomplete</h2>
+
+        <p>Here's the part that genuinely surprised me when I first learned it. If we keep increasing model complexity <strong>past</strong> the classical overfitting regime -- say, to the point where the model has more parameters than training examples -- the test error can come back down. And not just down: it can drop <strong>below the previous lowest point</strong> of the classical U-curve. This is <strong>double descent</strong>.</p>
+
+        <pre><code>test
+error │\
+      │ \        /\
+      │  \      /  \
+      │   \____/    \_____
+      │      ↑        ↑   ‾‾── keeps improving
+      │   sweet     peak near
+      │   spot    interpolation
+      └────────────────────────→ model complexity
+      phase I | phase II | phase III
+      (under- | (over-   | (over-
+       fitting)| fitting) |  parameterized)</code></pre>
+
+        <p>Three phases, each dominated by a different force:</p>
+
+        <ul>
+            <li><strong>Phase I (underfitting):</strong> bias decrease dominates. Test error falls.</li>
+            <li><strong>Phase II (overfitting):</strong> variance increase dominates. Test error rises -- this is where the classical picture stops.</li>
+            <li><strong>Phase III (over-parameterized):</strong> variance <strong>decrease</strong> dominates. Test error falls again.</li>
+        </ul>
+
+        <h2>Why Does Variance Come Back Down?</h2>
+
+        <p>One explanation, and the one I find most intuitive: once parameters outnumber training samples, the model has passed through (i.e. interpolated) <strong>all</strong> the training instances. Training error is exactly zero. So any change in the fitted function can only happen <strong>between</strong> the training points -- the model now has the freedom to choose how it connects the dots. And it turns out the model tends to choose a <strong>smooth interpolation</strong> between training points, which keeps predictions stable across different training sets. Smooth interpolation means low variance.</p>
+
+        <p>Which raises a new question: why does the model choose to smooth the path, when the training error is already zero and nothing in the loss forces it to? The suspects are all the <strong>explicit and implicit regularization</strong> baked into modern training -- SGD itself, dropout, L2 norm penalties, and so on. SGD in particular seems to have an implicit preference for low-norm, smooth solutions. Honestly, "why interpolating models are smooth" is still an active research question, so I wouldn't call this case closed.</p>
+
+        <p>One caveat worth keeping: in phase III <strong>the model is still overfitting</strong> in the usual sense -- there's a visible gap between training loss (zero) and validation loss. It just generalizes better than the smaller overfit models did. Double descent doesn't abolish overfitting; it says the gap can shrink again as you go bigger.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>Expected test error = <strong>variance + bias² + inherent noise</strong> -- and the derivation is just "add and subtract the mean" twice.</li>
+            <li>Noise is the floor; the game is trading bias against variance. Classical answer: find the sweet spot on the U-curve.</li>
+            <li>The U-curve is <strong>incomplete</strong>: push complexity past the interpolation threshold and test error descends a second time, sometimes below the old sweet spot.</li>
+            <li>The mechanism: an interpolating model can only vary between training points, and implicit regularization (SGD, dropout, weight decay) nudges it toward smooth in-between behavior -- low variance despite absurd capacity.</li>
+            <li>This is why "just make it bigger" is not as crazy as your statistics textbook implied -- and part of why massively over-parameterized LLMs work at all.</li>
+        </ul>
+
+        <h2>My Take</h2>
+
+        <p>What I like about double descent is how it rescues classical theory rather than demolishing it. The bias-variance decomposition is still exactly correct -- it's an identity, after all. What changed is our assumption about how variance behaves at extreme complexity: it doesn't blow up forever, it comes back down once the model interpolates everything. The classical figure wasn't wrong, it was cropped. It is quite humbling to me that the field trained on the U-curve for decades, and the interesting part was just off the right edge of the plot. It also makes me a bit more careful about the phrase "overfitting" -- a model with zero training error and a train/validation gap can still be the best model you have.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Belkin, M., Hsu, D., Ma, S., &amp; Mandal, S. (2019). Reconciling modern machine-learning practice and the classical bias-variance trade-off. <em>PNAS</em>, 116(32), 15849-15854.</li>
+            <li>Nakkiran, P., Kaplun, G., Bansal, Y., Yang, T., Barak, B., &amp; Sutskever, I. (2021). Deep double descent: Where bigger models and more data hurt. <em>Journal of Statistical Mechanics: Theory and Experiment</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

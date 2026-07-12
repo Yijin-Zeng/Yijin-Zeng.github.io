@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Normalizing Flow - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Normalizing Flow</h1>
+        <div class="post-meta">
+            <span class="tag">Generative AI</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Normalizing Flow.pdf">PDF</a>.</p>
+
+        <p>Most generative models are surprisingly cagey when you ask them a simple question: "given this image, what probability do you assign to it?"
+           GANs can't answer at all, VAEs can only give you a lower bound. Normalizing flow is the one that answers directly — it tries to learn
+           <strong>the distribution of the image itself</strong>, exactly, so you can both generate samples and evaluate the exact likelihood of any real image.
+           That's a big deal for things like anomaly detection or scientific applications where you actually need the density, not just pretty samples.</p>
+
+        <h2>The Setup</h2>
+        <p>Like most generative models, we start from something boring and easy — a standard normal <code>z ~ N(0, I)</code> — and push it through a generator:</p>
+
+        <pre><code>z ~ N(0, I)  -->  generator f(z; φ)  -->  x
+
+   standard normal          complex, targeted
+       ___                   distribution p(x)
+      /   \        f(·)        _      _
+     /     \      ----->      / \    / \
+    /       \                /   \__/   \</code></pre>
+
+        <p>After the transformation, <code>f(z; φ)</code> follows a different, more complex distribution. Denote it as <code>pr(x|φ)</code>.
+           If we knew <code>pr(x|φ)</code>, training would be trivial — just maximize the likelihood of real images:</p>
+
+        <pre><code>φ̂ = argmax_φ  Σ_{i ∈ real images} log pr(x_i | φ)</code></pre>
+
+        <p>But here's the natural question: if we know <code>f(·)</code>, can we know <code>p(x)</code>? <strong>Generally not.</strong>
+           For an arbitrary neural network, the induced density has no closed form. But — and this is the whole trick —
+           <strong>if <code>f</code> is invertible, then yes</strong>.</p>
+
+        <h2>The Hard Part: What Is pr(x|φ)?</h2>
+        <p>The tool we need is just integration by substitution, the same one from calculus. Suppose <code>X ~ F(x)</code> and <code>Y = φ(X)</code> where <code>φ</code> is invertible. What distribution does <code>Y</code> follow?</p>
+
+        <pre><code>Pr(Y ∈ R) = Pr(X ∈ φ⁻¹(R))
+          = ∫_{φ⁻¹(R)} f_X(x) dx
+          = ∫_R f_X(φ⁻¹(y)) |dφ⁻¹(y)/dy| dy     ← changing variable from x to y</code></pre>
+
+        <p>So the density of <code>Y</code> is the density of <code>X</code> evaluated at the pre-image, times the <strong>absolute value of the determinant of the Jacobian</strong> of the inverse map. Applying this to our generator (base density is standard normal):</p>
+
+        <pre><code>pr(x|φ) = N( f⁻¹(x; φ); 0, I ) · |det( ∂f⁻¹(x)/∂x )|
+        = N( z; 0, I ) · |det( ∂f(z)/∂z )|⁻¹     where f(z; φ) = x</code></pre>
+
+        <p>The second line uses the inverse function theorem: the Jacobian of the inverse is the inverse of the Jacobian, so its determinant is the reciprocal. Intuitively, the determinant tracks how much the transformation stretches or squeezes volume — if <code>f</code> expands a region, the density there must shrink to keep total probability at 1.</p>
+
+        <p>So in order to evaluate the likelihood, the generator <code>f(z; φ)</code> <strong>must be invertible</strong>. And not just in theory — we need to actually <strong>invert it and compute the determinant of the Jacobian efficiently</strong>. For a general invertible matrix, the determinant is an <code>O(n³)</code> operation, which is hopeless for image-sized dimensions. This constraint shapes the entire design of normalizing flows.</p>
+
+        <p>One thing I found clarifying: the model runs in <strong>both directions</strong>, and each direction has a different job.</p>
+
+        <pre><code>  <---- inverse mapping: evaluate likelihood of real samples (training)
+
+z  <-->  [ generator f(z; φ) ]  <-->  real samples x
+
+  ----> forward mapping: transform noise into samples (generation)</code></pre>
+
+        <h2>Designing Invertible Layers</h2>
+        <p>This is <strong>the key in normalizing flow</strong>. We want layers with three properties:</p>
+        <ul>
+            <li><strong>Expressive</strong> — sufficiently expressive to approximate any function.</li>
+            <li><strong>Invertible</strong> — otherwise the change of variables formula doesn't apply.</li>
+            <li><strong>Practical</strong> — we can invert it and evaluate the Jacobian determinant efficiently.</li>
+        </ul>
+
+        <p>The basic building blocks are <strong>linear flows</strong> and <strong>element-wise flows</strong>. Individually they satisfy properties 2 and 3 but fail 1 — but they are the basis for more sophisticated layers that satisfy all three.</p>
+
+        <h3>Linear Flows</h3>
+        <p>The simplest candidate: <code>Y = ΩX + β</code>. If <code>Ω</code> is invertible, the layer is invertible. But how do we guarantee <code>Ω</code> stays invertible during training, and keep the determinant cheap? The trick is to <strong>parameterize <code>Ω</code> in PLU form</strong>:</p>
+
+        <pre><code>Ω = P L U
+
+P: permutation matrix (fixed during training)
+L: lower triangular, diagonal fixed to 1
+U: upper triangular, diagonal set to s_i = sign(s_i) · exp(α_i)</code></pre>
+
+        <p>The diagonal of <code>U</code> is the only place invertibility can fail, so we force it non-zero by construction: <code>sign(s_i)</code> is fixed at the beginning, and we train <code>α_i</code> (initialized as <code>log|s_i|</code>). Since <code>exp(α_i) &gt; 0</code> always, the determinant can never hit zero. I find this a very statistician-flavored trick — reparameterize your way out of a constraint instead of fighting it with penalties.</p>
+
+        <p>Initialization is also thoughtful:</p>
+        <ol>
+            <li>Generate a <strong>random orthogonal matrix</strong> (sample a random matrix, run QR decomposition). Its determinant is 1, which stabilizes training at the beginning.</li>
+            <li>Run PLU decomposition on it.</li>
+            <li>Set <code>Ω = PLU</code>, replacing the diagonal of <code>U</code> with the <code>sign(s_i) · exp(log|s_i|)</code> parameterization.</li>
+        </ol>
+
+        <p>Now everything we need is cheap. The Jacobian is just <code>Ω</code> itself, and:</p>
+
+        <pre><code>|det(∂Y/∂X)| = |det(Ω)| = |det(P)| · |det(L)| · |det(U)|
+             = (±1) · 1 · Π_i sign(s_i) exp(α_i)     ← product of diagonals</code></pre>
+
+        <p>Inversion is also easy — no matrix inverse needed, just two rounds of back substitution:</p>
+
+        <pre><code>Y = ΩX + β  =>  LUX = Pᵀ(Y - β)
+solve  Lz = Pᵀ(Y - β)   then   Ux = z      ← both O(n²)</code></pre>
+
+        <p><strong>Problem of linear flow</strong>: it is only linear. If we stack only linear flows, we can only ever get linear combinations of the input (a composition of linear maps is still linear). So we need a non-linear part.</p>
+
+        <h3>Element-wise Flows</h3>
+        <p>Apply an invertible non-linear function to each coordinate independently: <code>y_i = f(x_i; φ)</code>, e.g. leaky ReLU or the exponential function. The Jacobian is diagonal, so its determinant is trivial:</p>
+
+        <pre><code>|det(J)| = Π_{i=1}^{D} |∂f(x_i)/∂x_i|</code></pre>
+
+        <p>And the inverse is simple as long as <code>f⁻¹</code> is simple. <strong>Problem of element-wise flow</strong>: it is non-linear but does not mix features — each dimension lives in its own world. So it is natural to alternate the two:</p>
+
+        <pre><code>input --> [ linear flow --> element-wise flow ] --> ... --> [ block ] --> output
+                       one block</code></pre>
+
+        <h3>Coupling Flows</h3>
+        <p>This is the cleverer construction that modern flows (RealNVP, Glow) are built on. Split the input <code>x</code> into two halves, <code>x₁</code> and <code>x₂</code>:</p>
+
+        <pre><code>y₁ = x₁                          ← simply copy x₁
+y₂ = f(x₂; φ(x₁))                ← element-wise flow, parameters
+                                    determined by x₁</code></pre>
+
+        <p>Here's the part that surprised me when I first saw it: <strong><code>φ</code> does not need to be invertible</strong> — it can be an arbitrary neural network. Only the element-wise map <code>f</code> acting on <code>x₂</code> needs to be invertible, because at inversion time we already know <code>x₁</code>:</p>
+
+        <pre><code>x₁ = y₁
+x₂ = f⁻¹(y₂; φ(x₁))</code></pre>
+
+        <p>So we can smuggle unlimited expressive power into <code>φ</code> for free. The Jacobian is block-triangular (since <code>y₁</code> doesn't depend on <code>x₂</code>), so:</p>
+
+        <pre><code>| ∂y₁/∂x₁  ∂y₁/∂x₂ |   | I        0       |
+|                   | = |                  |  =>  det = |∂y₂/∂x₂|
+| ∂y₂/∂x₁  ∂y₂/∂x₂ |   | ∂y₂/∂x₁  ∂y₂/∂x₂ |</code></pre>
+
+        <p>i.e. only the element-wise part contributes to the determinant, no matter how monstrous <code>φ</code> is. Permute which half gets copied across layers, and every dimension eventually gets transformed.</p>
+
+        <h2>Two Directions of KL: Which Way Are You Fitting?</h2>
+        <p>The last part of the note is about what objective we are actually optimizing, and it depends on which of two problems you have.</p>
+
+        <p><strong>Standard normalizing flow</strong>: the target distribution <code>q</code> (real images) is <strong>easy to sample from but hard to evaluate</strong>. We minimize the forward KL, <code>KL(q ‖ p_φ)</code>:</p>
+
+        <pre><code>argmin_φ KL(q‖p_φ) = argmin_φ ∫ q(x) log[q(x)/p_φ(x)] dx
+                   = argmax_φ ∫ q(x) log p_φ(x) dx        (q terms don't depend on φ)
+                   = argmax_φ E_{x~q}[ log p_φ(x) ]
+                   ≈ argmax_φ (1/n) Σ_i log p_φ(x_i)      => maximum likelihood</code></pre>
+
+        <p>So the maximum likelihood training we started with is exactly forward KL minimization, with the expectation over <code>q</code> replaced by an average over real samples.</p>
+
+        <p><strong>Reverse KL</strong>: the opposite situation. Suppose we have a distribution <code>q</code> we can <strong>evaluate easily but is hard to sample from</strong> — think unnormalized posteriors in Bayesian inference — and we want to approximate it with a flow so we can sample. Now we minimize <code>KL(p_φ ‖ q)</code>:</p>
+
+        <pre><code>argmin_φ KL(p_φ‖q) = argmin_φ { E_{x~p_φ}[log p_φ(x)] - E_{x~p_φ}[log q(x)] }
+                              \____ negative entropy ____/
+                   ≈ argmin_φ { (1/n) Σ log p_φ(x̂_i) - (1/n) Σ log q(x̂_i) }
+                                              where x̂_i sampled from our model</code></pre>
+
+        <p>A question I had to sit with: if we can evaluate <code>q</code>, why not just maximize <code>E[log q(x̂)]</code> directly and skip the entropy term? Because then <strong>all samples would collapse to the mode of <code>q</code></strong> — the single highest-density point. The entropy term is what prevents this from happening; it forces the model to keep spreading out.</p>
+
+        <p>Notice we still need to evaluate <code>log p_φ(x̂_i)</code>, like in the standard flow — but since we generated <code>x̂_i</code> ourselves, we already know its <code>z_i</code>, so <strong>we don't need to invert the network</strong>. One subtle caveat from the note: consider the Box transformation for why we cannot just maximize the likelihood of transformed data — we must maximize the likelihood of the observations themselves, with the Jacobian correction included, otherwise the objective is meaningless (you could inflate the "likelihood" arbitrarily by squeezing everything to a point).</p>
+
+        <h2>Summary</h2>
+        <ul>
+            <li>Normalizing flow learns <code>p(x)</code> <strong>directly and exactly</strong> — the only mainstream generative family with tractable exact likelihood.</li>
+            <li>The price: the generator must be <strong>invertible</strong>, with a cheap inverse and a cheap Jacobian determinant.</li>
+            <li>Linear flows (PLU-parameterized) mix features; element-wise flows add non-linearity; <strong>coupling flows</strong> get arbitrary neural network expressiveness while keeping the determinant a simple diagonal product.</li>
+            <li>Maximum likelihood training is forward KL; reverse KL turns flows into samplers for densities you can evaluate but not sample — with the entropy term guarding against mode collapse.</li>
+        </ul>
+
+        <h2>My Take</h2>
+        <p>What I enjoy most about normalizing flows is how honest the tradeoff is. The whole architecture — PLU decompositions, triangular Jacobians, coupling layers — exists because of one calculus formula and one computational complaint (<code>O(n³)</code> determinants). Every design decision traces back to "can I invert this and take its determinant cheaply?" It feels like the model family a statistician would design: no lower bounds, no adversarial games, just the change of variables formula taken seriously.</p>
+
+        <p>The downside is equally honest: invertibility means the latent space must have the <strong>same dimension</strong> as the data, so no compression, and the constrained layers mean you typically need many of them to match the sample quality of GANs or diffusion models. In practice flows have been somewhat eclipsed for image generation — but the core machinery lives on, and the reverse-KL trick makes them genuinely useful as trainable samplers in Bayesian and physics settings, which is where I find them most compelling today.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Rezende, D. J. and Mohamed, S. (2015). Variational Inference with Normalizing Flows. <em>ICML</em>.</li>
+            <li>Kingma, D. P. and Dhariwal, P. (2018). Glow: Generative Flow with Invertible 1x1 Convolutions. <em>NeurIPS</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

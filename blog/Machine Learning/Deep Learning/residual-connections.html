@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Residual Connections - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Residual Connections</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Residual Connections.pdf">PDF</a>.</p>
+
+        <p>Here's an experiment that puzzled people back in the AlexNet era: take a network that works, stack more layers on top of it, and watch it get <strong>worse</strong>. Not just worse on the validation set -- worse on the <strong>training set</strong> too. It is quite surprising to me when I first learned this, because a deeper network can trivially represent a shallower one (just make the extra layers identity mappings), so in theory more depth should never hurt training loss. And yet it did.</p>
+
+        <p>Residual connections are one of the main reasons deep neural networks can be trained at all today. If you've ever looked inside a transformer, every single block in a modern LLM carries them -- attention output gets added back to its input, MLP output gets added back to its input, all the way up hundreds of layers. So this is not some historical CNN trick; it's load-bearing infrastructure for basically everything we train now.</p>
+
+        <h2>The Problem: Deeper Networks Fail to Train</h2>
+
+        <p>A standard deep network is just a composition of functions:</p>
+
+        <pre><code>y = fₙ( ... f₃( f₂( f₁(x; φ₁); φ₂ ); φ₃ ) ... ; φₙ)</code></pre>
+
+        <p>The observation from AlexNet-style architectures: as n grows (i.e. the network becomes deeper), <strong>both training and validation loss go up</strong>.</p>
+
+        <p>This detail matters more than it looks. If only validation loss went up while training loss went down, we'd say the deeper model is overfitting -- a generalization problem. But training loss going up means <strong>the problem is not generalization, it's the training itself</strong>. The optimizer simply can't find a good solution, even though we know one exists.</p>
+
+        <h2>A Possible Explanation: Shattered Gradients</h2>
+
+        <p>Why would training fail? One compelling explanation is <strong>shattered gradients</strong>. In standard training, the gradient with respect to an early layer is a long chain rule product:</p>
+
+        <pre><code>∂y/∂f₁ = (∂y/∂fₙ) · (∂fₙ/∂fₙ₋₁) · ... · (∂f₂/∂f₁)</code></pre>
+
+        <p>As the model goes deeper and deeper, a small change in x leads to very different gradients. The loss surface effectively keeps changing with every batch -- the optimizer is chasing a moving target.</p>
+
+        <p>To picture it, consider a univariate input x mapped to a univariate output y, and plot the gradient ∂y/∂x as a function of x:</p>
+
+        <pre><code>Shallow network (1-2 layers)          Deep network (shattered)
+
+∂y/∂x                                 ∂y/∂x
+  │        ___/‾‾                       │  ╱╲    ╱╲ ╱╲
+  │    ___/                             │ ╱  ╲╱╲╱  ╳  ╲╱╲
+  │ __/                                 │╱    ╲╱   ╱╲   ╲
+  └──────────────── x                   └──────────────── x
+  smooth, structured                    looks like white noise</code></pre>
+
+        <p>For the shallow network the gradient is a smooth, well-behaved function of the input. For the deep network it looks like noise -- nearby inputs give wildly different gradients. Good luck doing gradient descent on that.</p>
+
+        <h2>The Fix: Add the Input Back</h2>
+
+        <p>The residual connection is almost embarrassingly simple. Instead of each layer replacing its input, each layer <strong>adds to it</strong>. For n = 3:</p>
+
+        <pre><code>h₁ = x  + f₁(x; φ₁)
+h₂ = h₁ + f₂(h₁; φ₂)
+y  = h₂ + f₃(h₂; φ₃)</code></pre>
+
+        <p>As a diagram, the input takes a shortcut around each block:</p>
+
+        <pre><code>     ┌───────┐   ┌───────┐   ┌───────┐
+     │       ▼   │       ▼   │       ▼
+x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ──→ ⊕ ──→ y</code></pre>
+
+        <p>Now here's the part I find genuinely illuminating. Unroll the recursion:</p>
+
+        <pre><code>y = x
+  + f₁(x; φ₁)
+  + f₂( x + f₁(x; φ₁); φ₂ )
+  + f₃( x + f₁(x; φ₁) + f₂(x + f₁(x; φ₁); φ₂); φ₃ )</code></pre>
+
+        <p>Three things fall out of this formula:</p>
+
+        <ul>
+            <li><strong>The lower-level information is kept.</strong> The raw x is literally a summand of the output -- it can never be destroyed by a bad layer in the middle.</li>
+            <li><strong>A residual network is an ensemble.</strong> The output is a sum of terms of different "depths": a depth-0 term (x itself), a depth-1 term, up to a depth-3 term. We can think of residual connections as an <strong>ensemble of neural networks</strong> of varying depth, trained jointly.</li>
+            <li><strong>There are many different paths from input to output.</strong> Information doesn't have to survive every layer; it just needs one good path.</li>
+        </ul>
+
+        <h2>Implementation Details That Actually Matter</h2>
+
+        <p>Two things to be careful about when implementing residual networks: the <strong>order of operations</strong> inside a block, and <strong>exploding activations</strong>. Both bit people in practice.</p>
+
+        <h3>Order of Operations</h3>
+
+        <p>The most natural block is Linear → ReLU, then add:</p>
+
+        <pre><code>x ──→ [Linear] ──→ [ReLU] ──→ ⊕ ──→
+└─────────────────────────────┘</code></pre>
+
+        <p>Problem: the branch ends in a ReLU, so it <strong>can only add positive values</strong> to the residual stream. The block can push activations up but never pull them down -- half the correction space is gone.</p>
+
+        <p>Swapping to ReLU → Linear fixes the output side, but now the ReLU sits directly on the input, and if the incoming values are all negative the block is dead. The practical answer is to <strong>put linear layers at both ends</strong>, e.g. a first Linear before the block (preventing all-negative inputs into ReLU) and end the branch with Linear so it can add values of either sign:</p>
+
+        <pre><code>x ──→ [ReLU] → [Linear] → [ReLU] → [Linear] ──→ ⊕ ──→
+└───────────────────────────────────────────────┘</code></pre>
+
+        <p>In practice a residual block can contain multiple layers like this -- the rule of thumb is just that the thing you add back should be able to take any sign.</p>
+
+        <h3>Exploding Variance</h3>
+
+        <p>Here's a subtler one. Suppose x has variance 1, and each fᵢ contributes an independent unit-variance output. Since we keep <strong>adding</strong>, variances add up:</p>
+
+        <pre><code>x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ──→ ⊕ ──→ y
+var: 1        2           4            8
+                variance grows exponentially
+                (and the backward pass behaves the same way)</code></pre>
+
+        <p><strong>Solution 1: rescale by 1/√2 after each addition.</strong> This keeps the variance pinned near 1... but it's not good. Unrolling the sum again, the output becomes</p>
+
+        <pre><code>y = (1/√2)³ (x + f₁(x))
+  + (1/√2)² f₂(·)
+  + (1/√2)  f₃(·)</code></pre>
+
+        <p>The variance is stable, but <strong>the contributions of the lower layers are scaled down</strong> exponentially -- the identity path from x gets crushed. That was the whole point of the residual connection, so the shattered gradient problem persists.</p>
+
+        <p><strong>Solution 2: batch norm inside the branch, before fᵢ.</strong></p>
+
+        <pre><code>x ──→ [BN] → f₁ ──→ ⊕ ──→ [BN] → f₂ ──→ ⊕ ──→ [BN] → f₃ ──→ ⊕ ──→
+var: 1               2                  3                   4</code></pre>
+
+        <p>Each branch now contributes a fixed variance-1 amount, so the total variance grows <strong>linearly instead of exponentially</strong> -- and crucially, the skip path is never scaled down.</p>
+
+        <p>There's an interesting side effect: at variance k on the stream, each new layer's variance-1 contribution is relatively small. So <strong>at the beginning of training, the network is effectively shallower</strong> -- later layers barely move the output, and depth gets "switched on" gradually as training progresses. I don't think this side effect is even bad; it's arguably part of why these networks train so smoothly.</p>
+
+        <h2>So Why Does It Work?</h2>
+
+        <p>There isn't one clean answer -- there are several explanations, and honestly they're all probably partially right:</p>
+
+        <ol>
+            <li><strong>The work for each layer is easier.</strong> Without the skip, a layer must learn the full transformation f(x) -- it has to consider how to transform its input all the way toward the output. With the skip, it only needs to learn the residual f(x) − x, i.e. each layer just <strong>"adds" information to the current solution</strong> rather than rebuilding it. Refining is easier than reconstructing.</li>
+            <li><strong>Shattered gradients are much less prominent, and the loss landscape is much smoother.</strong> Lower-layer inputs contribute to the output directly through the skip paths, so it's much easier to take their gradients. Even if the gradient is blocked inside some layer (a dead ReLU, say), the layers below can still update through the shortcut.</li>
+            <li><strong>It's an ensemble of many small models</strong> -- the unrolled-sum view from earlier, made literal.</li>
+            <li><strong>With many different paths, there may be one with a good prior</strong> -- this connects to the lottery ticket hypothesis: among exponentially many subnetworks/paths, some are well-initialized winners, and the residual structure lets them carry the load.</li>
+        </ol>
+
+        <h2>My Take</h2>
+
+        <p>What I love about residual connections is the mismatch between how trivial the idea looks and how much it changed. One extra addition -- <code>x + f(x)</code> instead of <code>f(x)</code> -- and networks went from struggling at ~20 layers to training at hundreds. The unrolled-sum view is the framing that made it click for me: a "deep" residual network is secretly a wide ensemble of shallow networks sharing weights, and shallow networks were never hard to train in the first place.</p>
+
+        <p>The other lesson I take from the variance analysis: the elegant idea is not enough on its own. Get the order of operations wrong and your blocks can only push in one direction; skip the normalization and your activations explode; normalize the wrong way (the 1/√2 trick) and you quietly destroy the very identity path you were trying to protect. The details are where the actual engineering lives.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>He, K. et al. (2016). Deep Residual Learning for Image Recognition. <em>CVPR</em>.</li>
+            <li>Balduzzi, D. et al. (2017). The Shattered Gradients Problem: If resnets are the answer, then what is the question? <em>ICML</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

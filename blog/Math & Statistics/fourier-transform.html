@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier Transform - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content svg {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Fourier Transform</h1>
+        <div class="post-meta">
+            <span class="tag">Math</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Fourier Transform.pdf">PDF</a>.</p>
+        <p>The Fourier Transform always seemed magical to me until I understood the "winding machine" intuition. The core idea is that <strong>you can decompose any signal into its constituent frequencies by wrapping it around a circle and looking at where the center of mass lands</strong>.</p>
+
+        <h2>Intuition: Decomposing Sound</h2>
+
+        <p>Sound is pressure varying over time. A microphone records this as a time-pressure signal. A complex sound wave (like music or speech) is really a sum of simple sine waves at different frequencies.</p>
+
+        <p>It is easy to <em>add</em> simple signals together to get a complex signal. But how do we go the other direction &mdash; how do we <em>decompose</em> a complex signal into a sum of simple signals? This is exactly what the Fourier Transform does.</p>
+
+        <h3>The Winding Machine</h3>
+
+        <p>Here is the key idea. Take your time-domain signal and imagine wrapping it around a circle at a certain frequency. More precisely:</p>
+
+        <ul>
+            <li>Plot the signal as pressure vs. time</li>
+            <li>Now "wind" this graph around the origin at some chosen frequency (e.g., 0.5 cycles/second, or 3 cycles/second)</li>
+            <li>The amplitude (pressure) of the signal at each time point determines how far from the origin the wound-up curve reaches</li>
+            <li>Compute the <strong>center of mass</strong> of the resulting wound-up shape</li>
+        </ul>
+
+        <!-- SVG: Winding machine concept -->
+        <svg width="520" height="200" viewBox="0 0 520 200">
+            <!-- Left: time-domain signal -->
+            <text x="10" y="15" font-size="11" fill="#666">pressure</text>
+            <line x1="10" y1="100" x2="200" y2="100" stroke="#333" stroke-width="1"/>
+            <text x="190" y="115" font-size="11" fill="#666">time</text>
+            <line x1="10" y1="30" x2="10" y2="170" stroke="#333" stroke-width="1"/>
+            <path d="M10,100 Q25,70 40,100 Q55,130 70,100 Q85,70 100,100 Q115,130 130,100 Q145,70 160,100 Q175,130 190,100" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+            <!-- Arrow -->
+            <text x="215" y="95" font-size="20" fill="#333">&rarr;</text>
+            <!-- Right: wound around circle -->
+            <circle cx="380" cy="100" r="60" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>
+            <circle cx="380" cy="100" r="2" fill="#333"/>
+            <!-- Wound path (flower-like) -->
+            <path d="M440,100 Q430,70 380,40 Q330,70 320,100 Q330,130 380,160 Q430,130 440,100" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+            <path d="M440,100 Q420,85 410,60 Q390,50 380,40" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+            <!-- Center of mass dot -->
+            <circle cx="395" cy="95" r="4" fill="#dc2626"/>
+            <text x="403" y="90" font-size="10" fill="#dc2626">center of mass</text>
+        </svg>
+
+        <p>Here is what makes this work: <strong>when the winding frequency matches the actual frequency</strong> of the signal (i.e., cycles/second = beats/second), the center of mass moves far from the origin. At all other winding frequencies, the wound-up curve is roughly balanced and the center of mass stays near zero.</p>
+
+        <p>So by plotting the x-coordinate of the center of mass as a function of winding frequency, we get a spike at each frequency that is actually present in the signal. This plot is the <strong>frequency domain</strong> representation of the signal.</p>
+
+        <!-- SVG: Frequency domain plot -->
+        <svg width="400" height="140" viewBox="0 0 400 140">
+            <text x="10" y="15" font-size="11" fill="#666">x-axis of center point</text>
+            <line x1="30" y1="110" x2="370" y2="110" stroke="#333" stroke-width="1"/>
+            <line x1="30" y1="20" x2="30" y2="110" stroke="#333" stroke-width="1"/>
+            <text x="350" y="130" font-size="11" fill="#666">cycle/second</text>
+            <!-- Baseline near zero -->
+            <path d="M30,108 L100,108 L105,107 L110,108 L170,108" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Spike at f=2 -->
+            <path d="M170,108 L175,108 L178,90 L180,40 L182,90 L185,108 L190,108" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Between spikes -->
+            <path d="M190,108 L250,108" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Spike at f=3 -->
+            <path d="M250,108 L253,108 L256,85 L258,30 L260,85 L263,108 L270,108" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Tail -->
+            <path d="M270,108 L370,108" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Labels -->
+            <text x="176" y="130" font-size="10" fill="#333">2</text>
+            <text x="254" y="130" font-size="10" fill="#333">3</text>
+            <text x="28" y="130" font-size="10" fill="#333">0</text>
+            <text x="22" y="43" font-size="10" fill="#333">0.5</text>
+        </svg>
+
+        <p>For example, if a signal is composed of a 2 beats/second wave plus a 3 beats/second wave, the frequency-domain plot will show spikes at 2 and 3.</p>
+
+        <h2>Time Domain vs. Frequency Domain</h2>
+
+        <p>These are two different ways of looking at the same signal:</p>
+
+        <ul>
+            <li><strong>Time domain</strong>: pressure (amplitude) as a function of time &mdash; what a microphone records</li>
+            <li><strong>Frequency domain</strong>: amplitude as a function of frequency &mdash; which frequencies are present and how strong they are</li>
+        </ul>
+
+        <p>The Fourier Transform converts from time domain to frequency domain. The Inverse Fourier Transform goes the other way.</p>
+
+        <h2>The Complex Plane and Rotation</h2>
+
+        <p>To describe winding and rotation mathematically, we use the <strong>complex plane</strong>. Recall Euler's formula:</p>
+
+        <pre><code>e^(ix) = cos(x) + i*sin(x)</code></pre>
+
+        <p>A point on the unit circle in the complex plane can be written as <code>e^(ix)</code>, where x is the angle. This gives us a clean way to describe rotation:</p>
+
+        <ul>
+            <li><code>e^(i*2pi*t)</code> &mdash; rotates one full cycle per second (counterclockwise)</li>
+            <li><code>e^(i*2pi*f*t)</code> &mdash; rotates f cycles per second</li>
+            <li><code>e^(-i*2pi*f*t)</code> &mdash; rotates f cycles per second in the <em>clockwise</em> direction (this is the one we use)</li>
+        </ul>
+
+        <!-- SVG: Unit circle in complex plane -->
+        <svg width="220" height="220" viewBox="0 0 220 220">
+            <text x="180" y="120" font-size="11" fill="#666">real</text>
+            <text x="105" y="15" font-size="11" fill="#666">imag</text>
+            <!-- Axes -->
+            <line x1="20" y1="110" x2="200" y2="110" stroke="#333" stroke-width="1"/>
+            <line x1="110" y1="20" x2="110" y2="200" stroke="#333" stroke-width="1"/>
+            <!-- Unit circle -->
+            <circle cx="110" cy="110" r="70" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+            <!-- Point on circle -->
+            <circle cx="160" cy="70" r="4" fill="#dc2626"/>
+            <line x1="110" y1="110" x2="160" y2="70" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,3"/>
+            <!-- Labels -->
+            <text x="180" y="107" font-size="10" fill="#333">1</text>
+            <text x="113" y="38" font-size="10" fill="#333">i</text>
+            <text x="163" y="65" font-size="10" fill="#dc2626">e^(ix)</text>
+            <!-- Arrow for rotation direction -->
+            <path d="M155,45 Q165,50 160,60" fill="none" stroke="#999" stroke-width="1"/>
+            <polygon points="160,60 157,53 163,55" fill="#999"/>
+        </svg>
+
+        <h2>Building the Formula</h2>
+
+        <h3>Step 1: Wind the signal around a circle</h3>
+
+        <p>Given a signal <code>g(t)</code> (pressure as a function of time), we wind it around the origin at frequency f by multiplying:</p>
+
+        <pre><code>g(t) * e^(-i*2pi*f*t)</code></pre>
+
+        <p>Here, <code>e^(-i*2pi*f*t)</code> handles the rotation (winding at frequency f in the clockwise direction), and <code>g(t)</code> controls the <strong>magnitude</strong> (distance from origin) at each moment. The result is a curve in the complex plane.</p>
+
+        <h3>Step 2: Compute the center of mass</h3>
+
+        <p>To find the center of mass of the wound-up curve, we can estimate it by sampling N points and averaging:</p>
+
+        <pre><code>center of mass ≈ (1/N) * sum[ g(t_n) * e^(-i*2pi*f*t_n) ]</code></pre>
+
+        <h3>Step 3: Take the continuous limit</h3>
+
+        <p>As we sample more and more finely, the sum becomes an integral. Taking the limit, we get:</p>
+
+        <pre><code>g_hat(f) = integral from -inf to +inf of g(t) * e^(-i*2pi*f*t) dt</code></pre>
+
+        <p>And there it is &mdash; this is the Fourier Transform. It gives us the frequency-domain representation of g(t). For each frequency f, it tells us "how much" of that frequency is present in the signal.</p>
+
+        <p>Note: some formulations include a <code>1/T</code> normalization factor (dividing by the total time interval). The convention varies, but the core idea is the same &mdash; it is an average of the wound-up signal.</p>
+
+        <h2>Interpretation</h2>
+
+        <p>The Fourier Transform <code>g_hat(f)</code> is a complex number for each frequency f. Its components tell us:</p>
+
+        <ul>
+            <li><strong>Magnitude</strong> <code>|g_hat(f)|</code>: how strongly frequency f is present in the signal (the distance of the center of mass from the origin)</li>
+            <li><strong>Phase</strong> <code>arg(g_hat(f))</code>: the phase offset of that frequency component</li>
+        </ul>
+
+        <p>When the winding frequency f matches a frequency actually present in g(t), the wound-up curve is "lopsided" &mdash; it spends more time on one side &mdash; so the center of mass drifts away from the origin. At other frequencies, the curve wraps around roughly evenly and the center of mass stays near zero. This is why the Fourier Transform produces spikes at the signal's constituent frequencies.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>The "winding machine" intuition: wrap the signal around a circle at various frequencies; the center of mass spikes when you hit a real frequency</li>
+            <li>Mathematically, <code>e^(-i*2pi*f*t)</code> performs the winding, integration computes the center of mass</li>
+            <li>The output is a complex-valued function of frequency &mdash; magnitude gives strength, phase gives offset</li>
+        </ul>
+
+        <h2>References</h2>
+        <ul>
+            <li>3Blue1Brown, <a href="https://www.youtube.com/watch?v=spUNpyF58BY">"But what is the Fourier Transform? A visual introduction"</a> (2018) &mdash; honestly the best explanation out there; this entire post is basically my notes from watching it</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

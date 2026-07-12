@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffusion Models - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Diffusion Models</h1>
+        <div class="post-meta">
+            <span class="tag">Generative AI</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Diffusion.pdf">PDF</a>.</p>
+
+        <p>Every image generator you've played with recently — the ones behind those photorealistic pictures of astronauts riding horses — starts from <strong>pure Gaussian noise</strong> and gradually sculpts it into an image.
+           It is quite surprising to me when I first know that the model behind this is trained to do something that sounds almost trivial: <strong>predict the noise that was added to an image</strong>. That's it. This note works through why that simple objective falls out of a fairly long (but satisfying) derivation.</p>
+
+        <h2>Encoder and Decoder</h2>
+        <p>A diffusion model consists of an <strong>encoder</strong> and a <strong>decoder</strong>. The encoder takes an image and gradually adds noise to it until the image becomes noise. The decoder reverses this process until it re-creates the image.</p>
+
+        <pre><code>              ------------- encode ------------->
+
+  an image  --add noise-->  noisy image  --add noise--> ... --> Gaussian noise
+            <--denoise---                <--denoise---  ...
+
+              <------------ decode --------------</code></pre>
+
+        <p>The encoder in diffusion is fixed and simple. At each step:</p>
+
+        <pre><code>z_1 = √(1-β_1) x     + √β_1 ε_1
+z_t = √(1-β_t) z_t-1 + √β_t ε_t ,     where ε_1, ..., ε_t ~ N(0, I) i.i.d.</code></pre>
+
+        <p>Here <code>β_t</code> is the noise schedule — how much noise we inject at step <code>t</code>. Whatever the distribution of <code>x</code> looks like (and image distributions are wildly multi-modal), after enough steps everything gets washed into a standard Gaussian.</p>
+
+        <h3>A Property That Is Not Immediately Obvious</h3>
+        <p>The encoder looks easy. But one property of it is not immediately clear: <strong>we can jump to any step in one shot</strong>. Unrolling two steps,</p>
+
+        <pre><code>z_t = √(1-β_t) z_t-1 + √β_t ε_t
+    = √(1-β_t) (√(1-β_t-1) x + √β_t-1 ε_t-1) + √β_t ε_t
+    = √((1-β_t)(1-β_t-1)) x + (noise term) ,   noise ~ N(0, (1-(1-β_t)(1-β_t-1)) I)</code></pre>
+
+        <p>The two Gaussian noises merge into one (sum of independent Gaussians is Gaussian — the variances just add up). Repeating this all the way down:</p>
+
+        <pre><code>p(z_t | x) = N( √ᾱ_t x , (1-ᾱ_t) I ) ,   i.e.  z_t = √ᾱ_t x + √(1-ᾱ_t) ε
+
+where  ᾱ_t = ∏_{i=1}^{t} (1-β_i)</code></pre>
+
+        <p>This is the identity that makes training practical later — we never have to simulate the chain step by step to get a noisy sample.</p>
+
+        <h2>The Decoder, and Why We Condition on x</h2>
+        <p>Our goal is to learn the true reverse distribution <code>p(z_t-1 | z_t)</code>. Unfortunately it has <strong>no closed form</strong>: by Bayes it involves <code>p(z_t-1) = ∫ p(z_t-1|x) p(x) dx</code>, and <code>p(x)</code> is the distribution of natural images — exactly the thing we don't know.</p>
+
+        <p>However — and this is very important — <code>p(z_t-1 | z_t, x)</code> <strong>does</strong> have closed form. Conditioning on the clean image makes everything Gaussian, and standard Gaussian identities give:</p>
+
+        <pre><code>p(z_t-1 | z_t, x) = N( (1-ᾱ_t-1)/(1-ᾱ_t) · √(1-β_t) · z_t
+                       + √ᾱ_t-1 · β_t/(1-ᾱ_t) · x ,
+                       β_t (1-ᾱ_t-1)/(1-ᾱ_t) · I )</code></pre>
+
+        <p>This distribution is what we will learn to imitate for reversing. The decoder approximates the reverse chain with Gaussians:</p>
+
+        <pre><code>pr(z_T)        = N(0, I)
+pr(z_t-1 | z_t) = N( f_t(z_t; φ_t) , σ_t² I )      &lt;- the neural network lives in f_t
+pr(x | z_1)     = N( f_1(z_1; φ_1) , σ_1² I )</code></pre>
+
+        <p>Two notes from the margin of my handwritten version: the larger the number of steps <code>T</code>, the better this Gaussian approximation becomes (each reverse step only needs to undo a tiny bit of noise); and <code>σ_t²</code> is pre-determined, e.g. 1 or 0.5 — we don't learn it.</p>
+
+        <h2>Training: ELBO, and Why Diffusion Beats VAE Here</h2>
+        <p>Ideally we'd maximize the marginal likelihood <code>pr(x | φ_1..T)</code>, but that integral over all <code>z_1, ..., z_T</code> is intractable. So, as in VAE, we work with its lower bound (ELBO):</p>
+
+        <pre><code>log pr(x) ≥ ∫ q(z_1..z_T | x) log [ pr(x, z_1..z_T | φ) / q(z_1..z_T | x) ] dz  =  ELBO</code></pre>
+
+        <p>where <code>q</code> is the encoder distribution. The gap between ELBO and the true log-likelihood is exactly <code>KL(q(z_1..T | x) || pr(z_1..T | x, φ))</code>.</p>
+
+        <p>Here is the part I find genuinely insightful. In VAE, both encoder and decoder optimize the ELBO, and the encoder can help close the gap — but a Gaussian variational encoder may be far from the true posterior, so the ELBO is often not close to the marginal likelihood, which is one reason VAE images look blurry. <strong>In diffusion, the encoder is fixed for a given x, so the decoder has to do all the work</strong> — and crucially, the thing the decoder must match, <code>q(z_t-1 | z_t, x)</code>, is a fixed Gaussian. Much easier to learn than chasing a moving target that depends on the decoder itself.</p>
+
+        <h3>Simplify the ELBO</h3>
+        <p>Expanding the joint in the reverse direction and the <code>q</code> in the forward direction, then applying Bayes' theorem to flip <code>q(z_t | z_t-1)</code> into <code>q(z_t-1 | z_t, x)</code> (this flip is the crucial move — it aligns each <code>q</code> term with a decoder term going the same direction), the ELBO becomes:</p>
+
+        <pre><code>ELBO ≈ E[ log pr(x | z_1, φ_1) ]  -  Σ_{t=2}^{T} E[ KL( q(z_t-1 | z_t, x) || pr(z_t-1 | z_t, φ_t) ) ]</code></pre>
+
+        <p>(The leftover term <code>log(pr(z_T)/q(z_T|x))</code> is ≈ 0, since after T steps <code>q(z_T|x)</code> is very close to standard normal.) The first term is a reconstruction error; each KL term compares two Gaussians, which has an explicit form — up to constants, it is just the <strong>squared distance between the two means</strong>:</p>
+
+        <pre><code>KL term ∝ (1/2σ_t²) || mean of q(z_t-1 | z_t, x)  -  f_t(z_t; φ_t) ||²</code></pre>
+
+        <p>We could stop here. This loss can already train a network to reverse the process: at each step, learn to predict the mean of <code>q(z_t-1 | z_t, x)</code>. But there is a nicer form.</p>
+
+        <h2>Reparameterization: It All Collapses to Predicting Noise</h2>
+        <p>Recall <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code>, so <code>x = z_t/√ᾱ_t - √(1-ᾱ_t)/√ᾱ_t · ε</code>. Substituting this into the mean of <code>q(z_t-1 | z_t, x)</code> and grinding through the algebra (about a page of it in the PDF, all the <code>ᾱ</code> factors cancelling beautifully), the target mean becomes:</p>
+
+        <pre><code>mean of q(z_t-1 | z_t, x)  =  1/√(1-β_t) · z_t  -  β_t/(√(1-ᾱ_t)√(1-β_t)) · ε</code></pre>
+
+        <p>So instead of predicting the mean directly, we parameterize the network in exactly the same shape and let it predict <code>ε</code>:</p>
+
+        <pre><code>f_t(z_t; φ_t)  =  1/√(1-β_t) · z_t  -  β_t/(√(1-ᾱ_t)√(1-β_t)) · g_t(z_t; φ_t)</code></pre>
+
+        <p>The difference of means is then just the difference of noise terms, and the whole loss collapses to:</p>
+
+        <pre><code>L(φ_1..T) ∝ Σ_i Σ_t  β_t²/(2σ_t²(1-ᾱ_t)(1-β_t)) · || ε_it - g_t( √ᾱ_t x_i + √(1-ᾱ_t) ε_it ; φ_t ) ||²</code></pre>
+
+        <p>Noise up an image to step <code>t</code>, ask the network which noise was used, penalize the squared error. That's the entire training objective.</p>
+
+        <h3>Why Is This Better Than the Loss Before Reparameterization?</h3>
+        <p>Although mathematically equivalent, the new loss is much more practical because it <strong>decomposes into a sum over sample size and step size</strong>. Before, to train with SGD we'd sample <code>b</code> images and train all <code>T</code> steps for each — if <code>T</code> is large, <code>b</code> has to be tiny (or doesn't fit in RAM at all), and with <code>b=1, T=1000</code> the losses within a batch are highly correlated while gradient directions across batches vary wildly. Now we simply sample <code>B</code> pairs from <strong>all combinations of image and step</strong> — a proper i.i.d.-ish minibatch.</p>
+
+        <p>One thing that puzzled me: the <code>ε</code>'s we regress against at different steps do <strong>not</strong> come from independent noise (they're all tied to the same <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code> decomposition). So why would learning the noise work? Because <strong>on average, the noise points in the right direction</strong> to move from the target distribution toward the standard normal — and its negation points back.</p>
+
+        <h2>Sampling: Don't Forget to Add Noise Back</h2>
+        <p>Generation runs the learned chain backwards:</p>
+
+        <pre><code>z_T ~ N(0, I)
+for t = T, ..., 2:
+    ẑ_t-1 = 1/√(1-β_t) · z_t - β_t/(√(1-ᾱ_t)√(1-β_t)) · g_t(z_t; φ_t)
+    z_t-1 = ẑ_t-1 + σ_t ε ,    ε ~ N(0, I)
+x = 1/√(1-β_1) · z_1 - β_1/(√(1-ᾱ_1)√(1-β_1)) · g_1(z_1; φ_1)</code></pre>
+
+        <p>The subtle point: <code>ẑ_t-1</code> is only the <strong>mean</strong> of the reverse distribution — the "average" direction at the current step. In image generation, average means <strong>blurry</strong> (the average of many dog images is a grey smudge, not a dog). <strong>It is important to add noise back at each step</strong> — by adding noise, we force the image to add details. Strictly speaking noise should be added at the very last step too, but in practice it doesn't matter.</p>
+
+        <h2>Summary</h2>
+        <ul>
+            <li>The <strong>encoder is fixed</strong>: gradually Gaussian-noise an image, with the one-shot identity <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code>.</li>
+            <li><code>p(z_t-1 | z_t)</code> is intractable, but <strong>conditioning on x makes it a closed-form Gaussian</strong> — that's the target the decoder learns.</li>
+            <li>The ELBO reduces to per-step Gaussian KLs, and because the encoder is fixed, the decoder chases a <strong>fixed target</strong> — the key advantage over VAE.</li>
+            <li>Reparameterization turns everything into <strong>noise prediction</strong>, which decomposes the loss over (image, step) pairs and plays nicely with SGD.</li>
+            <li>At sampling time, <strong>add noise back at every step</strong> — the mean alone gives you blurry averages, the noise gives you details.</li>
+        </ul>
+
+        <h2>My Take</h2>
+        <p>What sticks with me from working through this derivation is how much of diffusion's success comes down to <strong>choosing which distribution to learn</strong>. The true reverse <code>p(z_t-1 | z_t)</code> is hopeless; the conditioned one <code>p(z_t-1 | z_t, x)</code> is a plain Gaussian. One Bayes flip and everything downstream — the ELBO simplification, the noise-prediction loss, the SGD-friendly decomposition — follows almost mechanically. Compared to GANs (no adversarial instability) and VAEs (no encoder eating the ELBO gap), diffusion trades elegance of a single-shot generator for a long chain of very easy problems.</p>
+
+        <p>The cost, of course, is that the chain is long: sampling requires hundreds or thousands of network evaluations, one per step. That's the price of making each step trivially Gaussian — and it's exactly the gap that later work on faster samplers and distillation tries to close.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Ho, J. et al. (2020). Denoising Diffusion Probabilistic Models. <em>NeurIPS</em>.</li>
+            <li>Sohl-Dickstein, J. et al. (2015). Deep Unsupervised Learning using Nonequilibrium Thermodynamics. <em>ICML</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

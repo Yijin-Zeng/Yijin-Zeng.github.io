@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Mixture Model and EM Algorithm - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Gaussian Mixture Model and EM Algorithm</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/Gaussian Mixture Model and EM Algorithm.pdf">PDF</a>.</p>
+
+        <p>If you have ever run K-means on real data, you have probably seen it fail in a very particular way: an elongated, elliptical cluster gets sliced in half, or a small tight cluster gets swallowed by a big diffuse one nearby. Why? Because <strong>K-means draws circles (or balls) around its centers, and it uses the same distance measure (normally L2) for every cluster</strong>. It has no notion of a cluster's shape or spread.</p>
+
+        <p>Gaussian Mixture Model (GMM) fixes exactly this. It is a clustering model that assumes the instances are generated from a <strong>mixture of Gaussian distributions</strong> — each cluster gets its own mean <code>μ_j</code> and its own covariance <code>Σ_j</code>, so elliptical clusters and clusters with different variances are handled naturally. The price we pay is that fitting it is genuinely harder, and that is where the EM algorithm comes in.</p>
+
+        <h2>The Assumptions Behind GMM</h2>
+
+        <p>Start from the likelihood of the observations <code>x_1, ..., x_n</code>. Three assumptions get us to the mixture form:</p>
+
+        <pre><code>pr(x_1, ..., x_n) = pr(x_1) ⋯ pr(x_n)                       (independence)
+
+                  = ∏_{i=1}^{n} Σ_j p(x_i ∈ cluster j) · p(x_i | x_i ∈ cluster j)
+                                                              (law of total probability)
+
+                  = ∏_{i=1}^{n} Σ_{j=1}^{K} π_j · N(x_i ; μ_j, Σ_j)
+                                                              (Gaussian assumption)</code></pre>
+
+        <p>There is a nice generative story behind this. To generate one observation: first a <strong>latent variable</strong> <code>z</code> picks a cluster, i.e. <code>z = j</code> with probability <code>π_j</code>; then, within that cluster, the observation is drawn from the corresponding Gaussian <code>N(μ_j, Σ_j)</code>. So <code>z</code> is a discrete variable telling us which component produced the point — we just never get to observe it.</p>
+
+        <h2>Why We Cannot Just Maximize the Likelihood</h2>
+
+        <p>The obvious move is to minimize the negative log-likelihood over <code>π, μ, Σ</code>:</p>
+
+        <pre><code>min  - Σ_{i=1}^{n} log( Σ_{j=1}^{K} π_j · N(x_i ; μ_j, Σ_j) )
+
+s.t. Σ_j π_j = 1,   Σ_j symmetric and positive semi-definite</code></pre>
+
+        <p>And here everything goes wrong at once:</p>
+
+        <ul>
+            <li>Because of the <strong>sum inside the log</strong>, the log cannot cancel out the exp in the Gaussian density. There is no analytical form if we take gradients w.r.t. <code>π, μ, Σ</code> and set them to zero.</li>
+            <li>The parameters need to satisfy constraints (<code>π</code> sums to one, <code>Σ_j</code> must stay positive semi-definite), so directly running gradient descent is not ideal either.</li>
+            <li>The problem is also <strong>ill-defined</strong>: if we let <code>μ_j → x_i</code> and <code>Σ_j → 0</code>, then <code>pr(x_1, ..., x_n) → ∞</code>. A component can "cheat" by collapsing onto a single data point and claiming infinite likelihood. It is quite surprising to me when I first realized the global maximum of this likelihood is literally useless.</li>
+        </ul>
+
+        <h2>The EM Algorithm</h2>
+
+        <p>So <code>argmax_θ L(θ; x)</code> is hard. The key observation: if we introduce some latent variables <code>z</code>, then <code>argmax_θ L(θ; x, z)</code> — the <strong>complete-data</strong> log-likelihood — is easy. If someone told us which cluster each point belongs to, fitting the Gaussians would be trivial.</p>
+
+        <p>EM exploits this by iterating:</p>
+
+        <pre><code>θ^(t+1) = argmax_θ  E_{z ~ p(·|x, θ^(t))} [ L(θ; x, z) ]
+          ────────  ─────────────────────────────────────
+           M-step                  E-step</code></pre>
+
+        <p>In words: guess the latent variables using the current parameters (E-step), then maximize the complete-data log-likelihood as if that guess were the truth (M-step), and repeat.</p>
+
+        <h3>Why Does EM Actually Work?</h3>
+
+        <p>This is my favorite part of the note. Notice that <code>p(x, z; θ) = p(x; θ) · p(z|x; θ)</code>, which in log form gives</p>
+
+        <pre><code>L(θ; x) = L(θ; x, z) - L(θ; z|x)
+  target    the one we can maximize easily</code></pre>
+
+        <p>Take expectation on both sides w.r.t. <code>z ~ p(·|x, θ^(t))</code> — the left side does not depend on <code>z</code>, so it is unchanged. Do the same at <code>θ = θ^(t)</code> and subtract:</p>
+
+        <pre><code>L(θ; x) - L(θ^(t); x) = E[L(θ; x, z)] - E[L(θ^(t); x, z)]
+                        + KL( p(z|x, θ^(t)) ‖ p(z|x, θ) )
+                          ────────────────────────────────
+                                       ≥ 0</code></pre>
+
+        <p>The KL divergence is always non-negative. And since <code>θ^(t+1)</code> is chosen to maximize <code>E[L(θ; x, z)]</code>, the first difference is non-negative at <code>θ = θ^(t+1)</code> too. So:</p>
+
+        <pre><code>L(θ^(t+1); x) ≥ L(θ^(t); x)</code></pre>
+
+        <p>i.e. <strong>EM leads to a non-decreasing likelihood at each step</strong>. Two caveats worth being honest about: non-decreasing does not mean it converges to the global maximum (it can happily sit at a local optimum, so initialization matters), and the expected complete log-likelihood is exactly the ELBO-style lower bound that shows up later in variational inference — same trick, bigger stage.</p>
+
+        <h2>EM for GMM</h2>
+
+        <p>Now apply this machinery to the mixture model. Introduce latent variables <code>z_ij = 1</code> if <code>x_i ∈ C_j</code>, and 0 otherwise. To run EM we need two things: the joint distribution <code>p(x, z; θ)</code> and the conditional distribution <code>p(z|x; θ^(t))</code>.</p>
+
+        <h3>E-Step: Compute the Responsibilities</h3>
+
+        <p>The joint distribution has a clean product form (each point picks exactly one component):</p>
+
+        <pre><code>p(x, z; π, μ, Σ) = ∏_{i=1}^{n} ∏_{j=1}^{K} ( π_j · N(x_i ; μ_j, Σ_j) )^{z_ij}
+
+=> L(π, μ, Σ; x, z) = Σ_i Σ_j z_ij · ( log π_j + log N(x_i ; μ_j, Σ_j) )</code></pre>
+
+        <p>For the conditional distribution, Bayes' theorem gives us the <strong>responsibility</strong> — the posterior probability that point <code>i</code> came from component <code>j</code>:</p>
+
+        <pre><code>p_ij^(t) = p(z_ij = 1 | x_i ; θ^(t))
+
+         =        π_j^(t) · N(x_i ; μ_j^(t), Σ_j^(t))
+           ─────────────────────────────────────────────
+            Σ_{j'=1}^{K} π_j'^(t) · N(x_i ; μ_j'^(t), Σ_j'^(t))</code></pre>
+
+        <p>This is just "prior times likelihood, normalized". Plugging it in, the expected complete-data log-likelihood becomes</p>
+
+        <pre><code>E_{z ~ p(·|x, θ^(t))}[ L(π, μ, Σ; x, z) ]
+    = Σ_i Σ_j p_ij^(t) · ( log π_j + log N(x_i ; μ_j, Σ_j) )</code></pre>
+
+        <p>Notice that the <code>log π_j</code> term and the <code>log N</code> term <strong>can be maximized independently</strong> — that is exactly why introducing <code>z</code> made the problem easy. Compare this with the original objective: the log now sits directly on the Gaussian density, so exp gets cancelled and everything becomes tractable.</p>
+
+        <h3>M-Step, Part 1: Maximize π</h3>
+
+        <p>Maximize <code>Σ_i Σ_j p_ij^(t) ln π_j</code> subject to <code>π_1 + ... + π_K = 1</code>. (The constraint <code>0 ≤ π_j ≤ 1</code> is not necessary to enforce — since we are dealing with logs, <code>π_j &gt; 0</code> automatically, and the sum-to-one constraint takes care of the rest.) Use a Lagrange multiplier:</p>
+
+        <pre><code>𝓛(π_1, ..., π_K, λ) = Σ_i Σ_j p_ij^(t) ln π_j + λ(π_1 + ... + π_K - 1)
+
+∂𝓛/∂π_j = ( Σ_i p_ij^(t) ) / π_j + λ = 0
+
+=> π_j = Σ_i p_ij^(t) / Σ_i Σ_j' p_ij'^(t)   =   Σ_i p_ij^(t) / n</code></pre>
+
+        <p>So the new mixture weight is simply the average responsibility that component claims. Intuitive.</p>
+
+        <h3>M-Step, Part 2: Maximize μ and Σ</h3>
+
+        <p>Now maximize <code>Σ_i Σ_j p_ij^(t) ln N(x_i ; μ_j, Σ_j)</code>. Expanding the log-density, this is equivalent to maximizing</p>
+
+        <pre><code>Σ_i Σ_j p_ij^(t) · ( -d/2 · ln(2π) - ½ ln(det Σ_j) - ½ (x_i - μ_j)ᵀ Σ_j⁻¹ (x_i - μ_j) )</code></pre>
+
+        <p>Taking the derivative w.r.t. <code>μ_j</code> (using the identity <code>∂/∂x (xᵀAx) = (A + Aᵀ)x</code>) and setting it to zero:</p>
+
+        <pre><code>Σ_i p_ij^(t) · 2 Σ_j⁻¹ (x_i - μ_j) = 0
+
+=> μ_j = Σ_i p_ij^(t) x_i / Σ_i p_ij^(t)</code></pre>
+
+        <p>A responsibility-weighted average of the data — the soft version of the K-means centroid update.</p>
+
+        <p>For the covariance, a neat trick from the note: differentiate w.r.t. the <strong>precision matrix</strong> <code>Λ_j = Σ_j⁻¹</code> rather than <code>Σ_j</code> itself (if you go w.r.t. <code>Σ_j</code> you get the same result, but it is much harder). Using <code>∂/∂A ln(det A) = (A⁻¹)ᵀ</code> and <code>∂/∂A (xᵀAx) = xxᵀ</code>:</p>
+
+        <pre><code>Σ_i p_ij^(t) · ( Σ_j - (x_i - μ_j)(x_i - μ_j)ᵀ ) = 0     (up to a factor of ½)
+
+=> Σ_j = Σ_i p_ij^(t) (x_i - μ_j)(x_i - μ_j)ᵀ / Σ_i p_ij^(t)</code></pre>
+
+        <p>A responsibility-weighted covariance. One caveat flagged in the note: <strong>the variance collapses to 0 when <code>p_ij^(t) = 1</code> for a single point <code>i</code></strong> — this is the ill-defined singularity from earlier sneaking back in. EM does not magically remove it; in practice you handle it with covariance regularization (e.g. adding a small ridge to <code>Σ_j</code>) or by restarting components that collapse.</p>
+
+        <h2>GMM vs K-means, Revisited</h2>
+
+        <p>After the derivation, the relationship becomes clear. K-means is essentially a hard, degenerate special case of GMM:</p>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+            <tr style="border-bottom: 2px solid var(--border);">
+                <th style="padding: 12px; text-align: left; color: var(--text);">Aspect</th>
+                <th style="padding: 12px; text-align: left; color: var(--text);">K-means</th>
+                <th style="padding: 12px; text-align: left; color: var(--text);">GMM</th>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px; color: var(--text-secondary);">Assignment</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Hard (each point belongs to one cluster)</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Soft (responsibilities p_ij)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px; color: var(--text-secondary);">Cluster shape</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Circles/balls, same scale everywhere</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Ellipses via per-cluster Σ_j</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px; color: var(--text-secondary);">Cluster size/variance</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Implicitly equal</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Each cluster has its own π_j and Σ_j</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px; color: var(--text-secondary);">Output</td>
+                <td style="padding: 12px; color: var(--text-secondary);">Cluster labels</td>
+                <td style="padding: 12px; color: var(--text-secondary);">A full generative probability model</td>
+            </tr>
+        </table>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li><strong>GMM assumes data comes from a mixture of Gaussians</strong> — each cluster gets its own mean, covariance, and weight, which is exactly what K-means lacks.</li>
+            <li>Direct maximum likelihood fails three ways: no closed form (sum inside the log), awkward constraints, and an <strong>ill-defined objective</strong> that blows up when a component collapses onto a point.</li>
+            <li><strong>EM alternates between guessing the latent variables (E-step) and maximizing the complete-data log-likelihood (M-step)</strong>, and a short KL argument shows the likelihood never decreases.</li>
+            <li>For GMM the updates are pleasantly interpretable: responsibilities from Bayes' theorem, then responsibility-weighted averages for <code>π_j</code>, <code>μ_j</code>, and <code>Σ_j</code>.</li>
+            <li>EM guarantees monotone improvement, not the global optimum — and the collapse singularity still lurks, so regularize your covariances.</li>
+        </ul>
+
+        <h2>My Take</h2>
+
+        <p>What I like most about this derivation is how honest it is about failure modes. Most textbook treatments jump straight to "here are the EM updates", but the interesting part for me is <strong>why the naive approach breaks</strong>: the sum trapped inside the log, and that sneaky singularity where a Gaussian collapses onto one point and the likelihood shoots to infinity. Once you have seen that, EM stops feeling like a magic recipe and starts feeling like the obvious workaround — move the log inside by conditioning on the latent labels, and pay for it with an expectation.</p>
+
+        <p>The other thing that stuck with me: the "why does EM work" proof is only about half a page, and the same decomposition (expected complete log-likelihood plus a KL term) is the seed of the ELBO in variational inference and VAEs. Learning this one derivation properly buys you a surprising amount elsewhere. Also, differentiating w.r.t. the precision matrix instead of the covariance is one of those small tricks that saves you twenty minutes of matrix calculus pain — worth remembering.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Bishop, C. M. (2006). <em>Pattern Recognition and Machine Learning</em>. Springer. (Chapter 9: Mixture Models and EM)</li>
+            <li>Dempster, A. P., Laird, N. M., &amp; Rubin, D. B. (1977). Maximum likelihood from incomplete data via the EM algorithm. <em>Journal of the Royal Statistical Society: Series B</em>, 39(1), 1-22.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

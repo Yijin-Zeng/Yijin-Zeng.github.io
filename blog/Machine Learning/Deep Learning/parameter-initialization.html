@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parameter Initialization - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Parameter Initialization</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Parameter Initialization.pdf">PDF</a>.</p>
+
+        <p>The first time I trained a deep network with weights drawn from a plain N(0, 1), the loss just sat there. Not diverging, not improving -- just flat. It turns out the network was dead before the first gradient step even happened, and the culprit was something I had treated as an afterthought: <strong>how you initialize the parameters</strong>. Why would random numbers you pick <strong>before</strong> training matter so much? Let's work it out.</p>
+
+        <h2>What Goes Wrong Without Proper Initialization</h2>
+
+        <p>Consider a standard feedforward layer:</p>
+
+        <pre><code>f<sub>k</sub> = β<sub>k</sub> + Ω<sub>k</sub>h<sub>k</sub>
+   = β<sub>k</sub> + Ω<sub>k</sub> a(f<sub>k-1</sub>)</code></pre>
+
+        <p>where a(·) is the activation function (say, ReLU). Suppose we initialize β<sub>k</sub> to 0 and every element of Ω<sub>k</sub> independently from N(0, σ²). What happens as the signal flows forward?</p>
+
+        <ul>
+            <li>If σ is small (e.g. 0.001), the magnitude of f<sub>k</sub> is much <strong>smaller</strong> than f<sub>k-1</sub> -- activations shrink at every layer.</li>
+            <li>If σ is large (e.g. 100), the magnitude of f<sub>k</sub> is much <strong>larger</strong> than f<sub>k-1</sub> -- activations blow up.</li>
+        </ul>
+
+        <p>In a deep network this compounds: <strong>the magnitude problem gets worse and worse through each layer</strong>. Twenty layers of "slightly too small" is exponentially too small.</p>
+
+        <p>And the backward pass has exactly the same disease. The gradient flowing into layer k-1 is:</p>
+
+        <pre><code>∂L/∂f<sub>k-1</sub> = (∂L/∂f<sub>k</sub>) · (∂f<sub>k</sub>/∂f<sub>k-1</sub>)
+        = (∂L/∂f<sub>k</sub>) · Ω<sub>k</sub> · diag(𝟙{f<sub>k-1</sub> ≥ 0})    (if a = ReLU)</code></pre>
+
+        <p>The gradient gets multiplied by Ω<sub>k</sub> at every layer, so its scale depends directly on the scale of Ω<sub>k</sub>. Initialize badly and the gradients either shrink towards zero (vanishing) or grow without bound (exploding). Either way: <strong>hard to train</strong>. This isn't a "training is a bit slow" problem -- with vanishing gradients, training effectively never starts.</p>
+
+        <h2>The Fix: Keep the Variance Constant</h2>
+
+        <p>So what would "good" initialization look like? The idea is simple and, I think, quite elegant: choose σ² so that the <strong>variance stays unchanged</strong> as signals pass through each layer, in both directions:</p>
+
+        <pre><code>Forward pass:   Var(f<sub>k</sub>) ≈ Var(f<sub>k-1</sub>)
+Backward pass:  Var(∂L/∂f<sub>k-1</sub>) ≈ Var(∂L/∂f<sub>k</sub>)</code></pre>
+
+        <p>If neither the activations nor the gradients change scale layer by layer, we can stack as many layers as we like without the signal degrading. Let's derive what σ² has to be.</p>
+
+        <h2>Forward Pass: Deriving the Variance</h2>
+
+        <p>Some notation to keep things readable: write f = f<sub>k-1</sub>, f′ = f<sub>k</sub>, Ω = Ω<sub>k</sub>, and f<sub>i</sub> for the i-th element. Biases are initialized to 0. The i-th output is f′<sub>i</sub> = β<sub>i</sub> + Σⱼ Ω<sub>ij</sub> a(f<sub>j</sub>), summing over the m neurons of the previous layer.</p>
+
+        <p>First, the mean:</p>
+
+        <pre><code>E(f′<sub>i</sub>) = E(β<sub>i</sub>) + Σⱼ E(Ω<sub>ij</sub> a(f<sub>j</sub>))
+      = 0 + Σⱼ E(Ω<sub>ij</sub>) E(a(f<sub>j</sub>))    (weights independent of layer outputs)
+      = Σⱼ 0 · E(a(f<sub>j</sub>)) = 0</code></pre>
+
+        <p>The expectation splits because <strong>the parameters are initialized independently of the layer outputs</strong> -- the weights haven't seen any data yet. Now the variance:</p>
+
+        <pre><code>Var(f′<sub>i</sub>) = Var(Σⱼ Ω<sub>ij</sub> a(f<sub>j</sub>))
+        = Σⱼ Var(Ω<sub>ij</sub>) Var(a(f<sub>j</sub>))
+        = Σⱼ σ²<sub>Ω</sub> (E(a(f<sub>j</sub>)²) - E²(a(f<sub>j</sub>)))
+        = Σⱼ σ²<sub>Ω</sub> E(a(f<sub>j</sub>)²)</code></pre>
+
+        <p>Now use the fact that a = ReLU and split by the law of total expectation:</p>
+
+        <pre><code>E(a(f<sub>j</sub>)²) = P(f<sub>j</sub> &gt; 0) E(a(f<sub>j</sub>)² | f<sub>j</sub> &gt; 0) + P(f<sub>j</sub> ≤ 0) E(a(f<sub>j</sub>)² | f<sub>j</sub> ≤ 0)
+         = ½ E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0) + 0</code></pre>
+
+        <p>Here I'm assuming the input is <strong>symmetric around 0</strong> (reasonable if we preprocess each input to standard normal), so f<sub>j</sub> is positive half the time and the negative half gets killed by ReLU. Using symmetry again, E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0) contributes exactly half of the full second moment, so E(a(f<sub>j</sub>)²) = ½ σ²<sub>f</sub>. Putting it together:</p>
+
+        <pre><code>Var(f′<sub>i</sub>) = ½ m σ²<sub>Ω</sub> σ²<sub>f</sub></code></pre>
+
+        <p>This is the punchline. If we want σ²<sub>f′</sub> = σ²<sub>f</sub>, we need:</p>
+
+        <pre><code>σ²<sub>Ω</sub> = 2/m        (He initialization)</code></pre>
+
+        <p>where m is the number of neurons in the previous layer (i.e. the number of columns of Ω<sub>k</sub>, the "fan-in"). The factor of 2 exists purely because <strong>ReLU throws away half the variance</strong> -- I find that a satisfying way to remember it.</p>
+
+        <h2>Backward Pass: Same Logic, Different Direction</h2>
+
+        <p>Does the same σ² also keep gradients stable? Almost. Denote g′ = ∂L/∂f<sub>k</sub> and g = ∂L/∂f<sub>k-1</sub>, so g<sub>i</sub> = Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> 𝟙{f<sub>i</sub> ≥ 0}, now summing over the m′ neurons of the <strong>next</strong> layer. The mean is 0 by the same independence argument. For the variance:</p>
+
+        <pre><code>Var(g<sub>i</sub>) = E((Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> 𝟙{f<sub>i</sub> ≥ 0})²)
+        = Σⱼ E(g′<sub>j</sub>²) E(Ω<sub>ji</sub>²) E(𝟙{f<sub>i</sub> ≥ 0}²)    (cross terms vanish; assuming independence)
+        = m′ σ²<sub>g′</sub> σ²<sub>Ω</sub> · ½</code></pre>
+
+        <p>The indicator is 1 with probability ½ (symmetry again), which is where the final ½ comes from. So if we want σ²<sub>g</sub> = σ²<sub>g′</sub>, we need:</p>
+
+        <pre><code>σ²<sub>Ω</sub> = 2/m′</code></pre>
+
+        <p>Same formula, but with m′ -- the <strong>fan-out</strong> -- instead of the fan-in m. The forward and backward passes are pulling in slightly different directions.</p>
+
+        <h2>When Fan-In and Fan-Out Disagree</h2>
+
+        <p>Here we are with a small conflict: the forward pass wants σ² = 2/m, the backward pass wants σ² = 2/m′.</p>
+
+        <ul>
+            <li>If m = m′ (equal layer widths), there's no conflict -- one choice keeps <strong>both forward and backward passes stable</strong>. One more reason networks with uniform hidden widths are pleasant to work with.</li>
+            <li>If m ≠ m′, we compromise by replacing m (or m′) with their average (m + m′)/2, giving <strong>σ²<sub>Ω</sub> = 4/(m + m′)</strong>.</li>
+        </ul>
+
+        <p>Neither pass is perfectly preserved in the second case, but neither is badly broken either -- and in practice that's enough. This averaging trick is the same move Glorot and Bengio made for linear/tanh activations (where the factor is 2/(m + m′) instead, no ReLU halving); He et al. adapted the analysis to ReLU, which is where the extra 2 comes from.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>Bad initialization compounds layer by layer: activations and gradients either vanish or explode, and with vanishing gradients <strong>training never really starts</strong>.</li>
+            <li>The fix is a design principle, not a trick: pick σ²<sub>Ω</sub> so that <strong>variance is preserved</strong> through each layer, forwards and backwards.</li>
+            <li>For ReLU, the forward pass demands σ² = 2/m (He initialization); the backward pass demands σ² = 2/m′; the factor 2 is ReLU's fault for killing half the signal.</li>
+            <li>When m ≠ m′, split the difference: σ² = 4/(m + m′).</li>
+            <li>The derivation leans on assumptions worth remembering: weights independent of activations, inputs symmetric around 0 (hence: standardize your inputs), and independence across terms in the backward sum.</li>
+        </ul>
+
+        <h2>My Take</h2>
+
+        <p>What I like about this derivation is how little machinery it needs -- it's just means, variances, and the law of total expectation, yet it produces a formula that every deep learning framework ships as a default (<code>kaiming_normal_</code> in PyTorch is exactly σ² = 2/m). Before working through this, "He initialization" was a magic string I passed to an initializer; now the 2 in 2/m reads as "ReLU deletes half the variance, so pre-inflate by 2". I also think the caveats deserve more attention than they usually get: the whole argument assumes symmetric, standardized inputs and independence everywhere, which is exactly true only at step zero of training. The moment gradients update the weights, the assumptions start eroding -- initialization buys you a good starting point, not a guarantee. But in deep networks, a good starting point is the difference between training and staring at a flat loss curve.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>He, K., Zhang, X., Ren, S. &amp; Sun, J. (2015). Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification. <em>ICCV</em>.</li>
+            <li>Glorot, X. &amp; Bengio, Y. (2010). Understanding the Difficulty of Training Deep Feedforward Neural Networks. <em>AISTATS</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

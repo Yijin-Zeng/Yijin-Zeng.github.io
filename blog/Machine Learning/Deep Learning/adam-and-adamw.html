@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adam and AdamW - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Adam and AdamW</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Adam and AdamW.pdf">PDF</a>.</p>
+
+        <p>If you open the training config of basically any modern LLM -- GPT, Llama, whatever -- the optimizer is <strong>AdamW</strong>, not Adam. That "W" bugged me for a while. Adam is already one of the reasons deep neural networks can be trained (relatively) easily, so what was broken enough that everyone switched? It turns out Adam has a <strong>critical issue when combined with L2 loss</strong>, one of the most common regularization methods. The fix is a one-line change, but the reasoning behind it is a nice little story about how two things that look equivalent on paper stop being equivalent the moment you change the optimizer.</p>
+
+        <p>(If you want the build-up of how Adam itself works -- momentum, adaptive learning rates and all that -- I cover it in <a href="from-sgd-to-adam.html">From SGD to Adam</a>. Here I'll take Adam as given.)</p>
+
+        <h2>Observation 1: L2 loss in SGD is just weight decay</h2>
+
+        <p>Let's start with plain SGD. Suppose we add an L2 penalty to our loss:</p>
+
+        <pre><code>L*(θ) = L(θ) + (λ/2)‖θ‖²</code></pre>
+
+        <p>where L(θ) is the original loss and the second term is the L2 regularization. Taking the gradient:</p>
+
+        <pre><code>∇L*(θ) = ∇L(θ) + λθ</code></pre>
+
+        <p>Now plug this into the SGD update and watch what happens:</p>
+
+        <pre><code>θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η∇L*(θ⁽ᵗ⁾)
+       = θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾) - ηλθ⁽ᵗ⁾
+       = (1 - ηλ)θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾)</code></pre>
+
+        <p>Here we are. The L2 penalty has turned into the factor <strong>(1 - ηλ)</strong> multiplying θ⁽ᵗ⁾ -- every step, the weights get shrunk slightly towards zero before the gradient update is applied. This is exactly <strong>weight decay</strong>. In SGD, "add L2 loss" and "decay the weights each step" are literally the same thing, which is why people use the two terms interchangeably. That interchangeability is precisely what breaks next.</p>
+
+        <h2>Observation 2: L2 loss in Adam does NOT give weight decay</h2>
+
+        <p>Now do the same thing with Adam. We naively feed the regularized gradient ∇L*(θ) into the algorithm:</p>
+
+        <pre><code>Adam + L2 loss
+1. m⁽ᵗ⁺¹⁾ ← β₁m⁽ᵗ⁾ + (1-β₁) ∇L*(θ⁽ᵗ⁾)
+2. s⁽ᵗ⁺¹⁾ ← β₂s⁽ᵗ⁾ + (1-β₂) ∇L*(θ⁽ᵗ⁾) ⊙ ∇L*(θ⁽ᵗ⁾)
+3. m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 - β₁ᵗ)
+4. ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 - β₂ᵗ)
+5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε)</code></pre>
+
+        <p>Where's the problem? Look at step 2 and step 5 together. The λθ term now lives inside m̂, but m̂ gets <strong>divided by √ŝ</strong> -- Adam's whole trick of scaling each parameter's update by its gradient magnitude.</p>
+
+        <p>Think about what L2 regularization is supposed to do: <strong>parameters with large values should feel a large pull back towards zero</strong> (their penalty gradient λθ is large). But a large λθ also inflates that parameter's second moment ŝ, and dividing by √ŝ scales the update back down. <strong>Adam scales down exactly the gradients that the regularizer made large.</strong> The parameters that most deserve to be decayed get their decay largely cancelled out by the adaptive scaling. The regularization effect you thought you were adding mostly evaporates.</p>
+
+        <p>This is the subtle part that I think trips people up: nothing errors, nothing diverges, the loss curve looks fine. You just quietly get much weaker regularization than your λ suggests -- and tuning λ and η becomes weirdly entangled.</p>
+
+        <h2>The fix: AdamW decouples the two</h2>
+
+        <p>The AdamW solution is almost embarrassingly simple: <strong>separate Adam from the L2 loss</strong>. Two changes:</p>
+
+        <ul>
+            <li>In steps 1 and 2, use the <strong>plain gradient ∇L(θ)</strong> instead of ∇L*(θ) -- so the regularization never touches the moment estimates, and the adaptive scaling can't dilute it.</li>
+            <li>In step 5, <strong>subtract ηλθ directly</strong> -- applying the decay straight to the parameters, outside the adaptive machinery.</li>
+        </ul>
+
+        <pre><code>AdamW
+1. m⁽ᵗ⁺¹⁾ ← β₁m⁽ᵗ⁾ + (1-β₁) ∇L(θ⁽ᵗ⁾)
+2. s⁽ᵗ⁺¹⁾ ← β₂s⁽ᵗ⁾ + (1-β₂) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)
+3. m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 - β₁ᵗ)
+4. ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 - β₂ᵗ)
+5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε) - ηλθ⁽ᵗ⁾</code></pre>
+
+        <p>Steps 1-4 are untouched Adam on the unregularized loss; only step 5 changed. And now it's trivial to see AdamW has the weight decay effect: the -ηλθ⁽ᵗ⁾ term means every parameter gets multiplied by (1 - ηλ) each step, exactly like in the SGD derivation above -- no √ŝ in sight to cancel it. Large weights shrink at the rate you asked for, full stop. This is why it's called <strong>decoupled</strong> weight decay.</p>
+
+        <p>One caveat worth knowing: because the decay bypasses the loss entirely, AdamW is <strong>no longer minimizing L*(θ) = L(θ) + (λ/2)‖θ‖²</strong> in any strict sense -- it's Adam on L plus a separate shrinkage step bolted on. The two are only equivalent for SGD. It's a pragmatic fix that happens to work extremely well in practice, not a principled derivation from a single objective. (A related practical note: the <code>weight_decay</code> argument in <code>torch.optim.Adam</code> implements the broken L2-in-gradient version, while <code>torch.optim.AdamW</code> implements the decoupled one -- so the fix is genuinely a one-argument change away.)</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>In <strong>SGD</strong>, adding L2 loss gives θ ← (1-ηλ)θ - η∇L(θ) -- L2 regularization and weight decay are the <strong>same thing</strong>.</li>
+            <li>In <strong>Adam</strong>, the λθ term goes through the second-moment scaling, which shrinks precisely the large gradients the regularizer created -- so the weight decay effect quietly disappears.</li>
+            <li><strong>AdamW</strong> keeps the moment estimates on the plain gradient and subtracts λθ directly in the parameter update, restoring true weight decay.</li>
+            <li>The whole fix is one term moved from step 2 to step 5. That's it.</li>
+        </ul>
+
+        <h2>My Take</h2>
+
+        <p>What I love about this note is how small the actual insight is. Loshchilov and Hutter didn't invent a new optimizer -- they noticed that an identity everyone took for granted ("L2 = weight decay") silently stops holding once you divide by √ŝ, and moved one term. That single moved term is now baked into essentially every LLM training run on the planet. It's a good reminder that "equivalent" always comes with an asterisk: equivalent <strong>under which update rule?</strong> Whenever I compose two techniques that were each derived in isolation (a regularizer here, an adaptive optimizer there), I now try to actually write out the combined update once, by hand. It's five lines of algebra, and it's exactly how you catch this kind of bug -- the kind that never throws an error, just quietly does less than you think.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Loshchilov, I., &amp; Hutter, F. (2019). Decoupled Weight Decay Regularization. <em>ICLR</em>.</li>
+            <li>Kingma, D. P., &amp; Ba, J. (2015). Adam: A Method for Stochastic Optimization. <em>ICLR</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

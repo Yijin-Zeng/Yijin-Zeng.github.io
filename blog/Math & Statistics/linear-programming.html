@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Programming - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Linear Programming</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Linear Programming.pdf">PDF</a>.</p>
+
+        <h2>A Bakery Problem</h2>
+
+        <p>Imagine you run a bakery selling two kinds of cakes. Cake A sells for a profit of 20 and cake B for 50. Each cake takes one hour to prepare, and you only have 10 hours of prep time. Oven time is different: cake A takes 2 hours and cake B takes 3, with 30 oven hours in total. How many of each should you bake?</p>
+
+        <pre><code>max  20x + 50y          (x = number of cake A, y = number of cake B)
+x,y
+s.t. x + y <= 10        (prep time: one hour each, total <= 10)
+     2x + 6y <= 30      (oven time, total <= 30)
+     x >= 0, y >= 0</code></pre>
+
+        <p>This is a <strong>linear programming (LP)</strong> problem: a linear target function with linear constraints. It shows up everywhere &mdash; scheduling, budget allocation, network routing. The reason it deserves its own theory (rather than just being a special case of constrained optimization) is that the linear structure allows something remarkable: <strong>we only ever need to check a handful of "corner" points</strong>, instead of searching the whole space.</p>
+
+        <h2>The Standard Form</h2>
+
+        <p>The standard form for linear programming is:</p>
+
+        <pre><code>max  c^T x
+ x
+s.t. Ax = b
+     x >= 0</code></pre>
+
+        <p>Note the constraint is an <strong>equality</strong>, <code>Ax = b</code>. What if we have inequalities like in the bakery problem? We add a <strong>slack variable per constraint</strong>: <code>Ax <= b</code> is equivalent to <code>Ax + s = b, s >= 0</code>, where <code>s</code> absorbs the "unused" part of each constraint (i.e. the leftover prep hours). Conversely, an equality <code>Ax = b</code> can be written as two inequalities <code>Ax <= b</code> and <code>-Ax <= b</code>, so the equality form and the inequality form <code>max c^T x s.t. Ax <= b, x >= 0</code> are fully equivalent. We work with whichever is convenient.</p>
+
+        <h2>Why Corner Points Are Enough</h2>
+
+        <p>Back to the bakery. If you draw the constraints on the plane, the feasible region is a polygon, and its corners have very concrete meanings:</p>
+
+        <ul>
+            <li><strong>A (origin):</strong> do nothing</li>
+            <li><strong>B:</strong> constrained by oven time only</li>
+            <li><strong>C:</strong> constrained by prep time only</li>
+            <li><strong>D:</strong> constrained by both</li>
+        </ul>
+
+        <p>To find the maximum, <strong>we only need to check these corner points</strong>. First, why is that true? Here is the argument from my note. A corner point of a convex set S is (by definition) a point that cannot be written as a strict mixture of two distinct points in S: if <code>x = λy + (1-λ)z</code> with <code>y, z ∈ S</code> and <code>0 < λ < 1</code>, then <code>y = z</code>. The key claim is:</p>
+
+        <p><strong>Because the feasible region S is convex, any point x inside S can be expressed as a weighted sum of its corner points</strong> <code>v_1, ..., v_k</code>. That is, <code>x = λ_1 v_1 + ... + λ_k v_k</code> where the weights are non-negative and <code>λ_1 + ... + λ_k = 1</code>. Then for the linear target function f:</p>
+
+        <pre><code>f(x) = f(λ_1 v_1 + ... + λ_k v_k)
+     = λ_1 f(v_1) + ... + λ_k f(v_k)          (linearity)
+     <= (λ_1 + ... + λ_k) max{f(v_1), ..., f(v_k)}
+     = max{f(v_1), ..., f(v_k)}</code></pre>
+
+        <p>So no interior point can ever beat the best corner. Of course, the key claim itself needs to be proved. To see why it holds, take any point x inside a quadrilateral ABDC: draw a line through x, it exits through two edges at points x_1 and x_2, so <code>x = λ_1 x_1 + λ_2 x_2</code> with <code>λ_1 + λ_2 = 1</code>. But x_1 sits on an edge, so <code>x_1 = λ_3 A + λ_4 B</code>, and similarly <code>x_2 = λ_5 C + λ_6 D</code>. Substituting back, x becomes a weighted sum of the four corners, and (after a small computation) the weights still sum to 1. The formal proof uses the same idea by induction on dimension.</p>
+
+        <p>One caveat worth remembering: in the bakery example, the optimal corner D is <strong>not an integer point</strong> &mdash; you cannot bake 7.5 cakes. LP happily gives fractional answers, so for integer problems you need to check around the LP optimum (this is the entry door to integer programming, a much harder problem).</p>
+
+        <h2>Counting the Corner Points</h2>
+
+        <p>So corner points are enough. How many are there? Suppose we have n variables with m equality constraints (as in standard form) plus the non-negative constraints.</p>
+
+        <p>If m = 1, we get n candidate corner points of the form "one variable is nonzero, all others are zero" (plus the point where all variables are zero, so n+1 in total). If m > 1, the pattern generalizes: <strong>we select m variables from all n variables to satisfy the m equation constraints, while all other n-m variables are set to 0</strong>. This gives at most <code>C(n, m)</code> corner points. It is only an upper bound, because not all selected combinations produce valid corner points, as we will see.</p>
+
+        <p>Denote <code>A = (a_1, a_2, ..., a_n)</code> by its columns. To satisfy <code>Ax = b</code> at all, we need <code>b ∈ col(a_1, ..., a_n)</code>; if not, the LP problem simply has no solution. If b is in the column space, we get either one solution or infinitely many. The one-solution and no-solution cases are straightforward, so focus on the infinite case. Partition the columns:</p>
+
+        <pre><code>Ax = B x_B + N x_N = b
+
+where B = the m selected columns (a_i1, ..., a_im)
+      N = the remaining n-m columns, with x_N set to 0</code></pre>
+
+        <ul>
+            <li>If <strong>B is invertible</strong>: <code>x_B = B^{-1} b</code>, <code>x_N = 0</code> is a valid corner point.</li>
+            <li>If <strong>B is not invertible</strong>: the system <code>B x_B = b</code> has either no solution, infinitely many solutions (in both cases, no corner point for this selection), or exactly one solution &mdash; which again gives a valid corner point.</li>
+        </ul>
+
+        <p>Two notes here. First, <code>x_N</code> has to be exactly 0, otherwise the point is not a corner point. Second, the <code>C(n, m)</code> combinations do include <strong>all</strong> possible corner points: if we selected more than m variables, the corresponding columns cannot be independent (so not corner points); if we selected fewer than m, that case is already covered by the non-invertible-B analysis above.</p>
+
+        <h2>The Simplex Algorithm</h2>
+
+        <p>We know an optimum (if it exists) sits at a corner point. However, there are too many corner points &mdash; up to <code>C(n, m)</code> &mdash; to check one by one. The <strong>simplex algorithm</strong> walks along the edges of the polygon instead: start at a corner, move to a neighboring corner whenever it increases the target, and stop when no neighbor improves. It is quite satisfying to me that because the feasible region is convex and the target is linear, a <strong>local maximum here is automatically the global maximum</strong> &mdash; greedy hill-climbing on corners is actually optimal.</p>
+
+        <ol>
+            <li><strong>Introduce slack variables</strong> if there are inequality constraints, to reach standard form.</li>
+            <li><strong>Find a starting corner point.</strong> The m selected variables form the <strong>basis</strong>; the non-selected n-m variables (the <strong>non-basis</strong>) are set to 0. This step is harder than it sounds: we need to solve Ax = b and find a solution where all x >= 0. Finding some solution is easy; there is no guarantee it is non-negative.</li>
+            <li><strong>Check for optimality.</strong> Express the target z in terms of non-basis variables only. If we cannot increase any non-basis variable to make the target larger, this is the maximum point &mdash; stop. (A non-basis variable sits at 0, so it can only increase; otherwise it would go negative.)</li>
+            <li><strong>Pivot.</strong> Choose a non-basis variable (normally the one with the biggest coefficient) whose increase raises the target, and increase it from 0 until one of the m basic variables hits 0 first. Then change basis: bring the chosen variable in, drop the basic variable that hit 0.</li>
+            <li><strong>Repeat</strong> steps 3 and 4.</li>
+        </ol>
+
+        <h2>A Worked Example</h2>
+
+        <pre><code>max  z = 3x_1 + 2x_2
+s.t. x_1 + x_2 <= 4
+     x_1 + 3x_2 <= 6
+     x_1, x_2 >= 0</code></pre>
+
+        <p><strong>Step 1 (slack variables).</strong> The problem is equivalent to:</p>
+
+        <pre><code>max  z = 3x_1 + 2x_2
+s.t. x_1 + x_2 + s_1 = 4
+     x_1 + 3x_2 + s_2 = 6
+     x_1, x_2, s_1, s_2 >= 0</code></pre>
+
+        <p><strong>Step 2 (entry point).</strong> This example has an easy one: take basis <code>B = {s_1, s_2}</code> and non-basis <code>N = {x_1, x_2}</code>. Setting <code>x_1 = x_2 = 0</code> immediately gives <code>s_1 = 4, s_2 = 6</code>. So our entry point is <code>(0, 0, 4, 6)</code> with <code>z = 0</code>.</p>
+
+        <p><strong>Step 3 (pivot).</strong> The target expressed in non-basis variables is <code>z = 3x_1 + 2x_2</code>. The coefficient 3 is positive and larger than 2, so we bring x_1 into the basis while keeping <code>x_2 = 0</code>. From the constraints, <code>s_1 = 4 - x_1</code> and <code>s_2 = 6 - x_1</code>. As x_1 grows, s_1 hits 0 first (at <code>x_1 = 4</code>), so we drop s_1 from the basis. New basis: <code>x_1 = 4, s_2 = 2</code>; new non-basis: <code>x_2 = s_1 = 0</code>; now <code>z = 12</code>. (Re-expressing z in terms of the new non-basis is always possible, since <code>x_B = B^{-1}(b - N x_N)</code> and hence <code>z = c_B^T x_B + c_N^T x_N</code> is a function of x_N alone.)</p>
+
+        <p><strong>Step 4 (check).</strong> From <code>x_1 + x_2 + s_1 = 4</code> we get <code>x_1 = 4 - s_1 - x_2</code>, so:</p>
+
+        <pre><code>z = 3x_1 + 2x_2 = 12 - 3s_1 - x_2</code></pre>
+
+        <p>Both coefficients on the non-basis variables are negative: increasing either s_1 or x_2 can only decrease z. Stop here. The optimum is <code>x_1 = 4, x_2 = 0</code> with <code>z = 12</code>.</p>
+
+        <h2>My Take</h2>
+
+        <p>What I like most about linear programming is how the geometry does all the heavy lifting. The moment you accept "convex feasible region + linear target implies optimum at a corner", the whole subject reduces to bookkeeping: corners are just choices of m columns with an invertible B, and simplex is just greedy walking between them. It is quite surprising to me when I first realized that the algebraic pivot rule in simplex (swap one variable in the basis) is literally the geometric act of sliding along one edge of the polygon &mdash; two views of the same move. The honest caveats: finding a starting corner is genuinely non-trivial, <code>C(n, m)</code> can be astronomical in the worst case (simplex has exponential worst-case examples, though it is fast in practice), and the fractional-cake problem reminds us that real-world "count" variables push us into integer programming, where all this elegance gets much more expensive.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Dantzig, G. B. (1963). <em>Linear Programming and Extensions</em>. Princeton University Press.</li>
+            <li>Boyd, S., &amp; Vandenberghe, L. (2004). <em>Convex Optimization</em>. Cambridge University Press.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

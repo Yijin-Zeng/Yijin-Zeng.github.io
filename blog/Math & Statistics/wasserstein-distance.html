@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasserstein Distance - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Wasserstein Distance</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Wasserstein Distance.pdf">PDF</a>.</p>
+
+        <p>Imagine two piles of earth on the ground with the same total amount of soil, and you are asked to reshape the first pile into the second one using a shovel. Some ways of moving the soil are obviously wasteful (carrying dirt back and forth across the whole yard), and some are efficient. The minimum total effort you need &mdash; amount of soil times how far you carry it &mdash; is exactly the <strong>Wasserstein distance</strong> between the two piles. This is why people also call it the <strong>earth mover's distance</strong>.</p>
+
+        <p>Why should we care about yet another way of comparing distributions, when we already have KL divergence? Because KL can be surprisingly blind: if two distributions have disjoint supports (i.e. they don't overlap at all), KL divergence simply gives up and cannot tell you whether they are close or far. Wasserstein distance can. This single property is a big reason behind, for example, the Wasserstein GAN. I will come back to this comparison at the end.</p>
+
+        <h2>It Is Actually a Metric</h2>
+
+        <p>Wasserstein distance is a <strong>metric</strong> for measuring distances between two probability measures (i.e. probability distributions). Being a metric is not just a formality &mdash; it means it behaves like a genuine "distance", satisfying:</p>
+
+        <ol>
+            <li><strong>Non-negativity:</strong> <code>W(&mu;, &nu;) >= 0</code>, where equality holds if and only if <code>&mu;</code> and <code>&nu;</code> are equivalent (i.e. they mutually decide each other)</li>
+            <li><strong>Symmetry:</strong> <code>W(&mu;, &nu;) = W(&nu;, &mu;)</code></li>
+            <li><strong>Triangle inequality:</strong> <code>W(&mu;, &nu;) + W(&nu;, &omega;) >= W(&mu;, &omega;)</code></li>
+        </ol>
+
+        <p>Notice that KL divergence fails on symmetry and the triangle inequality &mdash; it is a divergence, not a distance. Wasserstein passes all three.</p>
+
+        <h2>Defining It: Start Discrete</h2>
+
+        <p>It is easier to start with discrete distributions. Suppose we have two discrete measures <code>&mu;</code> and <code>&nu;</code> with finite supports <code>X = {x_1, ..., x_n}</code> and <code>Y = {y_1, ..., y_m}</code>, respectively. Let <code>C_ij = c(x_i, y_j)</code> be a cost between <code>x_i</code> and <code>y_j</code>, e.g. L2 loss. Then the Wasserstein distance between <code>&mu;</code> and <code>&nu;</code> can be defined as:</p>
+
+        <pre><code>W(&mu;, &nu;) = min_P  sum_i sum_j  P_ij C_ij
+
+s.t.  sum_j P_ij = &mu;(x_i)   for any i = 1, ..., n
+      sum_i P_ij = &nu;(y_j)   for any j = 1, ..., m</code></pre>
+
+        <p>First, what does this mean? The matrix <code>P</code> is called a <strong>transport plan</strong>. Each row of <code>P</code> corresponds to a point <code>x_i</code>, and that row distributes the probability mass of <code>x_i</code> across the columns (the <code>y_j</code>'s). The two constraints say exactly this: row <code>i</code> must sum to <code>&mu;(x_i)</code> (we move all the mass of <code>x_i</code>, no more, no less), and after distributing, column <code>j</code> must sum to <code>&nu;(y_j)</code> (each target point receives exactly the probability it requires). So <code>W(&mu;, &nu;)</code> is the <strong>lowest cost to move &mu; onto &nu; while keeping all the probability accounted for</strong> &mdash; the shovel picture, made precise.</p>
+
+        <h3>A Concrete Example</h3>
+
+        <p>Here is the example from my note. Let <code>&mu;</code> put probabilities <code>(0.3, 0.5, 0.2)</code> on points <code>x_i = 1, 2, 3</code>, and <code>&nu;</code> put probabilities <code>(0.6, 0.1, 0.3)</code> on <code>y_j = 1, 2, 3</code>. The optimal plan turns out to be:</p>
+
+        <pre><code>          y=1   y=2   y=3
+x=1     [ 0.3    0     0  ]   x=1 keeps all its prob for itself
+x=2     [ 0.3   0.1   0.1 ]   x=2 gives 0.3 to y=1, keeps 0.1, gives 0.1 to y=3
+x=3     [  0     0    0.2 ]   x=3 keeps all its prob</code></pre>
+
+        <p>Each row sums to <code>&mu;</code>'s probabilities <code>(0.3, 0.5, 0.2)</code>, each column sums to <code>&nu;</code>'s probabilities <code>(0.6, 0.1, 0.3)</code> &mdash; the plan converts <code>&mu;</code> to <code>&nu;</code>. If the cost is <code>c(x_i, y_j) = (x_i - y_j)&sup2;</code>, then the Wasserstein distance here is:</p>
+
+        <pre><code>W(&mu;, &nu;) = 0.3&middot;0 + 0.3&middot;1 + 0.1&middot;0 + 0.1&middot;1 + 0.2&middot;0 = 0.4</code></pre>
+
+        <p>Notice how the diagonal entries (mass that stays put) contribute nothing, and only the mass that actually travels &mdash; the 0.3 and 0.1 moving one step away from <code>x=2</code> &mdash; costs anything. Exactly the earth-moving intuition.</p>
+
+        <h2>How to Actually Solve It: Linear Programming</h2>
+
+        <p>The definition is a minimization, but over what exactly? It turns out we can formulate the problem for two discrete distributions as a <strong>linear programming problem</strong>:</p>
+
+        <pre><code>min_x  c&#7488;x
+s.t.   Ax = b
+       x >= 0</code></pre>
+
+        <p>Here <code>c</code> is the cost matrix <code>C</code> flattened row by row (first row of C, then second, ..., then last), <code>x</code> is the transport plan <code>P</code> flattened column by column, and <code>b = (&nu;(y_1), ..., &nu;(y_m), &mu;(x_1), ..., &mu;(x_n))&#7488;</code> stacks the two marginal constraints. The constraint matrix <code>A</code> stacks two blocks: <code>A_1</code>, a block-diagonal arrangement of all-ones row vectors <code>1_{1&times;n}</code> (m blocks, picking out the column sums), and <code>A_2 = (I_{n&times;n}  I_{n&times;n}  ...  I_{n&times;n})</code>, n&times;m identity matrices side by side (picking out the row sums). Writing out the bookkeeping is a bit tedious, but it is purely mechanical.</p>
+
+        <p>Why is writing it as a linear programming problem useful? Three reasons:</p>
+
+        <ol>
+            <li><strong>Convex problem:</strong> a linear programming problem is guaranteed to be convex, so local minimum implies global minimum</li>
+            <li><strong>Off-the-shelf algorithms:</strong> there are many algorithms for it, e.g. the simplex method or interior point methods &mdash; although, to be honest, the complexity could be high for large supports</li>
+            <li><strong>Strong duality holds</strong> &mdash; the dual gives the exact answer, not just a bound (this dual view is what leads to the Kantorovich-Rubinstein form used in Wasserstein GANs)</li>
+        </ol>
+
+        <h2>From Discrete to Continuous</h2>
+
+        <p>The continuous version is the same idea, with sums replaced by integrals. Instead of a transport matrix <code>P</code>, we minimize over a joint measure <code>&pi;(x, y)</code>:</p>
+
+        <pre><code>W(&mu;, &nu;) = min_&pi;  &int;_{X&times;Y} c(x, y) d&pi;(x, y)
+
+s.t.  &int;_X &pi;(x, y) dx = &nu;(y)
+      &int;_Y &pi;(x, y) dy = &mu;(x)</code></pre>
+
+        <p>The two constraints say that <code>&pi;(x, y)</code> is a <strong>coupling</strong> of <code>&mu;(x)</code> and <code>&nu;(y)</code>, i.e. a joint distribution whose marginals are exactly <code>&mu;</code> and <code>&nu;</code>. This is the <strong>Kantorovich formulation</strong> of optimal transport: among all joint distributions that "connect" the two marginals, find the one with the cheapest expected transport cost.</p>
+
+        <h2>Why Not Just Use KL Divergence?</h2>
+
+        <p>Here is the comparison that made this concept click for me. Picture three bell-shaped distributions on a line: <code>d_1</code> on the right, <code>d_2</code> overlapping <code>d_1</code> but shifted slightly left, and <code>d_3</code> far away on the left, with support disjoint from both. Now shift <code>d_1</code> towards <code>d_2</code> and ask each measure how the distance to <code>d_3</code> changed:</p>
+
+        <ul>
+            <li><code>KL(d_1, d_3) &asymp; KL(d_2, d_3)</code> &mdash; KL <strong>fails to capture the shift</strong> from <code>d_1</code> to <code>d_2</code>. Since the supports barely overlap with <code>d_3</code>, KL is essentially saturated (near infinite) either way, and moving closer does not register at all.</li>
+            <li><code>W(d_1, d_3) > W(d_2, d_3)</code> &mdash; Wasserstein <strong>can capture the shift even if the supports are disjoint</strong>, because moving the pile of earth closer genuinely reduces the transport cost.</li>
+        </ul>
+
+        <p>This matters in practice. If you are training a generative model and the model's distribution starts far from the data distribution (disjoint supports are common early in training, especially in high dimensions), a KL-based loss gives you a flat, uninformative gradient. A Wasserstein-based loss still tells you "you are getting closer, keep going" &mdash; which is precisely the motivation behind Wasserstein GAN.</p>
+
+        <h2>My Take</h2>
+
+        <p>It is quite surprising to me that such an intuitive picture &mdash; shoveling piles of earth &mdash; turns out to be a proper metric with a clean linear programming formulation, while the more "information-theoretic-looking" KL divergence is not even symmetric. My mental summary: <strong>KL compares densities pointwise, Wasserstein compares distributions geometrically</strong>. KL asks "how surprised am I at each point?", which is meaningless where one density is zero; Wasserstein asks "how much work to physically move one shape into the other?", which always has an answer. The honest caveat is computational: the LP scales poorly with the size of the supports (in practice people reach for entropic regularization and the Sinkhorn algorithm), so the elegance is not free. But as a way of thinking about distances between distributions, the transport picture is the one I now reach for first.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Villani, C. (2009). <em>Optimal Transport: Old and New</em>. Springer-Verlag Berlin Heidelberg.</li>
+            <li>Arjovsky, M., Chintala, S., &amp; Bottou, L. (2017). Wasserstein Generative Adversarial Networks. <em>Proceedings of the 34th International Conference on Machine Learning (ICML)</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

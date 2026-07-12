@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A concise review for change point detection methods - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #fff7ed;
+            color: #c2410c;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">A concise review for change point detection methods</h1>
+        <div class="post-meta">
+            <span class="tag">Statistics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A more formal, technical review is available as a <a href="../../notes/Math & Statistics/ReviewForCPD.pdf">PDF</a>.</p>
+
+        <p>Change point detection is about spotting when something changes fundamentally in the data. 
+        Think of it like watching a heart rate monitor: most of the time it's steady, but when something happens, e.g. exercise, stress, rest, the pattern changes.
+        It is often very useful to detect these transition moments accurately, and quickly.</p>
+
+        <h2>Why Does This Matter?</h2>
+        <p>Change point detection is a very important topic in statistics and machine learning, because change points can show up everywhere, 
+           and we often want to detect them as quickly as possible. Consider the following fields and cases:
+        </p>
+        <ul>
+            <li><strong>Finance:</strong> financial markets are notoriously volatile. This unpredictability comes from the inherent noise in the data, 
+                meaning that even if a model is 'true', there is still randomness. However, it also comes from 'change points', which are unexpected, 
+                permanent shifts in the underlying 'true model' over time. 
+                Detecing such change points is definitely a billion dolloars question. For a practical example of this problem, look at the
+                <a href="https://hub.crunchdao.com/competitions/structural-break"> ADIA Lab Structural Break Challenge </a>.
+            </li>
+
+            <li><strong>Manufacturing:</strong> during manufacturing, we want to know when a machine starts malfunctioning as quickly as possible. 
+                For instance, consider a production line calibrated to yield items weighing 100g (±10g). If a mechanical fault occurs, the machine 
+                might abruptly shift to producing 200g items.
+            </li>
+
+            <li><strong>Health:</strong> we can continuously monitor people's key health metrics (e.g. using Apple watch), like heart rate, blood pressure, and blood sugar to track their overall condition. 
+                A fundamental change in one of these metrics can signal the onset of a disease or a medical event that requires proactive intervention. </li>
+
+        </ul>
+
+        <h2>Key challenges</h2>
+
+        <p>As in many other fields, change point detection is a balancing act. There are many inherent trade-offs we can encounter, most dominantly:</p>
+        <ul>
+            <li><strong>Detection Delay vs. False Alarm Rate:</strong> We almost always want to detect a shift as soon as it happens (low detection delay). At the same time, we want to avoid flagging changes when the system is actually stable (low false alarm rate). Unfortunately, these two goals conflict. A highly sensitive algorithm tends to generate more false alarms. Consider the extreme case of an algorithm that flags every single data point as a change point: it would detect real changes instantly, but its false alarm rate would be so high that the model is completely useless.</li>
+
+            <li><strong>Detection Delay vs. Computational Burden:</strong> Change point detection algorithms can become quite complex, 
+                e.g. methods based on neural networks or Gaussian processes. Generally, a more complex algorithm yields a lower detection delay, 
+                but requires significantly more computational power. Time and memory complexity are crucial considerations in change point detecion,
+                especially in scenarios where we can receive millions of data points per second, e.g. in cyber security.</li>
+        </ul>
+
+        <h2>Change Point Detection Methods</h2>
+
+        <h3>Introduction</h3>
+        <p>We provide intuitive explanations for some of the most frequently used change point detection methods. We divide them into two categories: single change point methods, which assume there is only one shift in the sequence, and multiple change point methods, which can handle sequences with several shifts. However, we shouldn't view these categories as completely separate, since many multiple change point methods are actually adaptations of single change point techniques.</p>
+
+        <h3>Single Change Point Methods</h3>
+        <p>Consider observations <em>y</em> = (<em>y</em>₁, ..., <em>y<sub>n</sub></em>), where each <em>y<sub>i</sub></em> ∈ ℝ. We assume <em>y</em> is a realization from a random sequence <em>Y</em> = (<em>Y</em>₁, ..., <em>Y<sub>n</sub></em>) such that <em>Y</em>₁, ..., <em>Y<sub>τ</sub></em> ~ <em>F</em>₁ and <em>Y</em><sub>τ+1</sub>, ..., <em>Y<sub>n</sub></em> ~ <em>F</em>₂, where <em>F</em>₁ and <em>F</em>₂ are unknown cumulative density functions. Our goal is to decide whether <em>F</em>₁ = <em>F</em>₂, and if not, provide an estimate τ̂ of τ.</p>
+
+        <h4>1. Cumulative Sum (CUSUM)</h4>
+        <p>CUSUM is a foundational algorithm for sequential change point detection proposed by Page (1954).</p>
+
+        <p><strong>The statistic:</strong> CUSUM computes</p>
+        <pre><code>S_m = Σᵢ₌₁ᵐ log(f₂(yᵢ)/f₁(yᵢ)) - min_{k≤n} Σᵢ₌₁ᵏ log(f₂(yᵢ)/f₁(yᵢ))</code></pre>
+
+        <p>where <em>f</em>₁ and <em>f</em>₂ are the density functions of <em>F</em>₁ and <em>F</em>₂ respectively. This can be computed recursively as</p>
+        <pre><code>S_m = max(S_{m-1} + log(f₂(yᵢ)/f₁(yᵢ)), 0)</code></pre>
+
+        <p>which makes it suitable for online (sequential) change point detection.</p>
+
+        <p><strong>Normal case:</strong> Suppose <em>F</em>₁ and <em>F</em>₂ are both univariate normal distributions with means μ₁ and μ₂ (μ₂ > μ₁) and the same variance σ². Then the CUSUM statistic simplifies to</p>
+        <pre><code>S_m = max(S_{m-1} + y_m - (μ₁ + μ₂)/2, 0)</code></pre>
+
+        <p><strong>Detection rule:</strong> CUSUM flags a change point when <em>S<sub>m</sub></em> exceeds a pre-defined threshold <em>L</em>. The threshold is typically chosen to control the false alarm probability, often via Monte Carlo simulations under the null hypothesis.</p>
+
+        <p><strong>Key property:</strong> When data are normally distributed and all parameters are known, CUSUM guarantees optimal performance in terms of detection delay (Lorden, 1971). However, in practice, parameters are often unknown, which degrades performance.</p>
+
+        <h4>2. Likelihood Ratio Test</h4>
+        <p>Hinkley (1970) considers the likelihood ratio test for change point detection. Suppose each <em>Y<sub>i</sub></em> follows a distribution <em>F</em> with probability density function <em>f</em> independently. The estimated change point τ̂ maximizes the likelihood function:</p>
+        <pre><code>L(t) = Σᵢ₌₁ᵗ log f(yᵢ, θ₁) + Σᵢ₌ₜ₊₁ⁿ log f(yᵢ, θ₂)</code></pre>
+
+        <p>where θ₁ and θ₂ are parameters that may differ before and after the change point.</p>
+
+        <p><strong>Test statistic:</strong> To test whether a change point exists, we compute</p>
+        <pre><code>S = 2(L(τ̂) - Σᵢ₌₁ⁿ log f(yᵢ, θ))</code></pre>
+
+        <p>where θ is the parameter estimate under the null hypothesis of no change. If <em>S</em> exceeds a threshold <em>c</em>, we conclude a change point exists at τ̂.</p>
+
+        <p><strong>Normal case:</strong> When θ₁ and θ₂ are unknown parameters in a normal distribution, the asymptotic distribution of τ̂ is known (Hinkley, 1970). The challenge is deriving the asymptotic distribution of <em>S</em> under the null hypothesis for general distributions—examples for normal, gamma, and Poisson cases are discussed by Chen and Gupta (2012).</p>
+
+        <p><strong>The threshold problem:</strong> Choosing <em>c</em> is non-trivial. One approach uses the Bonferroni inequality to control false alarm probability, but this bound is overly conservative for large <em>n</em>. When parameters are unknown and must be estimated, the generalized likelihood ratio (GLR) statistic can become very insensitive to real change points, as noted by Hawkins et al. (2003).</p>
+
+        <h4>3. t-Test Based Detection</h4>
+        <p>Hawkins et al. (2003) propose a more practical approach when parameters μ₁, μ₂, and σ are unknown. Suppose the pre- and post-change distributions are Gaussian but with unknown parameters:</p>
+        <pre><code>Yᵢ ~ N(μ₁, σ²) for i = 1, 2, ..., τ
+Yᵢ ~ N(μ₂, σ²) for i = τ + 1, ..., T</code></pre>
+
+        <p><strong>The algorithm:</strong> For any candidate split point <em>j</em>, define:</p>
+        <ul>
+            <li>Ȳ<sub>jn</sub> = (1/j) Σᵢ₌₁ʲ <em>Y<sub>i</sub></em> as the sample mean of observations 1 to <em>j</em></li>
+            <li>Ȳ'<sub>jn</sub> = 1/(n-j) Σᵢ₌ⱼ₊₁ⁿ <em>Y<sub>i</sub></em> as the sample mean of observations <em>j</em>+1 to <em>n</em></li>
+            <li><em>V<sub>jn</sub></em> = Σᵢ₌₁ʲ (<em>Y<sub>i</sub></em> - Ȳ<sub>jn</sub>)² + Σᵢ₌ⱼ₊₁ⁿ (<em>Y<sub>i</sub></em> - Ȳ'<sub>jn</sub>)² as the residual sum of squares</li>
+        </ul>
+
+        <p>For each <em>j</em>, compute the two-sample <em>t</em>-statistic:</p>
+        <pre><code>T_jn = √(j(n-j)/n) · (Ȳ_jn - Ȳ'_jn) / σ̂_jn</code></pre>
+
+        <p>where σ̂<sub>jn</sub> = <em>V<sub>jn</sub></em>/(n-2). If <em>Y</em>₁, ..., <em>Y<sub>n</sub></em> are i.i.d. N(μ₁, σ), then <em>T<sub>jn</sub></em> follows a <em>t</em>-distribution with n-2 degrees of freedom.</p>
+
+        <p><strong>Detection rule:</strong> Define</p>
+        <pre><code>T_{max,n} = max_j T_jn   and   τ̂_n = arg max_j T_jn</code></pre>
+
+        <p>If <em>T</em><sub>max,n</sub> exceeds a decision threshold <em>h<sub>n</sub></em>, we conclude μ₁ ≠ μ₂ and estimate the change point as τ̂<sub>n</sub>.</p>
+
+        <p><strong>The problem of choosing a threshold:</strong> Setting <em>h<sub>n</sub></em> requires careful calibration. One could use the Bonferroni inequality, but as Hawkins et al. (2003) note, this bound is overly conservative for large <em>n</em>. In practice, Monte Carlo simulation is often the most reliable approach. The same threshold challenge arises in the likelihood ratio approach—while we can control the false alarm rate theoretically, doing so without being overly conservative is difficult when the process is in control and n is large.</p>
+
+        <h4>4. Rank-Based Detection</h4>
+        <p>Hawkins and Deng (2010) develop a distribution-free change point detection method using ranks. This approach works without assuming any specific distribution, making it highly robust.</p>
+
+        <p><strong>The rank statistic:</strong> Define</p>
+        <pre><code>D_ij = sgn(Yᵢ - Yⱼ) = { 1,   if Yᵢ > Yⱼ
+                          { 0,   if Yᵢ = Yⱼ
+                          {-1,   if Yᵢ < Yⱼ</code></pre>
+
+        <p>Then compute</p>
+        <pre><code>U_{k,n} = Σᵢ₌₁ᵏ Σⱼ₌ₖ₊₁ⁿ D_ij,   1 ≤ k ≤ n-1</code></pre>
+
+        <p>and the normalized test statistic</p>
+        <pre><code>T_{k,n} = U_{k,n} / √(k(n-k)(n+1)/3)</code></pre>
+
+        <p><strong>Asymptotic distribution:</strong> Under the null hypothesis <em>H</em>₀: θ = 0 (no change), by relating <em>T<sub>k,n</sub></em> to the Mann-Whitney statistic, we have</p>
+        <pre><code>T_{k,n} → N(0,1)  as n, k → ∞</code></pre>
+
+        <p><strong>Detection rule:</strong> Define</p>
+        <pre><code>T_{max,n} = max_k T_{k,n}   and   τ̂_n = arg max_k T_{k,n}</code></pre>
+
+        <p>If <em>T</em><sub>max,n</sub> exceeds threshold <em>h<sub>n</sub></em>, reject <em>H</em>₀ and estimate the change point as τ̂<sub>n</sub>. Due to the difficulty of analytically determining <em>h<sub>n</sub></em> for a given false alarm probability, Monte Carlo simulations are typically used.</p>
+
+        <p><strong>Why ranks work:</strong> By using only the relative ordering of observations, this method is completely robust to outliers and works for any continuous distribution. Similar rank-based approaches using Kolmogorov-Smirnov and Cramér-von Mises tests are discussed by Ross and Adams (2012).</p>
+
+        <h3>Multiple Change Point Methods</h3>
+        <p>In practice, data sequences often contain multiple change points rather than just one. Suppose we observe <em>y</em> = (<em>y</em>₁, <em>y</em>₂, ..., <em>y<sub>n</sub></em>), where <em>y<sub>i</sub></em> ∈ ℝ and <em>y</em> is a realization of random sequence <em>Y</em> = (<em>Y</em>₁, <em>Y</em>₂, ..., <em>Y<sub>n</sub></em>). The sequence is piecewise i.i.d. with a set of change points τ = (τ₁, ..., τ<sub>m</sub>), where each τ<sub>i</sub> ∈ ℕ, τ₀ = 1, τ<sub>m+1</sub> = <em>n</em>, and τ<sub>i</sub> < τ<sub>j</sub> if and only if <em>i</em> < <em>j</em>.</p>
+
+        <p>The change points partition <em>Y</em> into segments such that</p>
+        <pre><code>Y_{τⱼ}, ..., Y_{τⱼ₊₁} ~ Fⱼ,  j = 0, ..., m
+Fᵢ ≠ F_{i+1},  i = 0, ..., m-1</code></pre>
+
+        <p>For notational convenience, we'll denote the sequence <em>y<sub>a</sub></em>, <em>y</em><sub>a+1</sub>, ..., <em>y<sub>b</sub></em> as <em>y<sub>a:b</sub></em>.</p>
+
+        <h4>1. Binary Segmentation</h4>
+        <p>Binary segmentation (Scott and Knott, 1974) is a popular greedy algorithm that has become one of the best-performing methods for practical change point detection problems (Killick and Eckley, 2014; van den Burg and Williams, 2020).</p>
+
+        <p><strong>The recursive algorithm:</strong> Binary segmentation adapts a single change point test statistic and applies it recursively. First, apply the test to the entire sequence. If a change point is detected, split the sequence at that point. Then apply the procedure recursively to each segment until no further change points are found.</p>
+
+        <p><strong>Mathematical formulation:</strong> Specifically, Scott and Knott (1974) assume <em>Y<sub>i</sub></em> are independent and follow N(μ<sub>i</sub>, σ). They test the null hypothesis <em>H</em>₀: μ₁ = μ₂ = ... = μ<sub>n</sub> against the alternative that μ<sub>i</sub> takes one of two possible values <em>m</em>₁ or <em>m</em>₂. To implement binary segmentation, first find the partition <em>B</em>₀ that maximizes the between-groups sum of squares:</p>
+        <pre><code>B₀ = arg max_t [(Σᵢ₌₁ᵗ yᵢ - Σᵢ₌ₜ₊₁ⁿ yᵢ)² + (Σᵢ₌ₜ₊₁ⁿ yᵢ - Σᵢ₌₁ᵗ yᵢ)²]</code></pre>
+
+        <p>The maximum likelihood estimate of the variance is</p>
+        <pre><code>σ̂² = (1/n) Σᵢ₌₁ⁿ (yᵢ - (1/n)Σⱼ₌₁ⁿ yⱼ)²</code></pre>
+
+        <p>Under <em>H</em>₀ (equal means in both groups), the test statistic</p>
+        <pre><code>λ = (π/(2(π-2))) · (B₀/σ̂²)</code></pre>
+
+        <p>is asymptotically χ²-distributed. If λ leads to rejection of <em>H</em>₀, repeat the procedure on the two resulting segments until no further rejections occur.</p>
+
+        <p><strong>The greedy limitation:</strong> If the first split isn't optimal, all subsequent splits inherit that error. Binary segmentation works best when there's one dominant change, but can struggle with multiple subtle shifts.</p>
+
+        <h4>2. Wild Binary Segmentation (WBS)</h4>
+        <p>Wild Binary Segmentation (Fryzlewicz, 2014) addresses the greedy nature of binary segmentation through randomization. Rather than always testing the full sequence, WBS is motivated by the observation that binary segmentation performs poorly when multiple change points are clustered.</p>
+
+        <p><strong>The random sampling approach:</strong> Unlike binary segmentation, WBS doesn't attempt to estimate change points using the whole sequence directly. Instead, Fryzlewicz (2014) proposes randomly sampling many subintervals (<em>Y<sub>s</sub></em>, <em>Y</em><sub>s+1</sub>, ..., <em>Y<sub>e</sub></em>), where <em>s</em> and <em>e</em> are integers with 1 ≤ <em>s</em> < <em>e</em> ≤ <em>n</em>. Then compute the CUSUM statistic for all subintervals:</p>
+        <pre><code>Y^b_{s:e} = √((e-b)/(n(b-s+1))) Σᵢ₌ₛᵇ Yᵢ - √((b-s+1)/(n(e-b))) Σᵢ₌ᵦ₊₁ᵉ Yᵢ</code></pre>
+
+        <p>The largest |<em>Y</em>^b<sub>s:e</sub>| among all subintervals is taken as the candidate change point for the entire sequence. A hypothesis test is performed under the null that the candidate is not a change point. If the null is rejected, split the sequence at this point and apply the procedure recursively until no further rejections occur.</p>
+
+        <p><strong>Why randomization helps:</strong> By testing many random windows instead of just the full sequence, WBS avoids committing to a potentially suboptimal first split. This makes it particularly effective when change points are close together or when the first change isn't the most pronounced.</p>
+
+        <h4>3. Pruned Exact Linear Time (PELT)</h4>
+        <p>PELT (Killick et al., 2012) builds on work by Jackson et al. (2005), who propose a greedy search algorithm for multiple change points. Unlike binary segmentation and wild binary segmentation, which greedily search for multiple change points, Jackson et al. (2005) and Killick et al. (2012) estimate all change points simultaneously by solving an optimization problem.</p>
+
+        <p><strong>The optimization framework:</strong> The goal is to minimize</p>
+        <pre><code>min_{τ∈{1,...,n}} {Σᵢ₌₁^{m+1} c(y_{τᵢ₋₁+1:τᵢ})} + βf(m)</code></pre>
+
+        <p>where <em>c</em>(·) is a segmentation cost function (e.g., variance of the sub-sequence), and β<em>f</em>(<em>m</em>) is a penalty term for preventing overfitting. The cost function is designed to be sensitive to the presence of change points in the subsequence: if the subsequence doesn't contain change points, the cost value should be small; otherwise, it should be large. The penalty term prevents over-segmentation by penalizing the number of change points detected.</p>
+
+        <p><strong>Jackson et al.'s recursion:</strong> Jackson et al. (2005) consider the case β<em>f</em>(<em>m</em>) = β<em>m</em> and show that</p>
+        <pre><code>F(y_{1:n}) = min_{τ∈{1,...,n}} {Σᵢ₌₁^{m+1} [c(y_{τᵢ₋₁+1:τᵢ}) + β]}
+           = min{F(y_{1:t}) + c(y_{t+1:n}) + β}</code></pre>
+
+        <p>This recursive formulation allows the problem to be solved via dynamic programming. However, the computational time for the recursive search is high, as noted by Killick et al. (2012).</p>
+
+        <p><strong>The pruning strategy:</strong> Killick et al. propose an efficient pruning strategy to reduce computational time. If <em>c</em>(·) satisfies the condition that for all <em>t</em> < <em>s</em> < <em>T</em>,</p>
+        <pre><code>c(y_{t+1:s}) + c(y_{s+1:T}) + K ≤ c(y_{t+1:T})</code></pre>
+
+        <p>then if</p>
+        <pre><code>F(y_{1:t}) + c(y_{t+1:s}) + K ≥ F(y_{1:s})</code></pre>
+
+        <p>at any future time <em>T</em> > <em>s</em>, <em>t</em> can never be the optimal last change point prior to <em>T</em> and can be pruned from consideration. This pruning process dramatically reduces computational complexity while preserving the accuracy of the original algorithm by Jackson et al. (2005), achieving O(<em>mn</em>²) time complexity in the worst case but often approaching linear time in practice.</p>
+
+        <h4>4. Nonparametric Maximum Likelihood</h4>
+        <p>Zou et al. (2014) consider a nonparametric maximum likelihood approach that makes no distributional assumptions. The key insight is that for <em>n</em> univariate random variables <em>Y</em>₁, <em>Y</em>₂, ..., <em>Y<sub>n</sub></em> ~ <em>F</em>, the empirical cumulative distribution function <em>F̂</em>(<em>μ</em>) of <em>y</em>₁, ..., <em>y<sub>n</sub></em> satisfies</p>
+        <pre><code>nF̂(μ) ~ Binomial(n, F(μ))</code></pre>
+
+        <p>for any fixed μ.</p>
+
+        <p><strong>The likelihood function:</strong> Assume there are <em>m</em> change points and denote the empirical cumulative distribution function of <em>y</em><sub>τⱼ:τⱼ₊₁</sub> as <em>F̂</em>^<sub>τⱼ+1</sub>(<em>μ</em>). For fixed μ, the log-likelihood can be written as</p>
+        <pre><code>L(τ₁, ..., τ_m) = Σₖ₌₀ᵐ (τ̂ₖ₊₁ - τ̂ₖ){F̂^{τₖ+1}(μ) log F̂^{τₖ+1}(μ) + [1 - F̂^{τₖ+1}(μ)] log[1 - F̂^{τₖ+1}(μ)]}</code></pre>
+
+        <p>For each fixed μ, the likelihood L(τ₁, ..., τ<sub>m</sub>) is expected to increase as each τ<sub>i</sub> → τᵢ. Hence one approach estimates the change points τ by maximizing the likelihood function L(τ₁, ..., τ<sub>m</sub>) directly.</p>
+
+        <p><strong>Dealing with μ dependence:</strong> However, the estimated change points depend on the choice of μ, which is hard to choose in practice. To overcome this, Zou et al. (2014) suggest choosing a weight function <em>w</em>(μ) and maximizing the integrated likelihood</p>
+        <pre><code>R(τ₁, ..., τ_m) = ∫₋∞^∞ L(τ₁, ..., τ_m) dw(μ)</code></pre>
+
+        <p>where, in their implementation,</p>
+        <pre><code>dw(μ) = {F̂₁ⁿ(μ)(1 - F̂₁ⁿ(μ))}⁻¹ dF̂₁ⁿ(μ)</code></pre>
+
+        <p><strong>Estimating the number of change points:</strong> Since <em>m</em> is unknown, they further propose estimating it by minimizing</p>
+        <pre><code>R(τ₁, ..., τ_m) + mξ_n</code></pre>
+
+        <p>where ξ<sub>n</sub> is the Bayesian information criterion (Schwarz, 1978). Let <span style="text-decoration: overline;">K</span><sub>n</sub> be the upper bound on the number of change points. Zou et al. (2014) show that if</p>
+        <pre><code>ξ_n = <span style="text-decoration: overline;">K</span>_n³(log K_n)²(log n)^{2+c}</code></pre>
+
+        <p>for any <em>c</em> > 0, then under mild conditions, the estimated number of change points converges in probability to the true number, and τ̂ is close to τ. The optimization problem is solved via dynamic programming with computational cost O(<em>mn</em>²). Haynes et al. (2017) further propose an approximation to reduce computational complexity.</p>
+
+        <h4>5. Energy-Based Detection</h4>
+        <p>Energy change point detection (ECD) (Matteson and James, 2014) is a multivariate nonparametric change point detection algorithm that combines the energy distance (Székely et al., 2005) and the bisection method (Vostrikova, 1981).</p>
+
+        <p><strong>The energy distance:</strong> For two multivariate sequences <em>X</em>^<em>n</em>₁ = (<em>X</em>₁, ..., <em>X</em><sub>n₁</sub>) and <em>Z</em>^<em>n</em>₂ = (<em>Z</em>₁, ..., <em>Z</em><sub>n₂</sub>), the energy distance is defined as:</p>
+        <pre><code>ϵ(X^{n₁}, Z^{n₂}; α) = (1/(n₁n₂)) Σⱼ₌₁^{n₁} Σᵢ₌₁^{n₂} ||Xⱼ - Zᵢ||^α
+                       - (1/(2n₁²)) Σⱼ₌₁^{n₁} Σᵢ₌₁^{n₁} ||Xⱼ - Xᵢ||^α
+                       - (1/(2n₂²)) Σⱼ₌₁^{n₂} Σᵢ₌₁^{n₂} ||Zⱼ - Zᵢ||^α</code></pre>
+
+        <p><strong>Convergence property:</strong> It can be shown that the statistic</p>
+        <pre><code>(mn/(m+n)) ϵ(X^n, Z^m; α)</code></pre>
+
+        <p>converges in distribution to a non-degenerate random variable if and only if</p>
+        <pre><code>(X₁, ..., X_{n₁}, Z₁, ..., Z_{n₂}) ~ F(x)</code></pre>
+
+        <p>where <em>F</em>(<em>x</em>) is a cumulative density function with 𝔼|<em>X</em>|^α < ∞ (α < 2). Otherwise,</p>
+        <pre><code>(mn/(m+n)) ϵ(X^n, Z^m; α) → ∞</code></pre>
+
+        <p><strong>Change point detection via bisection:</strong> Denote <em>Y</em>^τ = (<em>Y</em>₁, ..., <em>Y<sub>τ</sub></em>) and <em>Y</em>^κ = (<em>Y</em><sub>τ+1</sub>, ..., <em>Y<sub>n</sub></em>). Matteson and James (2014) propose searching for a change point τ̂ by solving</p>
+        <pre><code>argmin_{τ,κ} ϵ(Z^τ, Z^κ_κ)</code></pre>
+
+        <p>Then, a two-sample hypothesis test between <em>Y</em>₁, ..., <em>Y<sub>τ̂</sub></em> and <em>Y</em><sub>τ̂+1</sub>, ..., <em>Y<sub>n</sub></em> is performed using the permutation method. If the null hypothesis is rejected at the specified significance level, τ̂ is considered a change point, and the sequence is split into two disjoint subsequences. This procedure is repeated recursively on the split subsequences until no change point is detected.</p>
+
+        <p><strong>Why energy works for multivariate data:</strong> The energy statistic naturally handles multivariate data without requiring specific distributional assumptions. It's sensitive to differences in any aspect of the distribution—mean, variance, correlation structure, or higher moments. A similar kernel-based approach is considered by Harchaoui et al. (2009a).</p>
+
+        <h2>The Threshold Problem</h2>
+        <p>Nearly every method requires choosing a decision threshold to declare a change point. This threshold fundamentally governs the trade-off between detection delay and false alarm rate.</p>
+
+        <p><strong>Common strategies include:</strong></p>
+        <ul>
+            <li><strong>Bonferroni correction:</strong> Controls false alarm probability via probabilistic bounds, but tends to be overly conservative for large <em>n</em> (Hawkins et al., 2003).</li>
+            <li><strong>Monte Carlo simulation:</strong> Generate data under the null hypothesis (no change) and empirically determine the threshold that achieves your desired false alarm rate. This is often the most reliable practical approach.</li>
+            <li><strong>Information criteria:</strong> For methods like PELT and nonparametric maximum likelihood, penalty terms based on BIC help control model complexity.</li>
+        </ul>
+
+        <p>There's no escaping this fundamental trade-off: more sensitive detection inevitably increases false alarms. The optimal threshold depends on the relative costs of missed detections versus false alarms in your specific application.</p>
+
+    </div>
+</article>
+
+</body>
+</html>

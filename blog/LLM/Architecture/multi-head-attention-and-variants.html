@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Head Attention and Variants - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .diagram {
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Multi-Head Attention and Variants</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/Multi-head Attention And Variants.pdf">PDF</a>.</p>
+        
+        <p>Multi-head attention is the key component of every transformer, 
+           but during inference it can create a serious memory problem: 
+           <strong>the KV cache grows linearly with sequence length and scales with the number of heads</strong>. 
+           To alleviate such constraints, we can consider Grouped Query Attention (GQA).</p>
+
+        <h2>Standard Multi-Head Attention</h2>
+
+        <p>In standard Multi-Head Attention, the input <code>X</code> is projected into multiple independent sets of queries, keys, and values.
+            Each set acts as a "head," and each head computes its own attention independently. 
+        </p>
+
+        <p>            <strong>Intuition:</strong>
+            The intuition behind Multi-Head Attention is that a single word representation 
+            can contain many different characteristics of the word (e.g., it could be a verb, it is in the past tense, and it has the semantic meaning of "play").
+            If we just used a single Scaled Dot-Product Attention layer, we would be forced to query all of these characteristics in one shot.
+            Consequently, when we compute the softmax scores, a dominant trait like the verb characteristic might outweigh the past tense, 
+            causing the tense to be ignored. The Multi-Head Attention layer, however, allows the model to apply many different projections of the 
+            word representation into different subspaces. Each subspace focuses on a subset of the word's characteristics, so the first head might focus on the verb part, 
+            the second head could focus on the past tense, and so on. This would allow the output of the Multi-Head Attention to represent more information more easily.</p>
+
+        <h3>Per-Head Projections</h3>
+        <p>For each head <code>i</code>, we project the input through learned weight matrices:</p>
+
+        <pre><code>Q^i = X * W_Q^i
+K^i = X * W_K^i
+V^i = X * W_V^i</code></pre>
+
+        <p>Where <code>W_Q^i</code>, <code>W_K^i</code>, and <code>W_V^i</code> are the projection matrices for head <code>i</code>. Each head operates in a lower-dimensional subspace (typically <code>d_model / num_heads</code>).</p>
+
+        <h3>Per-Head Attention Computation</h3>
+        <p>Each head computes scaled dot-product attention independently:</p>
+
+        <pre><code>C_i = softmax(Q^i * (K^i)^T / sqrt(d_k)) * V^i</code></pre>
+
+        <h3>Concatenation and Output Projection</h3>
+        <p>The outputs of all heads are concatenated and passed through a final linear projection:</p>
+
+        <pre><code>Output = [C_1, C_2, ..., C_h] * W_o</code></pre>
+
+        <p>Where <code>W_o</code> is the output projection matrix and <code>h</code> is the total number of heads.</p>
+
+        <div class="diagram">
+            <svg width="520" height="340" viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg">
+                <!-- Input -->
+                <rect x="210" y="295" width="100" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+                <text x="260" y="314" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#1a1a1a">Input: X</text>
+
+                <!-- Arrows from input to heads -->
+                <line x1="235" y1="295" x2="90" y2="255" stroke="#999" stroke-width="1"/>
+                <line x1="260" y1="295" x2="260" y2="255" stroke="#999" stroke-width="1"/>
+                <line x1="285" y1="295" x2="430" y2="255" stroke="#999" stroke-width="1"/>
+
+                <!-- Head 1 -->
+                <rect x="40" y="225" width="100" height="30" rx="4" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+                <text x="90" y="244" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#2563eb">Q1  K1  V1</text>
+
+                <!-- Head 2 -->
+                <rect x="210" y="225" width="100" height="30" rx="4" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+                <text x="260" y="244" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#2563eb">Q2  K2  V2</text>
+
+                <!-- Head h -->
+                <rect x="380" y="225" width="100" height="30" rx="4" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+                <text x="430" y="244" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#2563eb">Qh  Kh  Vh</text>
+
+                <!-- Dots between heads -->
+                <text x="170" y="244" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#999">...</text>
+                <text x="345" y="244" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#999">...</text>
+
+                <!-- Arrows from heads to attention -->
+                <line x1="90" y1="225" x2="90" y2="195" stroke="#999" stroke-width="1" marker-end="url(#arrow)"/>
+                <line x1="260" y1="225" x2="260" y2="195" stroke="#999" stroke-width="1" marker-end="url(#arrow)"/>
+                <line x1="430" y1="225" x2="430" y2="195" stroke="#999" stroke-width="1" marker-end="url(#arrow)"/>
+
+                <!-- Attention boxes -->
+                <rect x="30" y="160" width="120" height="32" rx="4" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1"/>
+                <text x="90" y="180" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1a1a1a">Attention(Q1,K1,V1)</text>
+
+                <rect x="200" y="160" width="120" height="32" rx="4" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1"/>
+                <text x="260" y="180" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1a1a1a">Attention(Q2,K2,V2)</text>
+
+                <rect x="370" y="160" width="120" height="32" rx="4" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1"/>
+                <text x="430" y="180" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1a1a1a">Attention(Qh,Kh,Vh)</text>
+
+                <!-- Arrows to concat -->
+                <line x1="90" y1="160" x2="200" y2="115" stroke="#999" stroke-width="1"/>
+                <line x1="260" y1="160" x2="260" y2="115" stroke="#999" stroke-width="1"/>
+                <line x1="430" y1="160" x2="320" y2="115" stroke="#999" stroke-width="1"/>
+
+                <!-- Concat box -->
+                <rect x="170" y="85" width="180" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+                <text x="260" y="104" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#1a1a1a">[C1, C2, ..., Ch] * Wo</text>
+
+                <!-- Arrow to output -->
+                <line x1="260" y1="85" x2="260" y2="55" stroke="#999" stroke-width="1" marker-end="url(#arrow)"/>
+
+                <!-- Output -->
+                <rect x="210" y="25" width="100" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+                <text x="260" y="44" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#1a1a1a">Output</text>
+
+                <!-- Arrow marker -->
+                <defs>
+                    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#999" stroke-width="1"/>
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+
+        <p>Each head independently learns to attend to different relationships in the data. One head might focus on syntactic dependencies, another on semantic similarity, and so on.</p>
+
+        <h2>The KV Cache Bottleneck</h2>
+
+        <p>During autoregressive inference (generating one token at a time), a critical optimization is the <strong>KV cache</strong>: at each head, the keys and values of all previous tokens are cached so they do not need to be recomputed at every step.</p>
+
+        <p>The problem is that this cache grows linearly with sequence length and scales with the number of heads:</p>
+
+        <ul>
+            <li>Each head maintains its own separate K and V cache</li>
+            <li>Memory usage: <code>2 * num_heads * seq_len * d_k</code> (factor of 2 for K and V)</li>
+            <li>For models with many heads (e.g., 32 or 64), this becomes a significant memory bottleneck during long-context inference</li>
+            <li>The cache gets longer and longer as more tokens are generated, eventually becoming the dominant memory cost</li>
+        </ul>
+
+        <p>The KV cache is essential for efficient inference (avoiding quadratic recomputation), but <strong>its memory cost limits the batch size and maximum sequence length that can be served</strong>.</p>
+
+        <h2>Solution: Grouped Query Attention (GQA)</h2>
+
+        <p>Grouped Query Attention (introduced by Ainslie et al., 2023) provides a solution to the KV cache bottleneck. The core idea 
+            is divide the query heads into groups. Each group of query heads shares a single key head and a single value head.
+            Intuition behind the idea: having multiple different query is more important than having multiple different key and value.
+            When researchers analyzed standard Multi-Head Attention, they found that many of the Key and Value heads were practically identical. 
+            The model was learning the same representations multiple times.
+        </p>
+
+        <h3>How GQA Works</h3>
+
+        <p>Instead of having <code>h</code> independent K and V projections (one per query head), GQA uses only <code>g</code> groups of K/V pairs, where <code>g &lt; h</code>. Multiple query heads within the same group share the same K and V:</p>
+
+        <pre><code>For group j (containing query heads i_1, i_2, ..., i_n):
+
+  K^j = X * W_K^j       (shared key for the group)
+  V^j = X * W_V^j       (shared value for the group)
+
+  Q^(i_1) = X * W_Q^(i_1)   (each query head still has its own projection)
+  Q^(i_2) = X * W_Q^(i_2)
+  ...
+
+  C^(i_1) = softmax(Q^(i_1) * (K^j)^T / sqrt(d_k)) * V^j
+  C^(i_2) = softmax(Q^(i_2) * (K^j)^T / sqrt(d_k)) * V^j
+  ...</code></pre>
+
+        <p>The final output is still the concatenation of all head outputs projected through <code>W_o</code>:</p>
+
+        <pre><code>Output = [C^(1,1), ..., C^(1,n), C^(2,1), ..., C^(g,n)] * W_o</code></pre>
+
+        <div class="diagram">
+            <svg width="520" height="380" viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg">
+                <!-- Input -->
+                <rect x="210" y="335" width="100" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+                <text x="260" y="354" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#1a1a1a">Input: X</text>
+
+                <!-- Arrows from input to groups -->
+                <line x1="235" y1="335" x2="95" y2="295" stroke="#999" stroke-width="1"/>
+                <line x1="260" y1="335" x2="260" y2="295" stroke="#999" stroke-width="1"/>
+                <line x1="285" y1="335" x2="425" y2="295" stroke="#999" stroke-width="1"/>
+
+                <!-- Group 1 box -->
+                <rect x="20" y="240" width="150" height="55" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,2"/>
+                <text x="95" y="256" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#2563eb">Group 1</text>
+                <text x="95" y="272" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#4338ca">Q1,1  Q1,2 ... Q1,n</text>
+                <text x="95" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#dc2626">K1, V1 (shared)</text>
+
+                <!-- Group 2 box -->
+                <rect x="185" y="240" width="150" height="55" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,2"/>
+                <text x="260" y="256" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#2563eb">Group 2</text>
+                <text x="260" y="272" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#4338ca">Q2,1  Q2,2 ... Q2,n</text>
+                <text x="260" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#dc2626">K2, V2 (shared)</text>
+
+                <!-- Group 3 box -->
+                <rect x="350" y="240" width="150" height="55" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,2"/>
+                <text x="425" y="256" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#2563eb">Group g</text>
+                <text x="425" y="272" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#4338ca">Qg,1  Qg,2 ... Qg,n</text>
+                <text x="425" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#dc2626">Kg, Vg (shared)</text>
+
+                <!-- Arrows from groups to attention -->
+                <line x1="95" y1="240" x2="95" y2="210" stroke="#999" stroke-width="1" marker-end="url(#arrow2)"/>
+                <line x1="260" y1="240" x2="260" y2="210" stroke="#999" stroke-width="1" marker-end="url(#arrow2)"/>
+                <line x1="425" y1="240" x2="425" y2="210" stroke="#999" stroke-width="1" marker-end="url(#arrow2)"/>
+
+                <!-- Attention computations -->
+                <rect x="25" y="175" width="140" height="32" rx="4" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1"/>
+                <text x="95" y="195" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1a1a1a">Attn(Q1,*,K1,V1)</text>
+
+                <rect x="190" y="175" width="140" height="32" rx="4" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1"/>
+                <text x="260" y="195" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1a1a1a">Attn(Q2,*,K2,V2)</text>
+
+                <rect x="355" y="175" width="140" height="32" rx="4" fill="#f0f0ec" stroke="#1a1a1a" stroke-width="1"/>
+                <text x="425" y="195" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1a1a1a">Attn(Qg,*,Kg,Vg)</text>
+
+                <!-- Arrows to concat -->
+                <line x1="95" y1="175" x2="200" y2="130" stroke="#999" stroke-width="1"/>
+                <line x1="260" y1="175" x2="260" y2="130" stroke="#999" stroke-width="1"/>
+                <line x1="425" y1="175" x2="320" y2="130" stroke="#999" stroke-width="1"/>
+
+                <!-- Concat + Wo -->
+                <rect x="155" y="100" width="210" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+                <text x="260" y="119" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#1a1a1a">[C1,1,...,Cg,n] * Wo</text>
+
+                <!-- Arrow to output -->
+                <line x1="260" y1="100" x2="260" y2="70" stroke="#999" stroke-width="1" marker-end="url(#arrow2)"/>
+
+                <!-- Output -->
+                <rect x="210" y="40" width="100" height="30" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+                <text x="260" y="59" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#1a1a1a">Output</text>
+
+                <!-- Arrow marker -->
+                <defs>
+                    <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                        <path d="M0,0 L8,3 L0,6" fill="none" stroke="#999" stroke-width="1"/>
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+
+        <h3>Memory Savings</h3>
+
+        <p>The KV cache reduction is proportional to the grouping factor. If we have <code>h</code> heads and <code>g</code> groups:</p>
+
+        <ul>
+            <li><strong>Standard MHA</strong>: KV cache size = <code>2 * h * seq_len * d_k</code></li>
+            <li><strong>GQA</strong>: KV cache size = <code>2 * g * seq_len * d_k</code></li>
+            <li><strong>Reduction factor</strong>: <code>h / g</code></li>
+        </ul>
+
+        <p>For example, with 32 query heads and 8 KV groups, the KV cache is reduced by 4x.</p>
+
+        <h3>Special Cases</h3>
+
+        <p>GQA is a generalization that includes two extremes:</p>
+
+        <ul>
+            <li><strong>When g = h</strong> (one group per head): This is standard Multi-Head Attention &mdash; every query head has its own K and V.</li>
+            <li><strong>When g = 1</strong> (one group for all heads): This is Multi-Query Attention (MQA, Shazeer 2019) &mdash; all query heads share a single K and V, giving the maximum cache reduction but potentially sacrificing quality.</li>
+        </ul>
+
+        <p>GQA strikes a balance between MHA (full quality, large cache) and MQA (minimal cache, potential quality loss). In practice, models like LLaMA 2 70B use GQA with 8 KV heads for 64 query heads.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li><strong>Standard MHA</strong>: Each head has independent Q, K, V projections. Powerful but memory-intensive at inference due to per-head KV caching.</li>
+            <li><strong>KV Cache Bottleneck</strong>: During autoregressive generation, caching K and V for all heads across all past tokens dominates memory usage.</li>
+            <li><strong>GQA</strong>: Groups query heads to share K/V, reducing cache by a factor of <code>h/g</code> while retaining most of MHA's representational power.</li>
+        </ul>
+
+        <h3>References</h3>
+        <ul>
+            <li>Michel, P., Levy, O. and Neubig, G., 2019. Are sixteen heads really better than one?. Advances in neural information processing systems, 32.</li>
+            <li>Ainslie, J., Lee-Thorp, J., De Jong, M., Zemlyanskiy, Y., Lebrón, F. and Sanghai, S., 2023, December. Gqa: Training generalized multi-query transformer models from multi-head checkpoints. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (pp. 4895-4901).</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

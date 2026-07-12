@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijkstra's Algorithm - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Dijkstra's Algorithm</h1>
+        <div class="post-meta">
+            <span class="tag">Leetcode</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Computer Science/Fundamentals/Dijkstra Algorithm.pdf">PDF</a>.</p>
+        <p>Dijkstra's algorithm finds the shortest path in a weighted graph, and it is surprisingly elegant once you see how the priority queue guarantees optimality. See <a href="https://leetcode.com/problems/network-delay-time/">LeetCode 743: Network Delay Time</a> for a classic application.</p>
+
+        <h2>Problem Statement</h2>
+        <p>Given a weighted graph, find the minimum-cost path from a starting node to an end node. For example, consider the following graph and the task of finding the shortest path from node A to node F:</p>
+
+        <!-- SVG diagram of the example graph -->
+        <svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" style="display:block; margin: 0 auto 16px; max-width: 380px;">
+            <!-- Nodes -->
+            <circle cx="200" cy="30" r="20" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="200" y="35" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#1a1a1a">A</text>
+
+            <circle cx="120" cy="110" r="20" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="120" y="115" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#1a1a1a">B</text>
+
+            <circle cx="280" cy="110" r="20" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="280" y="115" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#1a1a1a">C</text>
+
+            <circle cx="150" cy="200" r="20" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="150" y="205" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#1a1a1a">D</text>
+
+            <circle cx="230" cy="190" r="20" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="230" y="195" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#1a1a1a">E</text>
+
+            <circle cx="170" cy="260" r="20" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+            <text x="170" y="265" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#1a1a1a">F</text>
+
+            <!-- Edges with weights -->
+            <!-- A-B (10) -->
+            <line x1="183" y1="43" x2="137" y2="97" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="148" y="65" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">10</text>
+
+            <!-- A-C (7) -->
+            <line x1="217" y1="43" x2="263" y2="97" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="248" y="65" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">7</text>
+
+            <!-- B-C (5) -->
+            <line x1="140" y1="110" x2="260" y2="110" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="200" y="103" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">5</text>
+
+            <!-- B-D (4) -->
+            <line x1="128" y1="129" x2="142" y2="181" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="125" y="160" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">4</text>
+
+            <!-- C-E (2) -->
+            <line x1="264" y1="124" x2="244" y2="174" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="262" y="155" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">2</text>
+
+            <!-- E-F (1) -->
+            <line x1="216" y1="205" x2="184" y2="245" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="205" y="232" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">1</text>
+
+            <!-- D-F (3) -->
+            <line x1="157" y1="219" x2="163" y2="241" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="146" y="237" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">3</text>
+
+            <!-- D-E (6) -->
+            <line x1="170" y1="196" x2="210" y2="192" stroke="#1a1a1a" stroke-width="1.2"/>
+            <text x="190" y="185" font-family="Inter, sans-serif" font-size="11" fill="#2563eb">6</text>
+        </svg>
+
+        <p>Dijkstra's algorithm solves this efficiently using a priority queue (min-heap) to always expand the cheapest unvisited node first.</p>
+
+        <h2>Algorithm Implementation</h2>
+        <p>The key idea is to use a min-heap to maintain candidate paths, always processing the shortest known path first. A dictionary <code>path</code> records the confirmed shortest cost to each visited node.</p>
+
+        <pre><code>import heapq
+
+def dijkstra(graph, start, end):
+    heap = []
+    heapq.heappush(heap, (0, start))  # (cost, node) - start with cost 0
+    path = {}  # stores the shortest path cost to each node
+
+    while heap:
+        current_cost, current_node = heapq.heappop(heap)
+
+        if current_node in path:
+            continue  # already found a shorter path to this node
+
+        path[current_node] = current_cost
+
+        for neighbor, cost in graph[current_node].items():
+            next_cost = current_cost + cost
+            if neighbor not in path:
+                heapq.heappush(heap, (next_cost, neighbor))
+
+    return path[end]</code></pre>
+
+        <h3>Step-by-Step Trace</h3>
+        <p>Consider a small graph where node 0 connects to node 1 (cost 1) and node 4 (cost 3), and node 1 connects to node 6 (cost 2). The algorithm processes as follows:</p>
+
+        <ol>
+            <li>Start: push <code>(0, 0)</code> onto the heap</li>
+            <li>Pop <code>(0, 0)</code> &rarr; heap becomes <code>[(1, 1), (3, 4)]</code>, path: <code>{0: 0}</code></li>
+            <li>Pop <code>(1, 1)</code> &rarr; heap becomes <code>[(3, 4), (3, 6)]</code>, path: <code>{0: 0, 1: 1}</code></li>
+            <li>Pop <code>(3, 4)</code> &rarr; path: <code>{0: 0, 1: 1, 4: 3}</code></li>
+            <li>Pop <code>(3, 6)</code> &rarr; path: <code>{0: 0, 1: 1, 4: 3, 6: 3}</code></li>
+        </ol>
+
+        <h2>Why the "Skip" Check is Necessary</h2>
+        <p>The <code>if current_node in path: continue</code> check is essential. A node can appear multiple times in the heap (pushed from different paths). Without this check, we would process the same node multiple times with suboptimal costs, leading to incorrect results.</p>
+
+        <h2>Key Insights</h2>
+
+        <p><strong>Here is the key insight:</strong> since we are using a priority queue (min-heap), each successive current_cost popped from the heap is guaranteed to be greater than or equal to the previous current_cost. This property leads to several important implications:</p>
+
+        <h3>1. First pop is the shortest path</h3>
+        <p>If a node is popped for the first time, the corresponding <code>current_cost</code> MUST be the minimum cost to reach it. The priority queue always yields the smallest cost first.</p>
+
+        <h3>2. Subsequent pops can be safely ignored</h3>
+        <p>If <code>heappop</code> returns a node already in <code>path</code>, the cost is equal to or larger than what we already recorded. Skip it.</p>
+
+        <h3>3. All reachable nodes will be visited</h3>
+        <p>Every reachable node will eventually be popped and added to <code>path</code> with its optimal cost.</p>
+
+        <h2>Time Complexity</h2>
+
+        <p>The time complexity is <code>O(E log V)</code>, where E is the number of edges and V is the number of vertices.</p>
+
+        <h3>Why?</h3>
+        <ul>
+            <li>Each node will be "visited" (processed) exactly once. Although a node may be pushed onto the heap multiple times, all pops after the first are skipped via the <code>continue</code> check.</li>
+            <li>For each visited node, we loop through all its neighbors. Across all nodes, the total number of neighbor iterations equals the number of edges E.</li>
+            <li>Each neighbor iteration may trigger a <code>heappush</code> operation, which costs <code>O(log V)</code> since the heap can hold at most V entries (in practice up to E, but <code>log E = O(log V)</code> for connected graphs).</li>
+            <li>Therefore total work: <code>V * (average neighbors) * log V = E * log V = O(E log V)</code>.</li>
+        </ul>
+
+        <h2>Reference Problem</h2>
+        <p>LeetCode 743 "Network Delay Time" asks: given a directed weighted graph, find the time it takes for a signal to reach all nodes from a source. This is a direct application of Dijkstra's algorithm -- compute shortest paths from the source to all nodes, then return the maximum value in <code>path</code>.</p>
+    </div>
+</article>
+
+</body>
+</html>

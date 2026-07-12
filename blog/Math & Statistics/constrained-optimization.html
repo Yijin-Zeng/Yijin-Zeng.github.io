@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constrained Optimization - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Constrained Optimization</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Constraint Optimization Problem.pdf">PDF</a>.</p>
+
+        <h2>The Standard Form</h2>
+        
+        <p>We sometimes face constrained optimization problems:</p>        
+
+                <pre><code>(q)  min  f(x)
+      x
+          s.t. g_i(x) <= 0  for all i = 1, ..., m</code></pre>
+
+        <p>This form is known as the standard form for constrained optimization problem. 
+           Any other formulation can be converted into this. For example, if we want to maximize <code>f(x)</code> rather than minimize it,
+           we have <code>max f(x) = min -f(x)</code>. Also, an equality constraint <code>g(x) = 0</code> can be equivalently written into two inequalities: 
+           <code>g(x) <= 0</code> and <code>-g(x) <= 0</code>.</p>
+
+        <h2>The Penalty Method (Naive Approach)</h2>
+        <p>To solve the constrained problem as described above, a simple (but may be impractical) idea is to convert the problem into an unconstrained problem by adding a penalty for violating constraints:</p>
+
+        <pre><code>min  f(x) + sum_i I(g_i(x))
+x
+
+        where I(z) = 0     if z <= 0
+                    +inf (or a large value if violating slightly is acceptable)  otherwise</code></pre>
+
+        <p>The problem of this approach is that it makes optimization process hard. 
+           The infinite penalty creates walls in the loss surface; if gradient descent starts on the wrong side, it can never cross over. 
+           Even with a large finite penalty instead of infinity, the sharp discontinuity makes optimization extremely difficult.</p>
+
+        <h2>Lagrange Multiplier Method</h2>
+        <p>Instead of introducing penalty, let us consider how <strong>Lagrange multiplier method</strong> approach the constrained problem. First, define the Lagrangian form for the problem:</p>
+
+        <pre><code>L(x, lambda) = f(x) + lambda^T g(x)
+
+where lambda = (lambda_1, ..., lambda_m)^T
+      g(x) = (g_1(x), ..., g_m(x))^T</code></pre>
+
+        <p>Notice that the original problem (q) is now equivalent to:</p>
+
+        <pre><code>(p)  min  max  L(x, lambda)
+      x  lambda>=0</code></pre>
+
+        <p>The reason is that for a feasible x (where all g_i(x) <= 0), the max over lambda >= 0 just gives f(x) since the lambda terms are non-positive. For an infeasible x, some g_i(x) > 0, 
+            and lambda can drive the Lagrangian to infinity. So the min-max formulation introduced by the Lagrangian form naturally enforces the constraints.</p>
+
+        <h2>The Dual Problem</h2>
+        <p>Next, we consider the so called dual problem of problem (p).
+           First, notice that for any function phi(x, y), we have:</p>
+
+        <pre><code>min phi(x,y) <= phi(x,y) <= max phi(x,y)
+ x                             y
+
+=> max min phi(x,y) <= min max phi(x,y)
+    y   x              x   y</code></pre>
+
+        <p>This gives us the <strong>Lagrange dual problem</strong>:</p>
+
+        <pre><code>(d)  max  min  L(x, lambda)
+    lambda  x
+     s.t. lambda >= 0</code></pre>
+
+        <p>Denote <code>q(lambda) = min_x L(x, lambda)</code> &mdash; this is called the inner problem. The dual problem in general much easier than the original problem (q).
+            Consider the following three reasons:</p>
+
+        <ol>
+            <li><strong>Simpler constraints:</strong> we go from g_i(x) <= 0 (which could be arbitrarily complex) to lambda_i >= 0 (simple box constraints, the easiest kind)</li>
+            <li><strong>Convexity:</strong> even if min f(x) is non-convex, max q(lambda) is always a convex problem</li>
+            <li><strong>Dimensionality reduction (in some cases):</strong> say x is in R^10000 and we have 5 constraints; the dual reduces the problem to only 5 dimensions</li>
+        </ol>
+
+        <h2>Solve the Dual Problem</h2>
+        <p>We now consider how to solving the dual problem (d).</p>
+
+        <ol>
+            <li><strong>Ideal case:</strong> we solve the (unconstrained) inner problem, get the analytical form for the vector <code>x</code>. Then we put the form of <code>x</code> back into the dual problem, solve the dual problem (by taking the gradient with respect to the vector <code>λ</code> and setting the result to zero), find the solutions for each <code>λ_i >= 0</code>, and we take the results as they are.</li>
+            <li><strong>Practical algorithm (dual ascent):</strong> 
+                <ol type="a">
+                    <li><strong>Initialize:</strong> Start with an initial guess for the vector of penalty variables, <code>λ</code>, ensuring every individual penalty element starts at <code>λ_i >= 0</code>.</li>
+                    <li><strong>Primal Update (Inner Problem):</strong> Using the currently fixed <code>λ</code> vector, computationally find the multi-dimensional vector <code>x</code> that minimizes the Lagrangian: <code>x^(k+1) = argmin_x L(x, λ^k)</code>.</li>
+                    <li><strong>Dual Update (Gradient Ascent):</strong> Evaluate the constraint violations for all <i>m</i> constraints, <code>g_i(x^(k+1))</code>. Update each penalty variable in the <code>λ</code> vector individually by taking a step in the direction of its specific gradient: <code>λ_i^(k+1) = max(0, λ_i^k + α * g_i(x^(k+1)))</code> (note that <code>g_i(x^(k+1))</code> is the gradient wrt λ_i at x^(k+1)) for all <code>i = 1, ..., m</code>, where <code>α</code> is the step size. The <code>max(0, ...)</code> operation ensures no individual penalty ever drops below zero.</li>
+                    <li><strong>Iterate:</strong> Repeat steps (b) and (c) until the vectors <code>x</code> and <code>λ</code> both stabilize and stop changing (convergence).</li>
+                </ol>
+            </li>
+        </ol>
+
+
+        <h2>Duality Gap</h2>
+        <p>Although the dual problem could be much easier than the original problem. Keep in mind that the results
+           for the dual problem could be smaller than the original problem.
+           The difference between the original and dual solutions is called <strong>duality gap</strong>:</p>
+
+        <pre><code>G = q* - d*
+
+where q* = optimal value of original problem
+      d* = optimal value of dual problem</code></pre>
+
+        <ul>
+            <li><strong>G = 0 (strong duality):</strong> the dual gives the exact solution</li>
+            <li><strong>G > 0 (weak duality):</strong> the dual only gives a lower bound, which means the x found by the dual is not in the feasible region of the original problem</li>
+        </ul>
+
+        <h3>When Does Strong Duality Hold?</h3>
+        <p>Naturally, we want to know when the strong duality would hold. A sufficient (but not necessary) condition is <strong>Slater's condition</strong>:</p>
+        <ol>
+            <li><strong>Convexity:</strong> f(x) and all g_i(x) are convex</li>
+            <li><strong>Strict feasibility:</strong> there exists at least one x such that g_i(x) < 0 for all i (strictly inside the feasible region, not on the boundary)</li>
+        </ol>
+
+        <p>Why might weak duality happen? In the inner problem <code>min_x (f(x) + lambda^T g(x))</code>, when g_i(x) > 0 (violating the constraint), we get a penalty lambda_i * g_i(x). But if f(x) is very small at that point, the violation might be worth it from the Lagrangian's perspective.</p>
+
+        <h2>KKT Conditions</h2>
+        <p>While the Lagrange method gives us a simpler dual problem, it doesn't directly solve the problem. We often solve constrained optimization directly using <strong>KKT (Karush-Kuhn-Tucker) conditions</strong>. These give a local minimum (or global, if Slater's condition holds).</p>
+
+        <p>The four conditions are:</p>
+        <ol>
+            <li><strong>Stationarity:</strong> <code>grad_x f(x) + lambda^T grad_x g(x) = 0</code> &mdash; at the minimum, the gradient of the Lagrangian must be zero</li>
+            <li><strong>Primal feasibility:</strong> <code>g_i(x) <= 0</code> for all i &mdash; the solution must satisfy the original constraints</li>
+            <li><strong>Dual feasibility:</strong> <code>lambda_i >= 0</code> for all i &mdash; multipliers must be non-negative</li>
+            <li><strong>Complementary slackness:</strong> <code>lambda_i * g_i(x) = 0</code> for all i &mdash; either the constraint is active (g_i = 0) or its multiplier is zero</li>
+        </ol>
+
+        <p>The complementary slackness condition is the most interesting one. Intuitively, it says that
+            if a constraint is not tight (g_i(x) < 0 we're strictly inside the feasible region), then lambda_i = 0, i.e. that constraint doesn't matter at the optimum. 
+            </p>
+
+        <h2>Using KKT to Find Solutions</h2>
+        <p>KKT conditions are both a checklist to verify a candidate solution and a tool to find one:</p>
+
+        <ol>
+            <li><strong>Guess</strong> which constraints are active (on the boundary); this follows complementary slackness condition which says for each constraint either g_i(x) = 0 or lambda_i = 0</li>
+            <li><strong>Solve</strong> for x and lambda from the stationarity and complementary slackness equations;
+            suppose x is in <code>R^k_1</code> and lambda is in <code>R^k_2</code>, then stationarity codition provides <code>R^k_1</code> equations and complementary slackness provides <code>R^k_2</code> equations</li>
+            <li><strong>Check feasibility</strong>; if it passes, found a local minimum. If not, go back to step 1 with a different guess</li>
+        </ol>
+
+        <p>Different guesses in step 1 can give different local minima. With m constraints, there are 2^m possible combinations to try in the worst case.
+           In some cases, the guess could be dramastically simpler. For example, if the target function is simply the sum of xi, then we can evaluate
+           if each xi is on the boundary seperately. 
+        </p>
+    </div>
+</article>
+
+</body>
+</html>

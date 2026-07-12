@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>From SGD to Adam - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">From SGD to Adam</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Adam.pdf">PDF</a>.</p>
+
+        <p>Almost every deep learning model I've trained -- at work or in side projects -- uses Adam (or AdamW) as the default optimizer, and for a long time I just accepted that without asking why. Plain SGD is such a clean idea: compute the gradient, take a small step downhill, repeat. Why do we need momentum terms, exponential moving averages, and bias corrections on top of it? It turns out each piece of Adam is a targeted fix for a concrete failure mode of SGD, and once you walk through them one by one, the final algorithm stops looking like alphabet soup and starts looking inevitable.</p>
+
+        <p>This matters in practice: if your loss curve is noisy, if training stalls in a flat region, or if your model has parameters with wildly different gradient scales (embeddings vs. dense layers, say), knowing <strong>which</strong> ingredient of Adam addresses <strong>which</strong> problem tells you what knob to turn. Let's build it up.</p>
+
+        <h2>Starting Point: SGD</h2>
+
+        <p>Stochastic gradient descent is one line:</p>
+
+        <pre><code>θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾)</code></pre>
+
+        <p>where the gradient is computed <strong>over a batch</strong>, not the whole dataset -- that's the "stochastic" part. Simple, but it has real problems: the batch gradients are noisy, it crawls through flat regions, and one global learning rate η has to fit every parameter. The rest of this post is about fixing those, one at a time.</p>
+
+        <h2>Momentum: Remember Where You Were Going</h2>
+
+        <p>Momentum keeps a running velocity vector m and updates it with the gradient, instead of using the gradient directly:</p>
+
+        <pre><code>m⁽ᵗ⁺¹⁾ ← α m⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾)
+θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ + m⁽ᵗ⁺¹⁾</code></pre>
+
+        <p>Why is this better? Two reasons.</p>
+
+        <h3>It accelerates -- by a lot</h3>
+
+        <p>Suppose the gradient is a constant, ∇L(θ⁽ᵗ⁾) = g (think of a long, consistent slope). Then the velocity builds up as a geometric series:</p>
+
+        <pre><code>m⁽¹⁾ = −ηg
+m⁽²⁾ = −ηg − αηg
+m⁽³⁾ = −ηg − αηg − α²ηg
+  ⋮
+m⁽ⁿ⁾ = −(1 + α + ... + αⁿ⁻¹) ηg  =  −(1 − αⁿ)/(1 − α) · ηg</code></pre>
+
+        <p>As n → ∞ this converges to −ηg / (1 − α). With the typical α = 0.9, that's <strong>10× the plain SGD step</strong>. It was quite satisfying when I first worked this out: the mysterious default 0.9 is really saying "accelerate up to 10 times when the gradient direction is consistent". If you set α = 0.99, you're asking for up to 100×, which explains why that setting can blow up.</p>
+
+        <p>There's a second, subtler benefit in the stochastic setting: batch gradients are noisy, but the noise is roughly random from batch to batch. Averaging over time means <strong>the random parts cancel out</strong> while the consistent part accumulates:</p>
+
+        <pre><code>without momentum:          with momentum:
+      ↗                          ↗
+    ↘   ↗                       ↗
+      ↗   ↘                    ↗      (random parts
+    ↘   ↗                     ↗        cancel out)
+      ↗                      ↗</code></pre>
+
+        <h3>It can skip local minima</h3>
+
+        <p>Because the update carries velocity from previous steps, momentum can coast through a small dip that would trap vanilla SGD:</p>
+
+        <pre><code>\
+ \            momentum can skip it easier
+  \          ↗ - - - ↘             /
+   \        /         ↘          /
+    \_  _  /            ↘ _ _ _ /
+      \/  ← SGD can get
+            stuck here</code></pre>
+
+        <p>Whether that's a pro or a con depends on the dip, of course -- sometimes the minimum you skipped was the one you wanted. In deep learning it's usually a pro.</p>
+
+        <h2>Nesterov: Look Before You Leap</h2>
+
+        <p>Nesterov Accelerated Gradient (NAG) is a small but clever tweak. Instead of taking the gradient at the current point, take it at the point where momentum is <strong>about</strong> to carry you:</p>
+
+        <pre><code>m⁽ᵗ⁺¹⁾ ← α m⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾ + α m⁽ᵗ⁾)
+θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ + m⁽ᵗ⁺¹⁾</code></pre>
+
+        <p>The key observation: <strong>in general the momentum vector already points in the right direction</strong> (i.e. towards the minimum). So why evaluate the gradient at the stale point A? Standard momentum goes from A to B by adding the gradient at A, then B to C by adding momentum. Nesterov instead <strong>applies the momentum first</strong> -- jump from A to the lookahead point D = θ + αm -- and takes the gradient at D, which in general points towards the minimum better. Then combine gradient and momentum as usual. It's a peek one step ahead, essentially for free.</p>
+
+        <h2>AdaGrad / RMSProp: One Learning Rate Doesn't Fit All</h2>
+
+        <p>Momentum fixes the direction and speed problem, but there's a separate issue: what if the loss surface is <strong>much steeper in one direction than another</strong>? Picture an elongated valley -- contour lines like squashed ellipses, gradient steep horizontally, shallow vertically:</p>
+
+        <pre><code>        _______________
+      /   ___________   \
+     /   /  _______  \   \
+    |   |  ( ∗ ←--- )  |  |   ← steep left-right,
+     \   \  ‾‾‾‾‾‾‾  /   /      shallow up-down
+      \   ‾‾‾‾‾‾‾‾‾‾‾   /
+        ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾</code></pre>
+
+        <p>Now try to pick one learning rate η that (1) makes good progress in <strong>both</strong> directions and (2) stays stable. You can't:</p>
+
+        <ul>
+            <li><strong>Tune η for the steep (horizontal) direction</strong> and training is stable but painfully slow, because the shallow direction has a much smaller gradient and barely moves.</li>
+            <li><strong>Tune η for the shallow (vertical) direction</strong> and the steep direction overshoots wildly -- you zigzag across the valley walls and training is very unstable.</li>
+        </ul>
+
+        <p>The fix: give <strong>each coordinate its own effective learning rate</strong> by tracking how big the gradients have been in that coordinate, and dividing by it. Keep an exponential moving average of the squared gradients (this is the RMSProp variant of the AdaGrad idea):</p>
+
+        <pre><code>s⁽ᵗ⁺¹⁾ ← β s⁽ᵗ⁾ + (1 − β) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)      ← pointwise product
+θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾) ⊘ √(s⁽ᵗ⁺¹⁾ + ε)          ← pointwise division</code></pre>
+
+        <p>Dividing the gradient by (roughly) its own recent magnitude <strong>rescales every direction to the same size</strong>, so the optimizer moves about the same distance along each axis -- straight down the valley instead of ricocheting off its walls. The ε is just there to avoid dividing by zero.</p>
+
+        <p>But there's a catch, and I find it a genuinely illuminating one: this rescaling means the optimizer <strong>only cares about directions and is agnostic about the actual size of the gradient</strong>. Near the minimum, the gradient becomes tiny -- which normally would be the signal to slow down and stop -- but after dividing by √s, the step size stays about the same. So it <strong>doesn't converge to the exact minimum; it oscillates around it</strong>, because it doesn't know the gradient is small and it needs to stop.</p>
+
+        <h2>Adam: Combine Both</h2>
+
+        <p>Here we are. Adam is literally momentum plus the adaptive scaling, glued together with one small correction:</p>
+
+        <pre><code>1.  m⁽ᵗ⁺¹⁾ ← β₁ m⁽ᵗ⁾ − (1 − β₁) ∇L(θ⁽ᵗ⁾)                  ← momentum
+2.  s⁽ᵗ⁺¹⁾ ← β₂ s⁽ᵗ⁾ + (1 − β₂) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)       ← adaptive learning rate
+3.  m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 − β₁ᵗ⁺¹)   ┐
+4.  ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 − β₂ᵗ⁺¹)   ┘  bias correction
+5.  θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ + η m̂⁽ᵗ⁺¹⁾ ⊘ √(ŝ⁽ᵗ⁺¹⁾ + ε)</code></pre>
+
+        <p>Each line earns its place:</p>
+
+        <ul>
+            <li><strong>Step 1 is momentum</strong> -- acceleration, noise cancellation, skipping shallow local minima. And notice it also patches the AdaGrad flaw above: the momentum average of gradients (unlike the squared magnitude) does shrink near the minimum, so <strong>it helps the AdaGrad part converge</strong> instead of oscillating forever.</li>
+            <li><strong>Step 2 is the per-coordinate scaling</strong> -- the elongated-valley fix, so no single learning rate has to serve both steep and shallow directions.</li>
+            <li><strong>Steps 3–4 are bias correction.</strong> Because m and s are initialized at 0, the moving averages are <strong>biased towards 0</strong> in the early iterations (after one step, m is only (1 − β₁) of the gradient). Dividing by 1 − βᵗ exactly undoes this, and the correction fades away as t grows.</li>
+            <li><strong>Step 5</strong> puts it together: move in the smoothed direction, scaled coordinate-wise.</li>
+        </ul>
+
+        <p>That's the whole story. Adam isn't one idea -- it's three small ideas (velocity, per-coordinate scaling, bias correction) each solving a specific, visualizable problem with plain SGD.</p>
+
+        <h2>My Take</h2>
+
+        <p>What I like most about deriving Adam this way is that none of the steps require any deep theory -- a geometric series, a squashed ellipse, and a "we started the average at zero" bookkeeping fix. Yet before writing this note, Adam felt like a black box of hyperparameters to me. Now β₁ = 0.9 reads as "up to 10× acceleration on consistent slopes", β₂ reads as "how long a memory the per-coordinate scale has", and ε reads as "don't divide by zero". The other thing that stuck with me is the AdaGrad oscillation argument: an optimizer that normalizes away gradient magnitude literally cannot tell it has arrived. Momentum smuggles that magnitude information back in. It's a nice reminder that combining two methods can fix a flaw that neither fixes alone.</p>
+
+        <p>One loose end: in step 5 I wrote the learning rate multiplying everything, which is also exactly where <strong>weight decay goes wrong</strong> when you add L2 regularization to Adam. That story -- and why AdamW exists -- continues in <a href="adam-and-adamw.html">Adam and AdamW</a>.</p>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Kingma, D. P., &amp; Ba, J. (2015). Adam: A Method for Stochastic Optimization. <em>ICLR</em>.</li>
+            <li>Duchi, J., Hazan, E., &amp; Singer, Y. (2011). Adaptive Subgradient Methods for Online Learning and Stochastic Optimization. <em>JMLR</em>, 12, 2121–2159.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polysemanticity and Superposition - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Polysemanticity and Superposition</h1>
+        <div class="post-meta">
+            <span class="tag">LLM</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Interpretability & Safety/Polysemanticity And Superposition.pdf">PDF</a>.</p>
+        <p>One of the most surprising things about LLM is that individual neurons often 'fires' (activates) for multiple <strong> semantically completely unrelated concepts </strong> 
+        such as hot chocolate and JAVA's closing brackets. This phenomenon is known as polysemanticity, and the superposition hypothesis offers a plausiable explanation.</p>
+
+        <h2>1. What Is Polysemanticity?</h2>
+
+        <p>Polysemanticity is the phenomenon where a single neuron activates (i.e. outputs a value much larger than other neuron's, more in below) for multiple, semantically unrelated concepts.</p>
+
+        <p>In an ideal world, we would have <strong>monosemanticity</strong>: each neuron corresponds to exactly one concept. For example:</p>
+        <ul>
+            <li>Neuron #52 activates only for "cats"</li>
+            <li>Neuron #900 activates only for "syntax errors"</li>
+        </ul>
+
+        <p>In reality, neuron #52 might activate for:</p>
+        <ol>
+            <li>Cats</li>
+            <li>Snow</li>
+            <li>Embedded closing brackets in Python code</li>
+        </ol>
+        <p>These concepts could be semantically completely unrelated to each other, yet the same neuron fires for all of them.</p>
+
+        <h3>What does "activated" mean?</h3>
+
+        <p>When we say a neuron is "activated," we mean it produces a large output value. For example, it probably gives a value 16.2, where all other neurons outputs values around 0.
+        There are two types of neuron can be activated. More often, we are saying the neurons in the <strong>feed forward layer</strong>.
+        In a decoder-only transformer, since we predict next word using the contextual embedding of the last token, we only care about the output for the last token of the sequence. We say a neuron is activated when its output value 
+        for the last token of the sequence is large. Another type of neuron can be activated is in <strong>attention layer</strong>.
+        The output of the attention layer is a linear combination across heads:</p>
+
+        <pre><code>Output = Output_head_1 + ... + Output_head_n</code></pre>
+
+        <p>If <code>||Output_head_i||</code> is large, then we say that head <code>i</code> is activated. Since we only care about the final output, what matters is whether the last token has large components.</p>
+
+        <h2>2. How the MLP Works in a Transformer (Decoder Only)</h2>
+
+        <p>To understand polysemanticity better, I find it helps (at least for me) to understand the role of the MLP layers in a transformer. I always understood the role of MLP layers as simple as 
+            'adding more non-linear transformations' to transformer. 
+            However, it turns out that the MLP is much more important than this.
+        </p>
+
+        <p>In short, attention layers aggregate information so far to the embedding of the last token, and then send this embedding as a "query" to the MLP, which then "reasons" about what to add for next word prediction.</p>
+
+        <p>The architecture looks like this:</p>
+
+        <pre><code>Contextual embedding       MLP Layer 1        MLP Layer 2         Output
+of last token               (expand)           (contract)
+from transformer block
+
+     X([size 4096]) ----> [dimension 16384] --> [dimension 4096] -----> Output([size 4096])-->
+     |                                                                   |
+     |_____________________ residual connection _________________________|</code></pre>
+
+        <p>Observations about this architecture:</p>
+        <ul>
+            <li>The input (size 4096) acts as a <strong>query</strong>: "what information should be added for next word prediction?" (because we have residual connections)</li>
+            <li>The first MLP layer as a <strong>key</strong>. Notice that it normally is 4 times of the model dimension (e.g., from 4096 to 16384). This upscale gives more room to represent 
+                the semantic meaning. Consider each dimension might represent different semantic meaning, e.g. French, chocolate etc. However, 16384 is probably still not big enough 
+                to represent all possible meanings.</li>
+            <li>The second MLP layer acts as a <strong>value</strong>. It acts like a knowledge pool, determining what we want to add into the final token's embedding once we know what semantic meanings
+                the embedding is looking (after key and query).</li>
+            <li>The <strong>residual connection</strong> means the MLP layers learn to add information to the original contextual embedding, not replace it.</li>
+        </ul>
+
+        <p> 
+            
+
+        <h3>Example</h3>
+<ul>
+        Consider the example where the model gets the input: 'the capital of France is'.
+        <li><strong>1. The Attention Layer: Context Gathering. </strong>
+        The masked self-attention layer goes to work first. The final token, "is", acts as a Query, looking back at all the preceding tokens (the Keys and Values) 
+        to build context. It will probably assign heavy attention weights to crucial words like "capital" and "France," while largely ignoring filler words like "the" and "of."
+
+        As a result, the vector embedding for "is" gets updated into a rich, compressed summary of the entire sequence. 
+        It now probably represents the combined concept: [Seeking: Capital city] + [Target country: France]. </li>
+
+        <li><strong> 2. The MLP Layer: Knowledge Retrieval. </strong>
+        Next, this updated vector is passed to the Multi-Layer Perceptron (MLP) as a Query. The MLP functions as a knowledge pool:
+
+        The Key (Layer 1): The expanded first layer receives the query and compares it against billions of patterns memorized during training (e.g., concepts for chocolate, cats, or Paris). It finds a match, and the specific neuron representing the concept of "Paris" fires. (Note: in dense models, neurons are polysemantic, meaning this firing neuron might also participate in other unrelated concepts).
+
+        The Value (Layer 2): The second layer acts as the value, retrieving the specific knowledge attached to that fired neuron. It injects the concept of "Paris" directly into the sequence's embeddings, giving the model the exact information it needs for the next word prediction.
+        
+    </li>
+       </ul> 
+        
+    </p>
+
+        <h3>Where polysemanticity appears in the MLP</h3>
+
+        <p>The contextual embedding of the last token from the transformer block can be expressed as a linear combination of neuron activations:</p>
+
+        <pre><code>e.g., french = a_1 * neuron_1 + a_2 * neuron_2 + ... + a_n * neuron_n</code></pre>
+
+        <p>Each column in the weight matrix is an independent vector (they form basis vectors in the vector space). Say <code>a_1, a_2, a_3 >> 0</code> while other <code>a_i ≈ 0</code> or are small. Then neurons 1, 2, 3 will "fire" (give large outputs) if the query is looking for "French."</p>
+
+        <p>This is where polysemanticity happens. We might observe super large values for certain neurons in the expanded 16384-dimensional vector. Since this vector now represents how much information we need for each feature, it becomes mathematically impossible for one neuron to represent only one meaning -- this would require monosemanticity, but the model needs to cram many more concepts into the available neurons.</p>
+
+        <h3>How does the model handle polysemantic neurons correctly?</h3>
+
+        <p>Since one neuron might represent different concepts, how does the model aggregate the information correctly? For example, if some of the neurons that fire for "French" also fire for "Java," how does the model avoid confusing itself?</p>
+
+        <p>Since multiple neurons fire for "French," their combination in the value weights (the 16384-sized output matrix) adds up to "French." Meanwhile, "Java" has a different set of neurons fire, although some individual neurons may overlap with "French." 
+            The overall pattern of activation is what distinguishes concepts, not any single neuron.</p>
+
+        <h2>3. Why Does Polysemanticity Happen?</h2>
+
+        <h3>The Superposition Hypothesis</h3>
+
+        <p>According to superposition hypothesis, the root cause for polysemanticity is</p>
+
+        <pre><code>d_features >> d_model</code></pre>
+
+        <p>Where:</p>
+        <ul>
+            <li><code>d_features</code> = the number of distinct features/concepts the model needs to represent</li>
+            <li><code>d_model</code> = the dimension of the model output (e.g., 16384), which equals the maximum number of orthogonal vectors in the space</li>
+        </ul>
+
+        <p>Under the superposition hypothesis, a single concept has to be represented as a linear combination of multiple neurons, because there is simply not enough room to represent all semantically independent concepts orthogonally.
+            The math is simple, a 16384 dimensional space can have at most 16384 independent vectors.
+        </p>
+
+        <p>If <code>d_features &lt; d_model</code>, then it would be possible to present each feature as a one-hot-like vector (e.g., <code>(1,0,0,0,...)</code>, <code>(0,1,0,...)</code>), achieving monosemanticity. Even if the representation is not axis-aligned, we can simply rotate them (e.g., via PCA). For instance, <code>(0.7, 0.7)</code> perpendicular to <code>(-0.5, 0.5)</code> can be rotated to align with axes.</p>
+
+        <p>Note however, in high-dimensional space, the number of <strong>nearly</strong> orthogonal vectors grows exponentially with dimension. Vectors can have dot products as small as 0.01 and still be "almost orthogonal" -- this is related to the <strong>Johnson-Lindenstrauss Lemma</strong>.</p>
+
+        <h2>4. More About Polysemanticity and Sparse Autoencoders</h2>
+
+        <p>We can explain the above more formally. Say for one layer, there are some concepts we want to activate. The "gold view" is a vector <code>h</code> in <code>R^(d_features x 1)</code> that would be super sparse:</p>
+
+        <pre><code>h = [0, 0, 0, ..., 1, 0, ..., 0, 0, ..., 0]   (mostly zeros, a few non-zero entries, e.g. for Paris, French)</code></pre>
+
+        <p>What we actually have in the model is:</p>
+
+        <pre><code>x = X_model * h</code></pre>
+
+        <p>Where <code>x</code> is the model output (the contextual embedding of the last word) we can observe, <code>X_model</code> is in <code>R^(n x d)</code> with <code>n &lt;&lt; d</code>, and 
+        <code>h</code> represents the concepts we want to use for the contextual embedding. However, the problem is that we only have <code>n</code> neurons to represent the concept, far fewer than the <code>d</code> features.</p>
+
+        <p>Consequences of this compression:</p>
+        <ul>
+            <li><code>x_i</code> (individual neuron activations) are not independent, even if two concepts should be semantically independent</li>
+            <li>One neuron may fire for independent concepts</li>
+        </ul>
+
+        <p>In practice, we observe <code>x</code> in the model, and we want to know <code>h</code> (the underlying sparse concept vector):</p>
+
+        <pre><code>h = X_model^+ * x</code></pre>
+
+        <p>Where <code>X_model^+</code> is the pseudo-inverse. It is not easy to learn h from the embedding directly,
+            because the firing neurons corresponding to different concepts might overlap. 
+            For example, consider the following three concepts and their assumed firing neurons:
+
+            "Paris" = Neurons 1, 4, and 7
+
+            "Food" = Neurons 4, 7, and 9
+
+            "France" = Neurons 1, 7, and 9
+
+            Neurons 1, 4, 7, and 9 firing simultaneously, how do we know it's the combination of "Paris" + "Food", or "Paris" + "France"?
+            
+            We learn h through a <strong>Sparse Autoencoder (SAE)</strong>.</p>
+
+        <h3>How SAEs work</h3>
+
+        <p>A Sparse Autoencoder is trained to recover the sparse concept vector from the model's activations:</p>
+
+        <pre><code>Input: x --> f_e(x) --> g_d(e) --> x*
+
+        Where:
+        f_e = encoder: projects x to a sparse embedding (with n_features >> d_model)
+        g_d = decoder: reconstructs x from the sparse embedding
+
+        Loss = reconstruction error (||x - x*||) + L1 loss on the embedding layer (to enforce sparsity)</code></pre>
+
+        <p>After we learn the SAE, we can use it to interpret the model: pass a sentence with a concept close to "Paris" through the model, 
+            observe which components in the sparse embedding layer are activated, and the next time we see those components activated, 
+            we know the concept "Paris" is being represented. The key for the success of SAE lies in the fact that n_features >> d_model, so the embedding
+            space in SAE has much more room to represent different concepts.</p>
+
+        <h2>5. Why Is Polysemanticity Bad?</h2>
+
+        <p>So polysemanticity might sound a bit weird, but why it is a bad thing for LLM?</p>
+
+        <h3>Problem 1: Cannot control model behavior</h3>
+
+        <p>If we had monosemanticity, we could:</p>
+        <ol>
+            <li>Find the neuron generating harmful content and turn it off (always output small values, so the related concept can never be outputed)</li>
+            <li>Find the neuron corresponding to "safety" and increase its weight, making the model generate more safety-related concepts. For example, if we increase the weight a lot, the model might produce nonsense like: "Safety is important, safety, security, safety, safety..."</li>
+        </ol>
+
+        <p>But with polysemanticity, increasing the weight of a "safety" neuron might also amplify other concepts sharing that neuron. This could lead to things undesirable, especially if 
+            we dont know what other concepts might be.
+        </p>
+
+        <h3>Problem 2: Cannot monitor the model's behavior</h3>
+
+        <p>If we had monosemanticity, we could monitor the internal state of the model and roughly know what the model is going to output -- without needing to see the actual input and output. This would be incredibly valuable for AI safety: we could detect when a model is "thinking about" harmful topics before it produces any output.</p>
+
+        <p>With polysemanticity, internal monitoring becomes much harder because each neuron's activation is ambiguous. It could mean any of several unrelated things.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Elhage, N., Hume, T., Olsson, C., Schiefer, N., Henighan, T., Kravec, S., Hatfield-Dodds, Z., Lasenby, R., Drain, D., Chen, C. and Grosse, R., 2022. Toy models of superposition. arXiv preprint arXiv:2209.10652.</li>
+            <li>Bricken, T. et al. (2023). Bricken, T., Templeton, A., Batson, J., Chen, B., Jermyn, A., Conerly, T., Turner, N., Anil, C., Denison, C., Askell, A. and Lasenby, R., 2023. Towards monosemanticity: Decomposing language models with dictionary learning. Transformer Circuits Thread, 2(5), p.6.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>
