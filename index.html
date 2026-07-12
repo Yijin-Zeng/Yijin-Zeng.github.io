@@ -944,6 +944,19 @@
             letter-spacing: 0.5px;
         }
 
+        .stat-arrow {
+            display: inline-block;
+            opacity: 0;
+            transform: translateX(-4px);
+            transition: opacity 0.2s, transform 0.2s;
+            margin-left: 2px;
+        }
+
+        .stat-item:hover .stat-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
         .intro-more {
             display: none;
         }
@@ -1006,15 +1019,15 @@
                 I'm a machine learning scientist at Expedia Group, working on Expedia's B2B Revenue Optimisation & Data Science Team. Prior to this, I completed my PhD in Statistics
                 and Machine Learning at Imperial College London, jointly with the University of Oxford through the StatML CDT program.
             </p>
-            <button class="read-more-btn" id="read-more-btn">Read more ↓</button>
+            <button class="read-more-btn" id="read-more-btn">Read more about my PhD research and my passions ↓</button>
 
             <div class="intro-more" id="intro-more">
-            <p class="intro-text" data-zh="我的博士研究专注于在缺失数据条件下开发严谨的假设检验、相关性分析和变点检测的统计方法。您可以在统计学和机器学习期刊中找到我的发表论文。">
+            <p class="intro-text" data-zh="我的博士研究专注于面向缺失数据场景，开发严谨的假设检验、相关性分析与变点检测统计方法。您可以在统计学与机器学习期刊中找到我发表的<a href='#' class='tab-link' data-section='publications'>论文</a>。">
                 My PhD research focused on developing rigorous statistical methodologies for hypothesis testing, correlation analysis, and change-point detection in the presence of missing data.
                 You can find my <a href="#" class="tab-link" data-section="publications">publications</a> in statistics and machine learning journals.
             </p>
 
-            <p class="intro-text" data-zh="在Expedia，我热衷于负责端到端的机器学习流水线。工作之余，我喜欢深入研究大语言模型（LLM）、计算机科学和数学等不同领域。您可以在这里浏览我的笔记和手写PDF。我非常享受动手实践，并出于兴趣完成了许多项目。我也积极通过技术演讲、教学和论文阅读分享会等活动来分享我的所学。">
+            <p class="intro-text" data-zh="我的目标是成为一名出色的机器学习科学家，并在这个过程中收获了许多乐趣。在Expedia，我负责端到端的机器学习 pipeline，并推动技术方案的创新。工作之余，我喜欢深入钻研大语言模型（LLM）、生成式人工智能、计算机科学与数学等不同领域。我目前学到的一些内容，可以在我的<a href='#' class='tab-link' data-section='notes'>笔记</a>中找到，并附有我的手写PDF。我也喜欢亲自动手实践，出于兴趣做了不少有趣的机器学习<a href='#' class='tab-link' data-section='projects'>项目</a>。此外，我也积极参与各种<a href='#' class='tab-link' data-section='engagement'>学术活动</a>，比如技术分享、教学和论文阅读分享会等。">
                 My goal is to be an excellent machine learining scientist and I have been having so much fun during this process.
                 At Expedia, I take ownership of end-to-end ML pipelines and drive innovation in our technical solutions.
                 Outside of work, I love diving deep into different topics such as LLMs, generative AI, computer science, and mathematics.
@@ -1033,26 +1046,26 @@
                 </div>
                 <div class="intro-icons">
                     <a href="https://github.com/Yijin-Zeng" title="GitHub"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="icon-label">GitHub</span></a>
-                    <a href="https://www.linkedin.com/in/yijin-zeng/" title="LinkedIn"><svg viewBox="0 0 16 16"><path d="M13.6 1H2.4C1.6 1 1 1.6 1 2.4v11.2c0 .8.6 1.4 1.4 1.4h11.2c.8 0 1.4-.6 1.4-1.4V2.4c0-.8-.6-1.4-1.4-1.4zM5.3 13H3.1V6.5h2.2V13zM4.2 5.6c-.7 0-1.3-.6-1.3-1.3s.6-1.3 1.3-1.3 1.3.6 1.3 1.3-.6 1.3-1.3 1.3zM13 13h-2.2V9.8c0-.8 0-1.8-1.1-1.8s-1.3.9-1.3 1.7V13H6.2V6.5h2.1v.9c.3-.6 1-1.1 2.1-1.1 2.2 0 2.6 1.5 2.6 3.4V13z"/></svg><span class="icon-label">LinkedIn</span></a>
+                    <a href="https://www.linkedin.com/in/yijin-zeng-9a51861b7/" title="LinkedIn"><svg viewBox="0 0 16 16"><path d="M13.6 1H2.4C1.6 1 1 1.6 1 2.4v11.2c0 .8.6 1.4 1.4 1.4h11.2c.8 0 1.4-.6 1.4-1.4V2.4c0-.8-.6-1.4-1.4-1.4zM5.3 13H3.1V6.5h2.2V13zM4.2 5.6c-.7 0-1.3-.6-1.3-1.3s.6-1.3 1.3-1.3 1.3.6 1.3 1.3-.6 1.3-1.3 1.3zM13 13h-2.2V9.8c0-.8 0-1.8-1.1-1.8s-1.3.9-1.3 1.7V13H6.2V6.5h2.1v.9c.3-.6 1-1.1 2.1-1.1 2.2 0 2.6 1.5 2.6 3.4V13z"/></svg><span class="icon-label">LinkedIn</span></a>
                     <a href="mailto:yijinzeng98@gmail.com" title="Email"><svg viewBox="0 0 24 24"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg><span class="icon-label">Email</span></a>
                     <a href="cv.pdf" title="CV"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6zm2-4h8v2H8v-2zm0-3h8v2H8v-2z"/></svg><span class="icon-label">CV</span></a>
                 </div>
                 <div class="stats-row">
-                    <div class="stat-item" data-section="publications">
+                    <div class="stat-item" data-section="publications" title="See my publications">
                         <div class="stat-number" data-target="4">0</div>
-                        <div class="stat-label">Publications</div>
+                        <div class="stat-label"><span data-zh="论文">Publications</span><span class="stat-arrow">→</span></div>
                     </div>
-                    <div class="stat-item" data-section="publications">
+                    <div class="stat-item" data-section="publications" title="See my packages">
                         <div class="stat-number" data-target="3">0</div>
-                        <div class="stat-label">Packages</div>
+                        <div class="stat-label"><span data-zh="软件包">Packages</span><span class="stat-arrow">→</span></div>
                     </div>
-                    <div class="stat-item" data-section="notes">
+                    <div class="stat-item" data-section="notes" title="Browse my notes">
                         <div class="stat-number" data-target="41">0</div>
-                        <div class="stat-label">Notes</div>
+                        <div class="stat-label"><span data-zh="笔记">Notes</span><span class="stat-arrow">→</span></div>
                     </div>
-                    <div class="stat-item" data-section="projects">
+                    <div class="stat-item" data-section="projects" title="Check out my projects">
                         <div class="stat-number" data-target="7">0</div>
-                        <div class="stat-label">Projects</div>
+                        <div class="stat-label"><span data-zh="项目">Projects</span><span class="stat-arrow">→</span></div>
                     </div>
                 </div>
             </div>
@@ -1077,7 +1090,7 @@
                     <span class="entry-date" data-zh="2025年11月 至今">Nov 2025 &ndash; Present</span>
                 </div>
                 <div class="entry-subtitle" data-zh="伦敦，英国">London, UK</div>
-                <div class="entry-desc" data-zh="<ul><li>在收入优化与数据科学团队中与其他科学家和工程师协作，构建、改进和维护处理大规模数据和高频请求的端到端机器学习流水线。</li><li>将复杂的业务逻辑和约束转化为可落地的数学、统计和机器学习解决方案。</li><li>探索并应用前沿研究方法，持续改进现有机器学习模型。</li><li>通过弥合离线指标与在线表现的差距来完善模型评估框架。</li><li>通过自动追踪关键绩效指标和护栏指标来监控模型健康状况。</li><li>维护流水线稳定性，快速响应合作伙伴需求以确保满意度。</li></ul>">
+                <div class="entry-desc" data-zh="<ul><li>在收入优化与数据科学团队工作，构建、优化并维护用于处理大规模数据与高频请求的端到端机器学习 pipeline。</li><li>将复杂的业务逻辑与约束条件，转化为切实可行的数学、统计或机器学习解决方案。</li><li>探索并应用前沿研究方法，持续改进现有机器学习模型。</li><li>通过弥合离线指标与线上表现之间的差距，完善模型评估框架。</li><li>通过自动追踪关键绩效指标（KPI）与护栏指标，监控模型健康状况。</li><li>维护 pipeline 稳定性，快速响应合作伙伴需求，确保合作方满意度。</li></ul>">
                     <ul>
                         <li>Work in the Revenue Optimisation & Data Science team to build, enhance, and maintain end-to-end machine learning pipelines for handling large-scale data and high-frequency requests.</li>
                         <li>Translate complex business logic and constraints into actionable mathematical, statistical, or machine learning solutions.</li>
@@ -1097,7 +1110,7 @@
                     <span class="entry-date" data-zh="2024年8月 – 2024年10月">Aug 2024 &ndash; Oct 2024</span>
                 </div>
                 <div class="entry-subtitle" data-zh="伦敦，英国">London, UK</div>
-                <div class="entry-desc" data-zh="<ul><li>与预测和供应链团队合作，提升每周产品需求的预测准确率。</li><li>构建端到端的模型训练数据流水线，包括自动特征选择、缺失数据填充、异常值处理、特征缩放和滑动窗口序列生成。</li><li>设计并实验多种深度神经网络架构（包括RNN和Transformer）用于供应链预测。达到或超过Tesco现有统计方法的效果，同时减少工作流程。特定产品-门店组合提升高达23%，数据有限的产品平均提升7%（统计显著）。</li><li>对模型输出进行全面分析，识别深度学习方法优于传统统计方法的具体场景。</li></ul>">
+                <div class="entry-desc" data-zh="<ul><li>与预测团队和供应链团队合作，提升每周产品需求预测的准确率。</li><li>构建用于模型训练的端到端数据 pipeline，涵盖自动特征选择、缺失数据填充、异常值处理、特征缩放，以及基于滑动窗口的序列生成。</li><li>针对供应链预测场景，设计并试验了多种深度神经网络架构（包括RNN和Transformer），效果达到甚至超越Tesco现有的统计方法，同时所需工作流程更少。在特定的产品与门店组合上，预测准确率最高提升23%；对历史数据有限的产品，平均提升7%（具有统计显著性）。</li><li>对模型输出进行全面分析，识别出深度学习方法优于传统统计方法的具体场景。</li></ul>">
                     <ul>
                         <li>Collaborated with forecasting and supply chain teams to improve forecasting accuracy for weekly product demand.</li>
                         <li>Built an end-to-end data pipeline for model training, including automated feature selection, missing data imputation, outlier handling, feature scaling, and sequence generation using sliding windows.</li>
@@ -1117,7 +1130,7 @@
                     <span class="entry-date" data-zh="2019年7月 – 2019年9月">Jul 2019 &ndash; Sep 2019</span>
                 </div>
                 <div class="entry-subtitle" data-zh="北京，中国">Beijing, China</div>
-                <div class="entry-desc" data-zh="<ul><li>与数据分析团队合作，分析医学调查和实验数据集，为新产品上市、定价、医生行为、患者旅程和品牌追踪提取关键洞察。</li><li>通过特征工程、缺失数据填充和异常值检测，为下游机器学习模型和统计分析进行数据预处理。</li><li>设计数据可视化，向技术和非技术利益相关者有效传达复杂结果。</li></ul>">
+                <div class="entry-desc" data-zh="<ul><li>在数据分析团队工作，分析医学调查与实验数据集，为医药产品在新品上市、定价、医生行为、患者旅程和品牌追踪等方面提取关键洞察。</li><li>通过特征工程、缺失数据填充与异常值检测，为下游的机器学习模型和统计分析完成数据预处理。</li><li>设计数据可视化，向技术和非技术利益相关者有效传达复杂结果。</li></ul>">
                     <ul>
                         <li>Worked in the data analytics team to analyze medical surveys and experimental datasets, extracting key insights for pharmaceutical products across new product launches, pricing, physician behaviors, patient journeys, and brand tracking.</li>
                         <li>Preprocessed data for downstream machine learning models through feature engineering, missing data imputation, and outlier detection.</li>
@@ -1138,7 +1151,7 @@
                         <span class="entry-date">2021 &ndash; 2025</span>
                     </div>
                     <div class="entry-subtitle" data-zh="统计与机器学习博士">PhD in Statistics &amp; Machine Learning</div>
-                    <div class="entry-detail" data-zh="博士期间，我的导师是<a href='https://profiles.imperial.ac.uk/dean.bodenham'>Dean Bodenham博士</a>和<a href='https://profiles.imperial.ac.uk/n.adams'>Niall Adams教授</a>，全额奖学金由Roth Scholarship和StatML CDT资助。">During my PhD, I was advised by
+                    <div class="entry-detail" data-zh="博士期间，我的导师是<a href='https://profiles.imperial.ac.uk/dean.bodenham'>Dean Bodenham博士</a>和<a href='https://profiles.imperial.ac.uk/n.adams'>Niall Adams教授</a>，并获得Roth Scholarship与StatML CDT的全额资助。">During my PhD, I was advised by
                         <a href="https://profiles.imperial.ac.uk/dean.bodenham">Dr. Dean Bodenham</a>
                         and <a href="https://profiles.imperial.ac.uk/n.adams">Prof. Niall Adams</a>,
                         and I was fully funded by Roth Scholarship and StatML CDT.
@@ -1153,7 +1166,7 @@
                         <span class="entry-date">2020 &ndash; 2021</span>
                     </div>
                     <div class="entry-subtitle" data-zh="统计学硕士">MSc in Statistics</div>
-                    <div class="entry-detail" data-zh="我从纯数学转向统计与机器学习，从北京来到伦敦。硕士以优异成绩（Distinction）毕业。">I moved from pure math to statistics and machine learning, and from Beijing to London. I completed the MSc with Distinction.</div>
+                    <div class="entry-detail" data-zh="我从纯数学转向了统计与机器学习，也从北京来到了伦敦，并以优异成绩（Distinction）完成硕士学业。">I moved from pure math to statistics and machine learning, and from Beijing to London. I completed the MSc with Distinction.</div>
                 </div>
             </div>
 
@@ -1256,7 +1269,7 @@
         </div>
 
         <p class="notes-desc" style="font-style: italic; color: var(--text-light); margin-bottom: 8px;">"温故而知新，可以为师矣" — 孔子<br><span style="font-size: 0.85rem;">Review the old to understand the new.</span></p>
-        <p class="notes-desc" data-zh="这些是我学习过程中整理的主题笔记，希望与感兴趣的朋友分享。每篇笔记都附有我手写的<span style='color: var(--link); font-weight: 500;'>PDF</span>详细推导。"> When approaching new challenges, 
+        <p class="notes-desc" data-zh="面对新的挑战，我常常发现回到最基础的概念和想法上重新思考，会很有帮助。我对那些经久不衰、值得反复回味的主题特别感兴趣，也一直很享受这个复习与思考的过程，收获颇丰。下面每篇笔记都配有我手写的<span style='color: var(--link); font-weight: 500;'>PDF</span>，里面是我自己的讲解和推导。"> When approaching new challenges, 
         I often find great value in first returning to fundamental concepts and ideas. I am drawn to topics with enduring relevance, and consistently find the review process both enjoyable and highly beneficial. 
         Each entry below is accompanied by a handwritten <span style="color: var(--link); font-weight: 500;">PDF</span> with my own explanation and derivations.</p>
 
@@ -1266,12 +1279,12 @@
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
                     <span class="chapter-color chapter-color-llm"></span>
-                    <span class="chapter-title">Large Language Models</span>
+                    <span class="chapter-title" data-zh="大语言模型">Large Language Models</span>
                 </div>
                 <div class="chapter-body">
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Architecture
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="架构">Architecture</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1309,7 +1322,7 @@
 
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Training &amp; Inference
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="训练与推理">Training &amp; Inference</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1337,7 +1350,7 @@
 
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Interpretability &amp; Safety
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="可解释性与安全性">Interpretability &amp; Safety</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1360,12 +1373,12 @@
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
                     <span class="chapter-color chapter-color-ml"></span>
-                    <span class="chapter-title">Machine Learning</span>
+                    <span class="chapter-title" data-zh="机器学习">Machine Learning</span>
                 </div>
                 <div class="chapter-body">
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Deep Learning
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="深度学习">Deep Learning</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1423,7 +1436,7 @@
 
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Classic ML
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="经典机器学习">Classic ML</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1446,7 +1459,7 @@
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
                     <span class="chapter-color chapter-color-genai"></span>
-                    <span class="chapter-title">Generative AI</span>
+                    <span class="chapter-title" data-zh="生成式人工智能">Generative AI</span>
                 </div>
                 <div class="chapter-body">
                     <div class="book-entry">
@@ -1482,7 +1495,7 @@
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
                     <span class="chapter-color chapter-color-math"></span>
-                    <span class="chapter-title">Math &amp; Statistics</span>
+                    <span class="chapter-title" data-zh="数学与统计学">Math &amp; Statistics</span>
                 </div>
                 <div class="chapter-body">
                     <div class="book-entry">
@@ -1518,12 +1531,12 @@
                 <div class="chapter-header" onclick="this.parentElement.classList.toggle('open')">
                     <span class="chapter-toggle">&#9654;</span>
                     <span class="chapter-color chapter-color-cs"></span>
-                    <span class="chapter-title">Computer Science</span>
+                    <span class="chapter-title" data-zh="计算机科学">Computer Science</span>
                 </div>
                 <div class="chapter-body">
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Fundamentals
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="基础">Fundamentals</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1556,7 +1569,7 @@
 
                     <div class="subtopic">
                         <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
-                            <span class="subtopic-toggle">&#9654;</span>Leetcode Style Question
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="力扣风格题目">Leetcode Style Question</span>
                         </div>
                         <div class="subtopic-entries">
                             <div class="book-entry">
@@ -1743,15 +1756,15 @@
         </div>
 
         <div style="margin-bottom: 40px;">
-            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;">Invited Talks</h3>
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;" data-zh="受邀讲座">Invited Talks</h3>
 
             <div class="entry-separated">
                 <div class="entry">
                     <div class="entry-top">
                         <span class="entry-title">StatML CDT Internal Seminar</span>
-                        <span class="entry-date">Jan 2025</span>
+                        <span class="entry-date" data-zh="2025年1月">Jan 2025</span>
                     </div>
-                    <div class="entry-detail">I presented on modern techniques for handling missing data in machine learning at the StatML Centre for Doctoral Training (CDT)</div>
+                    <div class="entry-detail" data-zh="我在StatML CDT（博士培养中心）分享了机器学习中处理缺失数据的现代方法。">I presented on modern techniques for handling missing data in machine learning at the StatML Centre for Doctoral Training (CDT)</div>
                 </div>
             </div>
 
@@ -1759,9 +1772,9 @@
                 <div class="entry">
                     <div class="entry-top">
                         <span class="entry-title">Imperial Internal Statistics Seminar</span>
-                        <span class="entry-date">Jun 2025</span>
+                        <span class="entry-date" data-zh="2025年6月">Jun 2025</span>
                     </div>
-                    <div class="entry-detail">I presented my PhD research on rank-based hypothesis testing in the presence of missing data at Imperial College London.
+                    <div class="entry-detail" data-zh="我在帝国理工学院分享了我的博士研究——缺失数据条件下基于秩的假设检验方法。">I presented my PhD research on rank-based hypothesis testing in the presence of missing data at Imperial College London.
                     </div>
                 </div>
             </div>
@@ -1770,40 +1783,40 @@
                 <div class="entry">
                     <div class="entry-top">
                         <span class="entry-title">Royal Statistical Society (RSS) Conference 2026</span>
-                        <span class="entry-date">Sep 2026</span>
+                        <span class="entry-date" data-zh="2026年9月">Sep 2026</span>
                     </div>
-                    <div class="entry-detail"> I will be presenting as an invited speaker at RSS 2026 in the session 'Modern Approaches for Missing and Incomplete Data Analysis'.</div>
+                    <div class="entry-detail" data-zh="我将作为受邀讲者出席RSS 2026大会，在《缺失与不完整数据分析的现代方法》专题环节中发言。"> I will be presenting as an invited speaker at RSS 2026 in the session 'Modern Approaches for Missing and Incomplete Data Analysis'.</div>
                 </div>
             </div>
 
         </div>
 
         <div style="margin-bottom: 40px;">
-            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;">Teaching</h3>
-            <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 16px;">I am/was a Teaching Assistant for the following courses:</p>
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;" data-zh="教学">Teaching</h3>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 16px;" data-zh="我担任了以下课程的助教：">I am/was a Teaching Assistant for the following courses:</p>
             <ul style="font-size: 0.88rem; color: var(--text-secondary); margin-left: 20px; line-height: 1.8; column-count: 2; column-gap: 40px;">
-                <li>Probability for Statistics (MSc)</li>
-                <li>Probabilistic Generative Models (MSc)</li>
-                <li>Data Science (MSc)</li>
-                <li>Statistical Clinics (MSc)</li>
-                <li>Probability and Statistics (BSc)</li>
-                <li>Signal Processing and Machine Learning (BSc)</li>
-                <li>Data Mining and Analysis (BSc)</li>
-                <li>Sets and Numbers (BSc)</li>
-                <li>Applied Statistics and Business (BSc)</li>
+                <li data-zh="统计概率论（硕士）">Probability for Statistics (MSc)</li>
+                <li data-zh="概率生成模型（硕士）">Probabilistic Generative Models (MSc)</li>
+                <li data-zh="数据科学（硕士）">Data Science (MSc)</li>
+                <li data-zh="统计诊所（硕士）">Statistical Clinics (MSc)</li>
+                <li data-zh="概率与统计（学士）">Probability and Statistics (BSc)</li>
+                <li data-zh="信号处理与机器学习（学士）">Signal Processing and Machine Learning (BSc)</li>
+                <li data-zh="数据挖掘与分析（学士）">Data Mining and Analysis (BSc)</li>
+                <li data-zh="集合与数（学士）">Sets and Numbers (BSc)</li>
+                <li data-zh="应用统计与商业（学士）">Applied Statistics and Business (BSc)</li>
             </ul>
         </div>
 
         <div style="margin-top: 40px;">
-            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;">Paper Reading Session</h3>
-            <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 20px;">I am one of the organizers for Expedia's machine learning team's paper reading session. Below are selected sessions I presented:</p>
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 20px;" data-zh="论文阅读分享会">Paper Reading Session</h3>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 20px;" data-zh="我是Expedia机器学习团队论文阅读分享会的组织者之一，以下是我主讲过的部分场次：">I am one of the organizers for Expedia's machine learning team's paper reading session. Below are selected sessions I presented:</p>
 
             <div class="entry-separated">
                 <div class="entry">
                     <div class="entry-top">
                         <span class="entry-title">Introduction to Variational Auto Encoder <a href="https://anthology-of-data.science/resources/prince2023udl.pdf" target="_blank" style="color: var(--text-light); margin-left: 12px; display: inline-flex; align-items: center; transition: color 0.2s;" title="View paper"><svg style="width: 24px; height: 24px; fill: currentColor;" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a></span>
                     </div>
-                    <div class="entry-subtitle">Exploring the theory and applications of variational autoencoders for learning latent representations in generative modeling.</div>
+                    <div class="entry-subtitle" data-zh="探讨变分自编码器（VAE）在生成式建模中学习潜在表示的理论与应用。">Exploring the theory and applications of variational autoencoders for learning latent representations in generative modeling.</div>
                 </div>
             </div>
 
@@ -1812,7 +1825,7 @@
                     <div class="entry-top">
                         <span class="entry-title">Mind the Gap: Understanding the Modality Gap in Multi-modal Contrastive Representation Learning <a href="https://arxiv.org/abs/2203.02053" target="_blank" style="color: var(--text-light); margin-left: 12px; display: inline-flex; align-items: center; transition: color 0.2s;" title="View paper"><svg style="width: 24px; height: 24px; fill: currentColor;" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a></span>
                     </div>
-                    <div class="entry-subtitle">Understanding representation gaps between different modalities in multi-modal learning and contrastive approaches.</div>
+                    <div class="entry-subtitle" data-zh="剖析多模态学习与对比学习方法中，不同模态之间存在的表示差异（modality gap）。">Understanding representation gaps between different modalities in multi-modal learning and contrastive approaches.</div>
                 </div>
             </div>
 
@@ -1821,7 +1834,7 @@
                     <div class="entry-top">
                         <span class="entry-title">AdamW <a href="https://arxiv.org/abs/1711.05101" target="_blank" style="color: var(--text-light); margin-left: 12px; display: inline-flex; align-items: center; transition: color 0.2s;" title="View paper"><svg style="width: 24px; height: 24px; fill: currentColor;" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a></span>
                     </div>
-                    <div class="entry-subtitle">Decoupled weight decay regularization in the Adam optimizer for improved generalization in deep learning.</div>
+                    <div class="entry-subtitle" data-zh="介绍Adam优化器中的解耦权重衰减（decoupled weight decay）正则化方法，用于提升深度学习模型的泛化能力。">Decoupled weight decay regularization in the Adam optimizer for improved generalization in deep learning.</div>
                 </div>
             </div>
 
@@ -1858,11 +1871,12 @@
         });
     });
 
-    document.querySelectorAll('.tab-link').forEach(function(el) {
-        el.addEventListener('click', function(e) {
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('.tab-link');
+        if (link) {
             e.preventDefault();
-            switchTo(this.getAttribute('data-section'));
-        });
+            switchTo(link.getAttribute('data-section'));
+        }
     });
 
     // Notes book entry click (navigate to page)
@@ -1938,9 +1952,17 @@
     // Read more toggle (home page)
     var readMoreBtn = document.getElementById('read-more-btn');
     var introMore = document.getElementById('intro-more');
+    var readMoreLabels = {
+        more: { en: 'Read more about my PhD research and my passions ↓', zh: '阅读更多关于我的博士研究和兴趣爱好 ↓' },
+        less: { en: 'Show less ↑', zh: '收起 ↑' }
+    };
+    function updateReadMoreLabel() {
+        var state = introMore.classList.contains('visible') ? 'less' : 'more';
+        readMoreBtn.textContent = readMoreLabels[state][isZh ? 'zh' : 'en'];
+    }
     readMoreBtn.addEventListener('click', function() {
         introMore.classList.toggle('visible');
-        this.textContent = introMore.classList.contains('visible') ? 'Show less ↑' : 'Read more ↓';
+        updateReadMoreLabel();
     });
 
 
@@ -1966,6 +1988,7 @@
                 }
             }
         });
+        updateReadMoreLabel();
     });
 
     // Theme toggle
