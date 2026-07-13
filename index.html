@@ -11,7 +11,7 @@
             --text: #2d2d2d;
             --text-secondary: #555;
             --text-light: #888;
-            --bg: #fafaf8;
+            --bg: #ffffff;
             --border: #e8e8e4;
             --accent: #3d3d3d;
             --link: #2563eb;
@@ -526,6 +526,27 @@
             color: var(--text-secondary);
             line-height: 1.8;
             margin-bottom: 28px;
+        }
+
+        .reasons-list {
+            list-style-position: outside;
+            padding-left: 1.2em;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        .reasons-list li {
+            margin-bottom: 8px;
+        }
+
+        .reasons-list li::marker {
+            color: var(--link);
+        }
+
+        .reasons-list strong {
+            color: var(--text);
         }
 
         .book-chapter {
@@ -1269,9 +1290,15 @@
         </div>
 
         <p class="notes-desc" style="font-style: italic; color: var(--text-light); margin-bottom: 8px;">"温故而知新，可以为师矣" — 孔子<br><span style="font-size: 0.85rem;">Review the old to understand the new.</span></p>
-        <p class="notes-desc" data-zh="面对新的挑战，我常常发现回到最基础的概念和想法上重新思考，会很有帮助。我对那些经久不衰、值得反复回味的主题特别感兴趣，也一直很享受这个复习与思考的过程，收获颇丰。下面每篇笔记都配有我手写的<span style='color: var(--link); font-weight: 500;'>PDF</span>，里面是我自己的讲解和推导。"> When approaching new challenges, 
-        I often find great value in first returning to fundamental concepts and ideas. I am drawn to topics with enduring relevance, and consistently find the review process both enjoyable and highly beneficial. 
-        Each entry below is accompanied by a handwritten <span style="color: var(--link); font-weight: 500;">PDF</span> with my own explanation and derivations.</p>
+        <p class="notes-desc" style="font-size: 0.75rem; line-height: 1.6;" data-zh="我保留这些笔记，主要是出于几个原因。首先，我的记忆力并不完美——几个月前明明完全理解的东西，也很容易就淡忘。每当我需要回想某些具体内容时，翻看自己的笔记总是比重新查阅原始资料快得多。另外，看着自己的知识库不断扩充，也是件很有满足感的事。学习本身就很有趣，但看到自己实实在在的成长，同样是让我坚持下去的强大动力。最后，我也相信这些笔记或许能帮到别人。分享知识、与人交流，对我来说是一种莫大的快乐，也真心希望这份笔记合集，同样能成为你的一份宝贵资源。"> 
+        I maintain these notes for several reasons. 
+        First, my memory isn't perfect; something I understood completely a few months ago can easily slip away. 
+        Whenever I need to recall specific information, reviewing my own notes is always faster than digging back 
+        through the original source. Additionally, it is deeply satisfying to watch my personal library of knowledge expand. 
+        Learning is enjoyable on its own, but seeing tangible proof of my growth is a powerful motivation to keep going. 
+        Last but not least, I believe these notes might eventually help others. Sharing knowledge and connecting with people 
+        is a massive source of happiness for me, and I truly hope this collection can be a valuable resource for you, too.
+        </p>
 
         <div id="notes-book">
             <!-- Chapter 1: LLM -->
@@ -1671,7 +1698,7 @@
             <h2 data-zh="项目">Projects</h2>
         </div>
 
-        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 40px;">These are informal projects I built mainly for fun.</p>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 40px;">These are informal projects I built for fun.</p>
 
         <div class="projects-timeline">
             <!-- 2026 -->
