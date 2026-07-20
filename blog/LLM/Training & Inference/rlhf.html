@@ -230,7 +230,8 @@ Prompt --> Fine-tuned LLM +--> Answer B --|---> Ranked by humans (e.g. A > B > C
 Prompt ---> Model ---> Output ------+
                                     |
                                     +---> Value model ---> estimated score given all tokens so far, so at each token there will be one score
-                                    (updated accoring to how close the estimated score for each token and score, e.g. MSE)</code></pre>
+                                    (updated accoring to how close the estimated score for each token and score, e.g. MSE,
+                                    so the score for each token is the predicted score for the whole outputs given the token so far.)</code></pre>
 
         <p>The decision logic at each step:</p>
         <ul>
