@@ -151,7 +151,12 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/FlashAttention.pdf">PDF</a>.</p>
-        <p>FlashAttention is one of those ideas that seems obvious in hindsight but is genuinely clever. The key insight is that <strong>standard attention wastes memory by materializing the full N x N score matrix, but you can compute the exact same result block by block without ever storing it</strong>. The trick that makes this work is an online softmax update rule.</p>
+        <p>FlashAttention is one of the many clever ideas that makes LLM more efficient. 
+           Standard attention mechanism deal with the full N x N score matrix
+
+           The key insight is that standard attention wastes memory by materializing the full N x N score matrix, 
+           but you can compute the exact same result block by block without ever storing it. 
+           The trick that makes this work is an online softmax update rule.</p>
 
         <h2>Standard Attention Recap</h2>
         <p>Recall that standard attention computes:</p>
