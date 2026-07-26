@@ -151,20 +151,72 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/FlashAttention.pdf">PDF</a>.</p>
-        <p>FlashAttention is one of the many clever ideas that makes LLM more efficient. 
-           Standard attention mechanism deal with the full N x N score matrix
+        <p>FlashAttention is one of the many clever ideas that makes LLM more efficient and practical. 
+           Standard attention mechanism deal with the full N * N score matrix, where N 
+           is the input length. When N is large, this matrix become massive, 
+           taking a huge space of HBM and making the inference
+           slow.</p>
+        <p>
+           The key insight of flash attention is that standard attention wastes memory 
+           and time by reading and saving the full N x N score matrix from and to HBM, 
+           but we can compute the exact same result of the attention layer 
+           block by block without ever needing the full score matrix. To make this work, 
+           we need a trick to update softmax update online.</p>
 
-           The key insight is that standard attention wastes memory by materializing the full N x N score matrix, 
-           but you can compute the exact same result block by block without ever storing it. 
-           The trick that makes this work is an online softmax update rule.</p>
+<h2>Standard Attention Recap</h2>
+<p>Recall that standard attention computes:</p>
+<pre><code>R = Softmax(Q K^T / sqrt(d)) V</code></pre>
+<p>Here R is the output matrix. The problem is that computing the full <code>Q K^T</code> matrix requires O(N^2) memory where N is the sequence length. 
+    For long sequences, this intermediate matrix is enormous and must be read/written to slow GPU high-bandwidth memory (HBM).</p>
 
-        <h2>Standard Attention Recap</h2>
-        <p>Recall that standard attention computes:</p>
-        <pre><code>R = Softmax(Q K^T / sqrt(d)) V</code></pre>
-        <p>Here R is the output matrix. The problem is that computing the full <code>Q K^T</code> matrix requires O(N^2) memory where N is the sequence length. For long sequences, this intermediate matrix is enormous and must be read/written to slow GPU high-bandwidth memory (HBM).</p>
+<p><strong>The Hardware Process for standard attention:</strong></p>
+<ol>
+    <li><strong>Read</strong> Q and K from HBM into Static Random-Access Memory (SRAM).</li>
+    <li>Compute the pre-softmax scores <code>S = Q K^T</code> in SRAM.</li>
+    <li><strong>Write</strong> the massive N x N matrix S from SRAM to HBM.</li>
+    <li><strong>Read</strong> S from HBM back into SRAM.</li>
+    <li>Compute the probabilities <code>P = Softmax(S)</code> in SRAM.</li>
+    <li><strong>Write</strong> the massive N x N matrix P from SRAM to HBM.</li>
+    <li><strong>Read</strong> P and V from HBM into SRAM.</li>
+    <li>Compute the final output <code>R = P V</code> in SRAM.</li>
+    <li><strong>Write</strong> the final N x d output R to HBM.</li>
+</ol>
+<p>Those four massive reads/writes of S and P takes O(N^2) memory and also
+   most of the computing time (memory-bounded).</p>
 
-        <h2>The FlashAttention Idea: Block-wise Computation</h2>
-        <p>FlashAttention divides Q, K, and V into b small blocks, each containing t elements (queries, keys, or values):</p>
+<h2>The FlashAttention Idea: Block-wise Computation</h2>
+<p>FlashAttention eliminates those intermediate O(N^2) 
+   reads and writes by processing the matrices in chunks (tiles). 
+   This ensures the intermediate matrices never leave SRAM.</p>
+
+<p><strong>The Hardware Process of FlashAttention:</strong></p>
+<ol>
+    <li><strong>Initialize</strong> the final output matrix R in HBM.</li>
+    <li><strong>Outer Loop: Read</strong> a block of queries (Q_block) from HBM into SRAM. Reserve a corresponding block for its output (R_block) in SRAM.</li>
+    <li><strong>Inner Loop:</strong> For each corresponding block of keys and values in the sequence:
+        <ul>
+            <li><strong>Read</strong> the key block (K_block) and value block (V_block) from HBM into SRAM.</li>
+            <li>Compute the partial attention scores <code>S_block = Q_block K_block^T</code> directly in SRAM.</li>
+            <li>Update the running softmax statistics using the online softmax trick, and compute the partial probabilities <code>P_block</code> entirely in SRAM.</li>
+            <li>Multiply <code>P_block</code> by <code>V_block</code> and mathematically accumulate the result into the waiting R_block.</li>
+            <li>Evict K_block and V_block from SRAM to free up space.</li>
+        </ul>
+    </li>
+    <li><strong>Write</strong> the mathematically completed R_block from SRAM to HBM exactly once.</li>
+    <li>Move to the next block of Q and repeat the process.</li>
+</ol>
+<p>Note how in the Inner Loop above, all chunk of Q, K, V are read
+    into SRAM from HBM only once, and then the corresponding chunk of
+    R is returned to HBM.    
+</p>
+
+
+
+
+<h2>Gradual computation of R_i</h2>
+
+<p> We now explain how FlashAttention works specifically.
+    FlashAttention divides Q, K, and V into b small blocks, each containing t elements (queries, keys, or values):</p>
 
         <pre><code>Q = [Q_1, Q_2, ..., Q_b]      (b blocks of queries, each of size t)
 K = [K_1, K_2, ..., K_b]      (b blocks of keys)
@@ -175,40 +227,33 @@ V = [V_1, V_2, ..., V_b]      (b blocks of values)</code></pre>
 
         <p>The key point is that FlashAttention computes each output block R_1, R_2, ..., R_b separately, and within each output block, it builds the result gradually by streaming through the K and V blocks one at a time.</p>
 
-        <h3>Gradual computation of R_1</h3>
         <p>Taking R_1 as an example (all other R_i are updated similarly), FlashAttention computes it in b steps:</p>
 
         <pre><code>Step 1:  R_1^(1) = Softmax(Q_1 (K_1^T) / sqrt(d)) (V_1)
 
-Step 2:  R_1^(2) = Softmax(Q_1 (K_1^T  K_2^T) / sqrt(d)) (V_1)
-                                                             (V_2)
-
-Step 3:  R_1^(3) = Softmax(Q_1 (K_1^T  K_2^T  K_3^T) / sqrt(d)) (V_1)
-                                                                    (V_2)
-                                                                    (V_3)
+Step 2:  R_1^(2) = Softmax(Q_1 (K_1^T  K_2^T) / sqrt(d)) (V_1^T V_2^T)^T
+                                                             
   ...
 
-Step b:  R_1^(b) = Softmax(Q_1 (K_1^T ... K_b^T) / sqrt(d)) (V_1)
-                                                               ( : )
-                                                               (V_b)</code></pre>
+Step b:  R_1^(b) = Softmax(Q_1 (K_1^T ... K_b^T) / sqrt(d)) (V_1^T ... V_b^T)^T
+                                                               </code></pre>
 
-        <p>After b steps, <code>R_1^(b) = R_1</code>, which is what we want in the end. The critical question is: how do we update from R_1^(i) to R_1^(i+1) efficiently without recomputing everything from scratch?</p>
+        <p>After b steps, <code>R_1^(b) = R_1</code>, which is what we want in the end. The critical question here is how to update from R_1^(i) to R_1^(i+1) efficiently.</p>
 
-        <h2>Efficient Incremental Updates</h2>
+        <h2>Update softmax attention online</h2>
         <p>Let us take one query from Q_1 as an example. Without loss of generality, denote it as q_1, and denote its output after step i as r_1^(i+1).</p>
 
         <h3>Expanding the output at step (i+1)</h3>
         <p>After processing through the (i+1)-th K and V blocks, the output for query q_1 is:</p>
 
-        <pre><code>r_1^(i+1) = Softmax(q_1^T (K_1 ... K_(i+1)t) / sqrt(d)) (V_1  )
-                                                            ( :   )
-                                                            (V_i+1)</code></pre>
+        <pre><code>r_1^(i+1) = Softmax(q_1^T (K_1 ... K_(i+1)t) / sqrt(d)) (V_1^T, ... V_(i+1)^T)^T
+                                                           </code></pre>
 
         <p>Since the (i+1)-th step has seen keys from blocks 1 through (i+1) (a total of (i+1)t keys), and each block has t values, we can write this out explicitly:</p>
 
-        <pre><code>         exp(q_1^T k_j / sqrt(d) - s^(in))
-r_1^(i+1) = SUM_j  --------------------------------  *  v_j
-         SUM_j' exp(q_1^T k_j' / sqrt(d) - s^(in))</code></pre>
+        <pre><code>                   exp(q_1^T k_j / sqrt(d) - s^(in))
+r_1^(i+1) = SUM_j  ------------------------------------------  *  v_j
+                   SUM_j' exp(q_1^T k_j' / sqrt(d) - s^(in))</code></pre>
 
         <p>Here <code>s^(in)</code> is the maximum of <code>q_1^T k_j / sqrt(d)</code> across all j in blocks 1...(i+1). This is the "max trick" subtracted for numerical stability (it does not change the result since it cancels in the softmax ratio, but prevents overflow in the exponentials).</p>
 
@@ -217,10 +262,10 @@ r_1^(i+1) = SUM_j  --------------------------------  *  v_j
         <h3>The decomposition</h3>
         <p>The key mathematical insight is that we can split the sum in both the numerator and denominator into two parts: the contribution from blocks 1...i (which we already computed) and the new contribution from block i+1:</p>
 
-        <pre><code>         SUM_{j=1}^{it} exp(q_1^T k_j / sqrt(d) - s^(in)) v_j
-         +  SUM_{j=it+1}^{(i+1)t} exp(q_1^T k_j / sqrt(d) - s^(in)) v_j
-r_1^(i+1) = ----------------------------------------------------------
-                SUM_{j=1}^{(i+1)t} exp(q_1^T k_j / sqrt(d) - s^(in))</code></pre>
+        <pre><code>         
+             SUM_{j=1}^{it} exp(q_1^T k_j / sqrt(d) - s^(in)) v_j +  SUM_{j=it+1}^{(i+1)t} exp(q_1^T k_j / sqrt(d) - s^(in)) v_j
+r_1^(i+1) = --------------------------------------------------------------------------------------------------------------------
+                                SUM_{j=1}^{(i+1)t} exp(q_1^T k_j / sqrt(d) - s^(in))</code></pre>
 
         <p>This can be further rewritten by separating the two parts:</p>
 
@@ -242,22 +287,14 @@ r_1^(i+1) =  ------------------------------------------------  *  [previous weig
             <li><strong>The running max</strong> s^(in): updated as the max of the old max and the new block's max, needed for numerical stability</li>
         </ul>
 
-        <h2>Why This Matters: Memory Efficiency</h2>
-        <p>The standard attention algorithm materializes the full N x N attention score matrix in HBM. FlashAttention avoids this by:</p>
-        <ul>
-            <li>Only ever working with blocks of size t x t in fast on-chip SRAM</li>
-            <li>Never writing the full attention matrix to slow HBM</li>
-            <li>Achieving the same exact result (not an approximation) through the incremental update scheme described above</li>
-        </ul>
-
-        <p>Here we are: FlashAttention is IO-aware -- it is designed around the GPU memory hierarchy. By keeping blocks small enough to fit in SRAM, it reduces the number of reads/writes to HBM, which is the actual bottleneck for attention computation on modern hardware. The speedup is substantial -- 2-4x wall-clock time on typical sequence lengths.</p>
-
         <h2>Summary</h2>
+        <p>During the above processes, we can see that</p>
         <ul>
-            <li>FlashAttention tiles Q, K, V into blocks and uses an online softmax trick (running max + running sum of exponentials) to compute exact attention incrementally -- no approximation involved</li>
-            <li>It is IO-aware: blocks fit in SRAM, avoiding repeated reads/writes to slow HBM, making it super fast in practice (2-4x speedup)</li>
-            <li>The downside is implementation complexity -- the kernel is highly hardware-specific, and custom backward passes are needed for training; not something you casually reimplement</li>
+            <li>FlashAttention has the same computational time complexity as stanard attention (O(N^2)).</li>
+            <li>FlashAttention reduces the space (memory) complexity from O(N^2) to O(N) by avoding computing and storing the whole attention score matrix at once.</li>
         </ul>
+        Although FlashAttention has the same computational complexity as standard attention, it is normally 2-4 x faster than standard attention. This 
+        is because it avoids move the attention score matrix back and forth between HBM and SRAM.
 
         <h2>References</h2>
         <ul>
