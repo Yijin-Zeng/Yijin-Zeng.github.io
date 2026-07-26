@@ -152,8 +152,8 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Conditional and Style GAN.pdf">PDF</a>.</p>
 
-        <p>Once a GAN is trained, we can sample <code>z ~ N(0, I)</code>, pass it through the generator, and get a high quality image. Great — except we <strong>cannot control what image we get</strong>.
-           Suppose we trained on images of animals and now we want a dog. Our only option is to keep sampling <code>z</code> over and over until one of the outputs happens to be a dog. That's embarrassingly inefficient, and it's the problem this whole note is about.</p>
+        <p>Once a GAN is trained, we can sample <code>z ~ N(0, I)</code>, pass it through the generator, and get a high quality image. What we <strong>cannot</strong> do is control what image we get.
+           Suppose we trained on images of animals and now we want a dog. The only option is to keep sampling <code>z</code> until one of the outputs happens to be a dog. That's inefficient, and it's the problem this note works through.</p>
 
         <pre><code>                                        x_i (real image)
                                             \
@@ -163,12 +163,12 @@ latent variable,       cannot control it)
 ~ N(0, I)</code></pre>
 
         <h2>Why Can't Each Dimension of z Control One Thing?</h2>
-        <p>A natural question I had: in a standard GAN, why doesn't each feature of <code>z</code> control one part of the image? Say <code>z₁</code> for color, <code>z₂</code> for background, and so on. Then controlling generation would be trivial.</p>
+        <p>In a standard GAN, why doesn't each feature of <code>z</code> just control one part of the image — say <code>z₁</code> for color, <code>z₂</code> for background, and so on? If that were true, controlling generation would be trivial.</p>
 
         <p>Here's the argument for why this <strong>can't</strong> be true: if each dimension independently controlled one attribute, then <strong>all possible combinations of attributes would be equally likely</strong> — and many combinations violate how the real world works.
            A concrete example: suppose <code>z₁</code> controls gender and <code>z₂</code> controls beard, independently. Then "male + beard" and "female + beard" would be generated with equal probability. The second one is much less realistic, so a generator that produces realistic images simply cannot let those two dimensions act independently. The features <strong>have to be entangled</strong>.</p>
 
-        <p>The way I think about it: the latent variable <code>z</code> encodes all the information for generating the image, and the generator acts as a <strong>decoder</strong>. It decodes <code>z</code> into an image without any disentanglement of features.</p>
+        <p>The latent variable <code>z</code> encodes all the information for generating the image, and the generator acts as a <strong>decoder</strong>. It decodes <code>z</code> into an image without any disentanglement of features.</p>
 
         <p>One nice property survives, though: the latent space in a GAN is <strong>smooth</strong>. Interpolate between two latent codes and the image morphs smoothly:</p>
 
@@ -233,7 +233,7 @@ input            ^                  ^                  ^
         </ul>
 
         <h3>Why Is the Noise Scaling 4x4x1 Times a Learnable 1x1x512, Not Just 4x4x512?</h3>
-        <p>This detail bugged me until I saw the insight: each channel may control one detail of the image — darkness, pores, hairs, etc. All spatial positions within a channel need a <strong>consistent signal</strong> to work together and make a realistic combination — which is why the noise itself is <code>4x4x1</code>, shared across channels spatially. But different features may need <strong>different levels of noise</strong> (hair needs more randomness than overall darkness, say), so we give each channel its own learnable scaling factor.</p>
+        <p>The insight: each channel may control one detail of the image — darkness, pores, hairs, etc. All spatial positions within a channel need a <strong>consistent signal</strong> to work together and make a realistic combination — which is why the noise itself is <code>4x4x1</code>, shared across channels spatially. But different features may need <strong>different levels of noise</strong> (hair needs more randomness than overall darkness, say), so each channel gets its own learnable scaling factor.</p>
 
         <h3>Why Map z to w First?</h3>
         <p><code>z</code> is Gaussian noise, and as we argued at the start, it is hard for the model to use one dimension of a Gaussian to control one feature — everything is entangled. The mapping network lets the model learn a <strong>new distribution for <code>w</code> that fits well with real world images</strong>, and in doing so it can <strong>untangle</strong> the features.</p>
@@ -248,10 +248,10 @@ gender vector  w̃ = w̄ - w̄*     (difference of averages)
 w        --> generator --> an image of a female
 w + w̃   --> generator --> an image of a male     (operation in latent space)</code></pre>
 
-        <p>It is quite surprising to me that this simple <strong>vector arithmetic in latent space</strong> actually works — average the <code>w</code>'s of male images, subtract the average of female images, and you get a direction you can add to any <code>w</code> to change gender.</p>
+        <p>This simple <strong>vector arithmetic in latent space</strong> works: average the <code>w</code>'s of male images, subtract the average of female images, and the result is a direction you can add to any <code>w</code> to change gender.</p>
 
         <h3>Why Would Style GAN Work?</h3>
-        <p>There's an implicit assumption underneath all of this, and I find it a genuinely interesting claim about neural networks: <strong>if there are many ways for a neural network to solve a problem, it has a bias to pick the easy one</strong>. The architecture makes the disentangled solution the easy one — modulate global attributes through <code>w</code>, sprinkle randomness through per-layer noise — so that's what training converges to. It's an inductive-bias argument, not a proof; but it holds up remarkably well in practice.</p>
+        <p>There's an implicit assumption underneath all of this: <strong>if there are many ways for a neural network to solve a problem, it has a bias to pick the easy one</strong>. The architecture makes the disentangled solution the easy one — modulate global attributes through <code>w</code>, sprinkle randomness through per-layer noise — so that's what training converges to. It's an inductive-bias argument, not a proof, but it's the assumption StyleGAN's design rests on.</p>
 
         <p>The division of labor that emerges:</p>
         <ul>
@@ -259,10 +259,15 @@ w + w̃   --> generator --> an image of a male     (operation in latent space)</
             <li><strong>Per-layer noise (local)</strong>: it controls details that make an image look more realistic but don't matter that much — e.g. the exact position of hairs. A change of random noise plays out at the pixel level.</li>
         </ul>
 
-        <h2>My Take</h2>
-        <p>What ties this note together for me is the entanglement argument at the beginning. Once you accept that a realistic generator <strong>cannot</strong> have independently meaningful latent dimensions (because independent dimensions imply all attribute combinations are equally likely, including physically implausible ones), the three fixes each make sense as a different bargain: Conditional GAN buys control with labels, InfoGAN manufactures control by forcing a code to be reconstructable, and StyleGAN restructures the generator so that disentanglement becomes the path of least resistance.</p>
-
-        <p>StyleGAN's "networks pick the easy solution" assumption is the part I keep coming back to. It's hand-wavy, unproven, and it works — which is a pretty accurate summary of a lot of deep learning. The caveat is that none of these methods gives you guaranteed disentanglement; you still have to go hunting in latent space (like the gender-vector trick) to find out what the model actually learned.</p>
+        <h2>Summary</h2>
+        <ul>
+            <li>In a standard GAN, latent dimensions can't independently control single attributes — that would make physically implausible combinations (e.g. "female + beard") just as likely as plausible ones. Features have to be entangled, and <code>z</code> is smooth but not controllable.</li>
+            <li>Conditional GAN adds control directly: feed an attribute vector <code>c</code> alongside <code>z</code>, and have the discriminator judge the pair <code>(x, c)</code> instead of <code>x</code> alone.</li>
+            <li>Auxiliary Classifier GAN gives the discriminator a second head that classifies <code>x</code>, so the generator is pushed toward images that are recognizably the right class.</li>
+            <li>InfoGAN drops the need for labels: <code>c</code> is drawn randomly, and the discriminator must reconstruct it from the generated image, which forces the generator to encode meaningful structure (class, style, posture) into <code>c</code>.</li>
+            <li>StyleGAN restructures the generator itself: <code>z</code> is mapped to an intermediate variable <code>w</code> that modulates every layer (global attributes), while independent per-layer noise handles fine, local detail.</li>
+            <li>The assumption behind StyleGAN is that a network with many ways to solve a problem is biased toward the easy one — and the architecture is set up so the disentangled solution is the easy one.</li>
+        </ul>
 
         <h2>References</h2>
         <ul>

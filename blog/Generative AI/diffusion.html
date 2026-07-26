@@ -152,11 +152,10 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Diffusion.pdf">PDF</a>.</p>
 
-        <p>Every image generator you've played with recently — the ones behind those photorealistic pictures of astronauts riding horses — starts from <strong>pure Gaussian noise</strong> and gradually sculpts it into an image.
-           It is quite surprising to me when I first know that the model behind this is trained to do something that sounds almost trivial: <strong>predict the noise that was added to an image</strong>. That's it. This note works through why that simple objective falls out of a fairly long (but satisfying) derivation.</p>
+        <p>A diffusion model consists of an <strong>encoder</strong> and a <strong>decoder</strong>. The encoder takes an image and gradually adds noise to it until the image becomes noise. The decoder reverses this process until it re-creates the image. What training the decoder actually reduces to is a strikingly simple objective: <strong>predict the noise that was added to an image</strong>. This note works through the derivation of why that's the objective.</p>
 
         <h2>Encoder and Decoder</h2>
-        <p>A diffusion model consists of an <strong>encoder</strong> and a <strong>decoder</strong>. The encoder takes an image and gradually adds noise to it until the image becomes noise. The decoder reverses this process until it re-creates the image.</p>
+        <p>Drawn out, the process looks like this:</p>
 
         <pre><code>              ------------- encode ------------->
 
@@ -202,7 +201,7 @@ where  ᾱ_t = ∏_{i=1}^{t} (1-β_i)</code></pre>
 pr(z_t-1 | z_t) = N( f_t(z_t; φ_t) , σ_t² I )      &lt;- the neural network lives in f_t
 pr(x | z_1)     = N( f_1(z_1; φ_1) , σ_1² I )</code></pre>
 
-        <p>Two notes from the margin of my handwritten version: the larger the number of steps <code>T</code>, the better this Gaussian approximation becomes (each reverse step only needs to undo a tiny bit of noise); and <code>σ_t²</code> is pre-determined, e.g. 1 or 0.5 — we don't learn it.</p>
+        <p>Two things worth noting: the larger the number of steps <code>T</code>, the better this Gaussian approximation becomes (each reverse step only needs to undo a tiny bit of noise); and <code>σ_t²</code> is pre-determined, e.g. 1 or 0.5 — we don't learn it.</p>
 
         <h2>Training: ELBO, and Why Diffusion Beats VAE Here</h2>
         <p>Ideally we'd maximize the marginal likelihood <code>pr(x | φ_1..T)</code>, but that integral over all <code>z_1, ..., z_T</code> is intractable. So, as in VAE, we work with its lower bound (ELBO):</p>
@@ -211,7 +210,7 @@ pr(x | z_1)     = N( f_1(z_1; φ_1) , σ_1² I )</code></pre>
 
         <p>where <code>q</code> is the encoder distribution. The gap between ELBO and the true log-likelihood is exactly <code>KL(q(z_1..T | x) || pr(z_1..T | x, φ))</code>.</p>
 
-        <p>Here is the part I find genuinely insightful. In VAE, both encoder and decoder optimize the ELBO, and the encoder can help close the gap — but a Gaussian variational encoder may be far from the true posterior, so the ELBO is often not close to the marginal likelihood, which is one reason VAE images look blurry. <strong>In diffusion, the encoder is fixed for a given x, so the decoder has to do all the work</strong> — and crucially, the thing the decoder must match, <code>q(z_t-1 | z_t, x)</code>, is a fixed Gaussian. Much easier to learn than chasing a moving target that depends on the decoder itself.</p>
+        <p>This is where diffusion has a structural advantage over VAE. In VAE, both encoder and decoder optimize the ELBO, and the encoder can help close the gap — but a Gaussian variational encoder may be far from the true posterior, so the ELBO is often not close to the marginal likelihood, which is one reason VAE images look blurry. <strong>In diffusion, the encoder is fixed for a given x, so the decoder has to do all the work</strong> — and crucially, the thing the decoder must match, <code>q(z_t-1 | z_t, x)</code>, is a fixed Gaussian. Much easier to learn than chasing a moving target that depends on the decoder itself.</p>
 
         <h3>Simplify the ELBO</h3>
         <p>Expanding the joint in the reverse direction and the <code>q</code> in the forward direction, then applying Bayes' theorem to flip <code>q(z_t | z_t-1)</code> into <code>q(z_t-1 | z_t, x)</code> (this flip is the crucial move — it aligns each <code>q</code> term with a decoder term going the same direction), the ELBO becomes:</p>
@@ -225,7 +224,7 @@ pr(x | z_1)     = N( f_1(z_1; φ_1) , σ_1² I )</code></pre>
         <p>We could stop here. This loss can already train a network to reverse the process: at each step, learn to predict the mean of <code>q(z_t-1 | z_t, x)</code>. But there is a nicer form.</p>
 
         <h2>Reparameterization: It All Collapses to Predicting Noise</h2>
-        <p>Recall <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code>, so <code>x = z_t/√ᾱ_t - √(1-ᾱ_t)/√ᾱ_t · ε</code>. Substituting this into the mean of <code>q(z_t-1 | z_t, x)</code> and grinding through the algebra (about a page of it in the PDF, all the <code>ᾱ</code> factors cancelling beautifully), the target mean becomes:</p>
+        <p>Recall <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code>, so <code>x = z_t/√ᾱ_t - √(1-ᾱ_t)/√ᾱ_t · ε</code>. Substituting this into the mean of <code>q(z_t-1 | z_t, x)</code> and grinding through the algebra (all the <code>ᾱ</code> factors cancel), the target mean becomes:</p>
 
         <pre><code>mean of q(z_t-1 | z_t, x)  =  1/√(1-β_t) · z_t  -  β_t/(√(1-ᾱ_t)√(1-β_t)) · ε</code></pre>
 
@@ -242,7 +241,7 @@ pr(x | z_1)     = N( f_1(z_1; φ_1) , σ_1² I )</code></pre>
         <h3>Why Is This Better Than the Loss Before Reparameterization?</h3>
         <p>Although mathematically equivalent, the new loss is much more practical because it <strong>decomposes into a sum over sample size and step size</strong>. Before, to train with SGD we'd sample <code>b</code> images and train all <code>T</code> steps for each — if <code>T</code> is large, <code>b</code> has to be tiny (or doesn't fit in RAM at all), and with <code>b=1, T=1000</code> the losses within a batch are highly correlated while gradient directions across batches vary wildly. Now we simply sample <code>B</code> pairs from <strong>all combinations of image and step</strong> — a proper i.i.d.-ish minibatch.</p>
 
-        <p>One thing that puzzled me: the <code>ε</code>'s we regress against at different steps do <strong>not</strong> come from independent noise (they're all tied to the same <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code> decomposition). So why would learning the noise work? Because <strong>on average, the noise points in the right direction</strong> to move from the target distribution toward the standard normal — and its negation points back.</p>
+        <p>Note that the <code>ε</code>'s we regress against at different steps do <strong>not</strong> come from independent noise (they're all tied to the same <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code> decomposition). So why would learning the noise work? Because <strong>on average, the noise points in the right direction</strong> to move from the target distribution toward the standard normal — and its negation points back.</p>
 
         <h2>Sampling: Don't Forget to Add Noise Back</h2>
         <p>Generation runs the learned chain backwards:</p>
@@ -263,11 +262,6 @@ x = 1/√(1-β_1) · z_1 - β_1/(√(1-ᾱ_1)√(1-β_1)) · g_1(z_1; φ_1)</cod
             <li>Reparameterization turns everything into <strong>noise prediction</strong>, which decomposes the loss over (image, step) pairs and plays nicely with SGD.</li>
             <li>At sampling time, <strong>add noise back at every step</strong> — the mean alone gives you blurry averages, the noise gives you details.</li>
         </ul>
-
-        <h2>My Take</h2>
-        <p>What sticks with me from working through this derivation is how much of diffusion's success comes down to <strong>choosing which distribution to learn</strong>. The true reverse <code>p(z_t-1 | z_t)</code> is hopeless; the conditioned one <code>p(z_t-1 | z_t, x)</code> is a plain Gaussian. One Bayes flip and everything downstream — the ELBO simplification, the noise-prediction loss, the SGD-friendly decomposition — follows almost mechanically. Compared to GANs (no adversarial instability) and VAEs (no encoder eating the ELBO gap), diffusion trades elegance of a single-shot generator for a long chain of very easy problems.</p>
-
-        <p>The cost, of course, is that the chain is long: sampling requires hundreds or thousands of network evaluations, one per step. That's the price of making each step trivially Gaussian — and it's exactly the gap that later work on faster samplers and distillation tries to close.</p>
 
         <h2>References</h2>
         <ul>

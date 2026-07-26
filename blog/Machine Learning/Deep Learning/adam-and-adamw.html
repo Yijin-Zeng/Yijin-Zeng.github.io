@@ -156,13 +156,13 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Adam and AdamW.pdf">PDF</a>.</p>
 
-        <p>If you open the training config of basically any modern LLM -- GPT, Llama, whatever -- the optimizer is <strong>AdamW</strong>, not Adam. That "W" bugged me for a while. Adam is already one of the reasons deep neural networks can be trained (relatively) easily, so what was broken enough that everyone switched? It turns out Adam has a <strong>critical issue when combined with L2 loss</strong>, one of the most common regularization methods. The fix is a one-line change, but the reasoning behind it is a nice little story about how two things that look equivalent on paper stop being equivalent the moment you change the optimizer.</p>
+        <p>Adam is one of the reasons deep neural networks can be trained (relatively) easily. However, it has a critical issue when combined with L2 loss, one of the most common regularization methods.</p>
 
-        <p>(If you want the build-up of how Adam itself works -- momentum, adaptive learning rates and all that -- I cover it in <a href="from-sgd-to-adam.html">From SGD to Adam</a>. Here I'll take Adam as given.)</p>
+        <p>(For the build-up of how Adam itself works -- momentum, adaptive learning rates and so on -- see <a href="from-sgd-to-adam.html">From SGD to Adam</a>. This note takes Adam as given and focuses on what happens when you add L2 regularization on top of it.)</p>
 
-        <h2>Observation 1: L2 loss in SGD is just weight decay</h2>
+        <h2>Observation 1: L2 loss in SGD is equivalent to weight decay</h2>
 
-        <p>Let's start with plain SGD. Suppose we add an L2 penalty to our loss:</p>
+        <p>Suppose we add an L2 penalty to the loss:</p>
 
         <pre><code>L*(θ) = L(θ) + (λ/2)‖θ‖²</code></pre>
 
@@ -170,17 +170,17 @@
 
         <pre><code>∇L*(θ) = ∇L(θ) + λθ</code></pre>
 
-        <p>Now plug this into the SGD update and watch what happens:</p>
+        <p>Plugging this into the SGD update:</p>
 
         <pre><code>θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η∇L*(θ⁽ᵗ⁾)
        = θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾) - ηλθ⁽ᵗ⁾
        = (1 - ηλ)θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾)</code></pre>
 
-        <p>Here we are. The L2 penalty has turned into the factor <strong>(1 - ηλ)</strong> multiplying θ⁽ᵗ⁾ -- every step, the weights get shrunk slightly towards zero before the gradient update is applied. This is exactly <strong>weight decay</strong>. In SGD, "add L2 loss" and "decay the weights each step" are literally the same thing, which is why people use the two terms interchangeably. That interchangeability is precisely what breaks next.</p>
+        <p>The L2 penalty has turned into the factor <strong>(1 - ηλ)</strong> multiplying θ⁽ᵗ⁾ -- every step, the weights get shrunk slightly towards zero before the gradient update is applied. This is <strong>weight decay</strong>. In SGD, adding L2 loss and decaying the weights each step are the same operation.</p>
 
-        <h2>Observation 2: L2 loss in Adam does NOT give weight decay</h2>
+        <h2>Observation 2: L2 loss in Adam does not result in a weight decay effect</h2>
 
-        <p>Now do the same thing with Adam. We naively feed the regularized gradient ∇L*(θ) into the algorithm:</p>
+        <p>Now feed the regularized gradient ∇L*(θ) into the Adam algorithm directly:</p>
 
         <pre><code>Adam + L2 loss
 1. m⁽ᵗ⁺¹⁾ ← β₁m⁽ᵗ⁾ + (1-β₁) ∇L*(θ⁽ᵗ⁾)
@@ -189,44 +189,30 @@
 4. ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 - β₂ᵗ)
 5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε)</code></pre>
 
-        <p>Where's the problem? Look at step 2 and step 5 together. The λθ term now lives inside m̂, but m̂ gets <strong>divided by √ŝ</strong> -- Adam's whole trick of scaling each parameter's update by its gradient magnitude.</p>
+        <p>The λθ term now sits inside both m and s, and step 5 divides by √ŝ -- this is the part of Adam that scales the gradient of each parameter down.</p>
 
-        <p>Think about what L2 regularization is supposed to do: <strong>parameters with large values should feel a large pull back towards zero</strong> (their penalty gradient λθ is large). But a large λθ also inflates that parameter's second moment ŝ, and dividing by √ŝ scales the update back down. <strong>Adam scales down exactly the gradients that the regularizer made large.</strong> The parameters that most deserve to be decayed get their decay largely cancelled out by the adaptive scaling. The regularization effect you thought you were adding mostly evaporates.</p>
+        <p>Here is the effect: when we apply L2 regularization, we expect the gradient of a parameter with a large value to be large, pulling it back towards zero. But that large gradient also inflates ŝ for that same parameter, and dividing by √ŝ scales the update back down. <strong>Adam scales down exactly the gradients that the regularizer made large.</strong> So the weight decay effect that L2 regularization is supposed to produce does not actually show up.</p>
 
-        <p>This is the subtle part that I think trips people up: nothing errors, nothing diverges, the loss curve looks fine. You just quietly get much weaker regularization than your λ suggests -- and tuning λ and η becomes weirdly entangled.</p>
+        <h2>The fix: AdamW separates Adam from the L2 loss</h2>
 
-        <h2>The fix: AdamW decouples the two</h2>
-
-        <p>The AdamW solution is almost embarrassingly simple: <strong>separate Adam from the L2 loss</strong>. Two changes:</p>
-
-        <ul>
-            <li>In steps 1 and 2, use the <strong>plain gradient ∇L(θ)</strong> instead of ∇L*(θ) -- so the regularization never touches the moment estimates, and the adaptive scaling can't dilute it.</li>
-            <li>In step 5, <strong>subtract ηλθ directly</strong> -- applying the decay straight to the parameters, outside the adaptive machinery.</li>
-        </ul>
+        <p>The idea is simple: instead of using ∇L*(θ) in steps 1 and 2, keep using the plain gradient ∇L(θ) there, so the L2 term has no effect on the moment estimates. Then subtract λθ directly in step 5, applying the L2 regularization directly to the parameter update instead.</p>
 
         <pre><code>AdamW
 1. m⁽ᵗ⁺¹⁾ ← β₁m⁽ᵗ⁾ + (1-β₁) ∇L(θ⁽ᵗ⁾)
 2. s⁽ᵗ⁺¹⁾ ← β₂s⁽ᵗ⁾ + (1-β₂) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)
 3. m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 - β₁ᵗ)
 4. ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 - β₂ᵗ)
-5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε) - ηλθ⁽ᵗ⁾</code></pre>
+5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε) - λθ⁽ᵗ⁾</code></pre>
 
-        <p>Steps 1-4 are untouched Adam on the unregularized loss; only step 5 changed. And now it's trivial to see AdamW has the weight decay effect: the -ηλθ⁽ᵗ⁾ term means every parameter gets multiplied by (1 - ηλ) each step, exactly like in the SGD derivation above -- no √ŝ in sight to cancel it. Large weights shrink at the rate you asked for, full stop. This is why it's called <strong>decoupled</strong> weight decay.</p>
-
-        <p>One caveat worth knowing: because the decay bypasses the loss entirely, AdamW is <strong>no longer minimizing L*(θ) = L(θ) + (λ/2)‖θ‖²</strong> in any strict sense -- it's Adam on L plus a separate shrinkage step bolted on. The two are only equivalent for SGD. It's a pragmatic fix that happens to work extremely well in practice, not a principled derivation from a single objective. (A related practical note: the <code>weight_decay</code> argument in <code>torch.optim.Adam</code> implements the broken L2-in-gradient version, while <code>torch.optim.AdamW</code> implements the decoupled one -- so the fix is genuinely a one-argument change away.)</p>
+        <p>Steps 1-4 are just Adam on the unregularized loss L; only step 5 changed. It is then trivial to show that AdamW has the weight decay effect: the -λθ⁽ᵗ⁾ term shrinks every parameter directly, with no √ŝ in the way to cancel it out, exactly as in the SGD case above.</p>
 
         <h2>Summary</h2>
 
         <ul>
-            <li>In <strong>SGD</strong>, adding L2 loss gives θ ← (1-ηλ)θ - η∇L(θ) -- L2 regularization and weight decay are the <strong>same thing</strong>.</li>
-            <li>In <strong>Adam</strong>, the λθ term goes through the second-moment scaling, which shrinks precisely the large gradients the regularizer created -- so the weight decay effect quietly disappears.</li>
-            <li><strong>AdamW</strong> keeps the moment estimates on the plain gradient and subtracts λθ directly in the parameter update, restoring true weight decay.</li>
-            <li>The whole fix is one term moved from step 2 to step 5. That's it.</li>
+            <li>In <strong>SGD</strong>, adding L2 loss gives θ⁽ᵗ⁺¹⁾ ← (1-ηλ)θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾) -- L2 regularization and weight decay are equivalent.</li>
+            <li>In <strong>Adam</strong>, the λθ term passes through the second-moment scaling in step 5, which scales down exactly the gradients that L2 regularization made large -- so the weight decay effect does not appear.</li>
+            <li><strong>AdamW</strong> fixes this by keeping the moment estimates (steps 1-2) on the plain gradient ∇L(θ), and subtracting λθ directly in the parameter update (step 5) instead.</li>
         </ul>
-
-        <h2>My Take</h2>
-
-        <p>What I love about this note is how small the actual insight is. Loshchilov and Hutter didn't invent a new optimizer -- they noticed that an identity everyone took for granted ("L2 = weight decay") silently stops holding once you divide by √ŝ, and moved one term. That single moved term is now baked into essentially every LLM training run on the planet. It's a good reminder that "equivalent" always comes with an asterisk: equivalent <strong>under which update rule?</strong> Whenever I compose two techniques that were each derived in isolation (a regularizer here, an adaptive optimizer there), I now try to actually write out the combined update once, by hand. It's five lines of algebra, and it's exactly how you catch this kind of bug -- the kind that never throws an error, just quietly does less than you think.</p>
 
         <h2>References</h2>
 

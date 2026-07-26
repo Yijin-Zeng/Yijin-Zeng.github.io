@@ -156,9 +156,7 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Bias Variance Trade-off And Double Descent.pdf">PDF</a>.</p>
 
-        <p>Give a neural network enough capacity and it will fit your training data perfectly -- every single point, zero training error. And yet modern LLMs, which are massively over-parameterized (often with far more parameters than training examples), generalize remarkably well. If you took a classical statistics course, this should bother you. It bothered me. The classical theory says a model that interpolates every training point should be a disaster on test data. So why isn't it?</p>
-
-        <p>To answer that, we first need the classical story: where does generalization error actually come from?</p>
+        <p>Given enough capacity, a neural network can fit its training data perfectly -- every point, zero training error. That alone says nothing about how well it generalizes to a test set. Generalization error can be decomposed into exactly three parts: inherent noise, bias, and variance.</p>
 
         <h2>Where Test Error Comes From: Three Pieces</h2>
 
@@ -166,24 +164,24 @@
 
         <pre><code>y = f(x) + ε</code></pre>
 
-        <p>where f(x) is the <strong>generating function</strong> (the true function we want to learn) and ε is <strong>inherent noise</strong> with variance σ². The generalization error of a fitted model f̂(x; D) (trained on dataset D) decomposes into exactly three parts:</p>
+        <p>where f(x) is the <strong>generating function</strong> -- the true function we want to learn -- and ε is <strong>inherent noise</strong> with variance σ². For a fitted model f̂(x; D) trained on dataset D, the generalization error breaks into:</p>
 
         <ul>
-            <li><strong>Inherent noise:</strong> comes from the data itself. Even if we fit f perfectly, this error cannot be reduced. It's the floor.</li>
-            <li><strong>Bias:</strong> the difference between the <strong>expected prediction</strong> E<sub>D</sub>[f̂(x; D)] and the underlying real value f(x). How wrong are we on average?</li>
-            <li><strong>Variance:</strong> how much predictions wiggle when we retrain on different training sets. Same x, different D, different answer.</li>
+            <li><strong>Inherent noise:</strong> comes from the data itself. Even if we fit the generating function perfectly, this error cannot be reduced.</li>
+            <li><strong>Bias:</strong> the difference between the <strong>expected prediction</strong> E<sub>D</sub>[f̂(x; D)] and the underlying real value f(x).</li>
+            <li><strong>Variance:</strong> the variance of predictions given different training sets. Same x, different D, different answer.</li>
         </ul>
 
-        <h2>The Derivation (It's Shorter Than You'd Think)</h2>
+        <h2>Deriving the Decomposition</h2>
 
         <p>The expected test error at a point x, averaging over both the training set D and the noise ε:</p>
 
         <pre><code>E_{D,ε}[(f̂(x;D) - y)²]
   = E_{D,ε}[(f̂(x;D) - f(x) - ε)²]
   = E_{D,ε}[(f̂(x;D) - f(x))² + ε² + 2ε(f̂(x;D) - f(x))]
-  = E_D[(f̂(x;D) - f(x))²] + E[ε²] + 0       ← cross term dies: E[ε] = 0</code></pre>
+  = E_D[(f̂(x;D) - f(x))²] + E[ε²] + 0       ← cross term drops: E[ε] = 0</code></pre>
 
-        <p>Now the classic trick: add and subtract the expected prediction E<sub>D</sub>[f̂(x;D)] inside the square.</p>
+        <p>Now add and subtract the expected prediction E<sub>D</sub>[f̂(x;D)] inside the square:</p>
 
         <pre><code>E_D[(f̂(x;D) - E_D[f̂(x;D)] + E_D[f̂(x;D)] - f(x))²] + σ²
 
@@ -192,86 +190,91 @@
   + E_D[2(f̂(x;D) - E_D[f̂(x;D)])(E_D[f̂(x;D)] - f(x))]   ← = 0
   + σ²                                            ← inherent noise</code></pre>
 
-        <p>The cross term vanishes again (E<sub>D</sub>[f̂ - E<sub>D</sub>f̂] = 0), and we're left with:</p>
+        <p>The cross term vanishes for the same reason as before (E<sub>D</sub>[f̂ - E<sub>D</sub>f̂] = 0), leaving:</p>
 
         <pre><code>Expected test error = Var_D(f̂(x;D)) + (f(x) - E_D[f̂(x;D)])² + σ²
                     =    variance    +        bias²          + noise</code></pre>
 
-        <p>Two cross terms, both zero, and the whole decomposition falls out. I find it satisfying that something this fundamental needs nothing beyond "add and subtract the mean".</p>
+        <p>Two cross terms, both zero, and the decomposition falls out. Nothing beyond "add and subtract the mean," used twice.</p>
 
-        <h3>A side question I like: can you estimate the three pieces in practice?</h3>
+        <h3>Can we estimate the three pieces in practice?</h3>
 
-        <p>Given enough data (as many as we want), is it possible to decompose a model's actual prediction error into variance, bias, and inherent noise? <strong>Variance is easy</strong>: randomly resample the training data, refit the model each time, and estimate the variance of the predictions directly. The hard part is splitting the remainder into bias and inherent noise -- they're glued together in the error.</p>
+        <p>Given enough data -- as many samples as we want -- is it possible to decompose a model's actual prediction error into variance, bias, and inherent noise? <strong>Variance is easy</strong>: sample the training data randomly, refit the model, and estimate the variance of its predictions directly. The hard part is separating bias from inherent noise, since they're glued together in what's left.</p>
 
-        <p>The trick: consider a model that always has <strong>zero bias</strong> -- a model that simply predicts y, the data itself. Its error contains only variance and inherent noise, and since we can estimate its variance by resampling, the inherent noise falls out. Subtract that from any other model's error and the bias is what's left. I thought this was a neat move when I first saw it.</p>
+        <p>The trick is to consider a model with <strong>zero bias</strong> by construction -- one that simply predicts y, the data itself. Its error contains only variance and inherent noise. Since we can already estimate its variance by resampling, the inherent noise falls out by subtraction. From there, subtracting the inherent noise (and variance) from any other model's error leaves its bias.</p>
 
-        <h2>The Classical Picture: A U-Shaped Curve</h2>
+        <h2>The Classical Picture: A Bias-Variance Trade-off Curve</h2>
 
-        <p>The inherent noise cannot be reduced, so all we can do is find a model with <strong>low bias and low variance</strong>. And this is hard, because of the famous trade-off: as model complexity grows, bias falls but variance rises.</p>
+        <p>The inherent noise can't be reduced, so we want a model with <strong>low bias and low variance</strong>. This is hard because of the famous trade-off: as model complexity grows, bias falls but variance rises.</p>
 
-        <pre><code>error
-  │\
-  │ \  bias + variance
-  │  \      _____/
-  │   \    /
-  │    \__/  ← sweet spot (set model complexity here)
-  │  bias↓      variance↑
-  └──────────────────────→ model complexity
-   underfitting | overfitting</code></pre>
+        <pre><code>bias/
+variance
+  │＼                    ╱
+  │  ＼      over      ╱
+  │    ＼   fitting  ╱      ← bias + variance
+  │ under  ＼      ╱
+  │ fitting  ＼__╱
+  │  bias ＼      ╱ variance
+  │          ＼╱
+  └──────────↑─────────────→ model complexity
+        sweet point
+   (set model complexity here)</code></pre>
 
-        <p>So we cannot simply crank model complexity to the sky and expect a good result. The key is to strike the balance. The standard toolbox:</p>
+        <p>So we can't just push model complexity as high as possible and expect a good result. The key is to strike a balance between bias and variance. Common methods:</p>
 
         <ul>
-            <li><strong>To decrease bias:</strong> increase model complexity, or choose a correct model class in the first place (a linear model will never fit an exponential function, no matter how much data you feed it).</li>
-            <li><strong>To decrease variance:</strong> get more training data, decrease model complexity, add regularization, or use ensembles -- random forests are a nice example: each tree may keep or even <strong>increase</strong> bias, but averaging slashes the variance.</li>
+            <li><strong>To decrease bias:</strong> increase model complexity, or choose a correct model class in the first place -- a linear model can't fit an exponential function no matter how much data you feed it.</li>
+            <li><strong>To decrease variance:</strong> increase training data size, decrease model complexity, add regularization, or use an ensemble method -- random forests are the standard example: each tree may keep or even <strong>increase</strong> bias, but averaging decreases variance.</li>
         </ul>
 
-        <h2>Except... The Figure Is Incomplete</h2>
+        <h2>The Curve Is Incomplete</h2>
 
-        <p>Here's the part that genuinely surprised me when I first learned it. If we keep increasing model complexity <strong>past</strong> the classical overfitting regime -- say, to the point where the model has more parameters than training examples -- the test error can come back down. And not just down: it can drop <strong>below the previous lowest point</strong> of the classical U-curve. This is <strong>double descent</strong>.</p>
+        <p>It turns out the bias-variance figure above is incomplete. If we keep increasing model complexity -- say, to the point where the model has more parameters than training data -- we can observe a phenomenon known as <strong>double descent</strong>: test error rises through the usual overfitting regime, but then drops again, sometimes to a lower point than the previous sweet spot.</p>
 
-        <pre><code>test
-error │\
-      │ \        /\
-      │  \      /  \
-      │   \____/    \_____
-      │      ↑        ↑   ‾‾── keeps improving
-      │   sweet     peak near
-      │   spot    interpolation
-      └────────────────────────→ model complexity
-      phase I | phase II | phase III
-      (under- | (over-   | (over-
-       fitting)| fitting) |  parameterized)</code></pre>
+        <pre><code>bias/
+variance │＼                 ___
+         │  ＼     ___     ╱   ╲___
+         │    ＼__╱   ╲___╱        ‾‾‾───
+         │      ↑        ↑
+         │  sweet      double
+         │  point      descent
+         └────────────────────────────→ model complexity
+          phase I  │ phase II │  phase III
+         (under-   │ (over-   │ (over-
+          fitting) │ fitting) │  parameterized)
+
+loss
+  │＼_                    ___
+  │   ‾‾‾‾───training___╱   ╲___________  ← validation loss
+  │        ‾‾‾‾‾‾‾‾‾‾‾‾‾╱        ‾‾‾───___
+  │_________________________________________ ← training loss (≈0)
+  └────────────────────────────────────────→ model complexity</code></pre>
 
         <p>Three phases, each dominated by a different force:</p>
 
         <ul>
-            <li><strong>Phase I (underfitting):</strong> bias decrease dominates. Test error falls.</li>
-            <li><strong>Phase II (overfitting):</strong> variance increase dominates. Test error rises -- this is where the classical picture stops.</li>
-            <li><strong>Phase III (over-parameterized):</strong> variance <strong>decrease</strong> dominates. Test error falls again.</li>
+            <li><strong>Phase I (underfitting):</strong> bias decrease dominates -- test error falls.</li>
+            <li><strong>Phase II (overfitting):</strong> variance increase dominates -- test error rises. This is where the classical picture stops.</li>
+            <li><strong>Phase III (over-parameterized):</strong> variance <strong>decrease</strong> dominates -- test error falls again.</li>
         </ul>
 
         <h2>Why Does Variance Come Back Down?</h2>
 
-        <p>One explanation, and the one I find most intuitive: once parameters outnumber training samples, the model has passed through (i.e. interpolated) <strong>all</strong> the training instances. Training error is exactly zero. So any change in the fitted function can only happen <strong>between</strong> the training points -- the model now has the freedom to choose how it connects the dots. And it turns out the model tends to choose a <strong>smooth interpolation</strong> between training points, which keeps predictions stable across different training sets. Smooth interpolation means low variance.</p>
+        <p>One explanation: once the number of parameters exceeds the number of training samples, the model has passed through (interpolated) all the training instances -- training error is zero. Any change in the fitted function can then only happen <strong>between</strong> training points, since the points themselves are already fixed. The model has the freedom to choose how it connects the dots, and it tends to choose a <strong>smooth interpolation</strong> between them, which keeps predictions stable across different training sets.</p>
 
-        <p>Which raises a new question: why does the model choose to smooth the path, when the training error is already zero and nothing in the loss forces it to? The suspects are all the <strong>explicit and implicit regularization</strong> baked into modern training -- SGD itself, dropout, L2 norm penalties, and so on. SGD in particular seems to have an implicit preference for low-norm, smooth solutions. Honestly, "why interpolating models are smooth" is still an active research question, so I wouldn't call this case closed.</p>
+        <p>So why does the model choose to smooth the path when the training error is already zero and nothing forces it to? The likely cause is the <strong>explicit and implicit regularization</strong> built into modern training -- SGD, dropout, L2 norm penalties, and so on. This is still an active area of explanation rather than a fully settled one.</p>
 
-        <p>One caveat worth keeping: in phase III <strong>the model is still overfitting</strong> in the usual sense -- there's a visible gap between training loss (zero) and validation loss. It just generalizes better than the smaller overfit models did. Double descent doesn't abolish overfitting; it says the gap can shrink again as you go bigger.</p>
+        <p>Worth keeping in mind: in phase III the model is <strong>still overfitting</strong> in the technical sense -- there's still a gap between training loss and validation loss. It just generalizes better than the models in the middle of the classical overfitting zone did.</p>
 
         <h2>Summary</h2>
 
         <ul>
-            <li>Expected test error = <strong>variance + bias² + inherent noise</strong> -- and the derivation is just "add and subtract the mean" twice.</li>
-            <li>Noise is the floor; the game is trading bias against variance. Classical answer: find the sweet spot on the U-curve.</li>
-            <li>The U-curve is <strong>incomplete</strong>: push complexity past the interpolation threshold and test error descends a second time, sometimes below the old sweet spot.</li>
-            <li>The mechanism: an interpolating model can only vary between training points, and implicit regularization (SGD, dropout, weight decay) nudges it toward smooth in-between behavior -- low variance despite absurd capacity.</li>
-            <li>This is why "just make it bigger" is not as crazy as your statistics textbook implied -- and part of why massively over-parameterized LLMs work at all.</li>
+            <li>Generalization error decomposes as <strong>variance + bias² + inherent noise</strong>, derived by adding and subtracting the mean twice.</li>
+            <li>Inherent noise is the floor; the classical game is trading bias against variance and finding the sweet point on the trade-off curve.</li>
+            <li>The classical curve is <strong>incomplete</strong>: push model complexity past the point where parameters outnumber training data, and test error can descend a second time -- this is double descent.</li>
+            <li>Mechanism: an interpolating model (zero training error) can only vary between training points, and implicit/explicit regularization pushes it toward a smooth interpolation there -- lower variance despite far more capacity.</li>
+            <li>The model in phase III is still technically overfitting -- there's still a train/validation gap -- it just generalizes better than the models before it.</li>
         </ul>
-
-        <h2>My Take</h2>
-
-        <p>What I like about double descent is how it rescues classical theory rather than demolishing it. The bias-variance decomposition is still exactly correct -- it's an identity, after all. What changed is our assumption about how variance behaves at extreme complexity: it doesn't blow up forever, it comes back down once the model interpolates everything. The classical figure wasn't wrong, it was cropped. It is quite humbling to me that the field trained on the U-curve for decades, and the interesting part was just off the right edge of the plot. It also makes me a bit more careful about the phrase "overfitting" -- a model with zero training error and a train/validation gap can still be the best model you have.</p>
 
         <h2>References</h2>
 

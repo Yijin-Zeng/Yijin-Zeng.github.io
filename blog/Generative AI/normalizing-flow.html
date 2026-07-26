@@ -152,13 +152,7 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Normalizing Flow.pdf">PDF</a>.</p>
 
-        <p>Most generative models are surprisingly cagey when you ask them a simple question: "given this image, what probability do you assign to it?"
-           GANs can't answer at all, VAEs can only give you a lower bound. Normalizing flow is the one that answers directly — it tries to learn
-           <strong>the distribution of the image itself</strong>, exactly, so you can both generate samples and evaluate the exact likelihood of any real image.
-           That's a big deal for things like anomaly detection or scientific applications where you actually need the density, not just pretty samples.</p>
-
-        <h2>The Setup</h2>
-        <p>Like most generative models, we start from something boring and easy — a standard normal <code>z ~ N(0, I)</code> — and push it through a generator:</p>
+        <p>Normalizing flow is a generative model that tries to learn the distribution of the data directly. Like other generative models, it starts from something simple — a standard normal <code>z ~ N(0, I)</code> — and pushes it through a generator <code>f(z; φ)</code> to produce a complex, targeted distribution over <code>x</code>:</p>
 
         <pre><code>z ~ N(0, I)  -->  generator f(z; φ)  -->  x
 
@@ -168,14 +162,11 @@
      /     \      ----->      / \    / \
     /       \                /   \__/   \</code></pre>
 
-        <p>After the transformation, <code>f(z; φ)</code> follows a different, more complex distribution. Denote it as <code>pr(x|φ)</code>.
-           If we knew <code>pr(x|φ)</code>, training would be trivial — just maximize the likelihood of real images:</p>
+        <p>Denote the resulting density <code>pr(x|φ)</code>. If we knew <code>pr(x|φ)</code>, training would be simple — just maximize the likelihood of real images:</p>
 
         <pre><code>φ̂ = argmax_φ  Σ_{i ∈ real images} log pr(x_i | φ)</code></pre>
 
-        <p>But here's the natural question: if we know <code>f(·)</code>, can we know <code>p(x)</code>? <strong>Generally not.</strong>
-           For an arbitrary neural network, the induced density has no closed form. But — and this is the whole trick —
-           <strong>if <code>f</code> is invertible, then yes</strong>.</p>
+        <p>So the question is: if we know <code>f(·)</code>, can we know <code>p(x)</code>? Generally not — for an arbitrary neural network the induced density has no closed form. But <strong>if <code>f</code> is invertible, then yes</strong>.</p>
 
         <h2>The Hard Part: What Is pr(x|φ)?</h2>
         <p>The tool we need is just integration by substitution, the same one from calculus. Suppose <code>X ~ F(x)</code> and <code>Y = φ(X)</code> where <code>φ</code> is invertible. What distribution does <code>Y</code> follow?</p>
@@ -189,11 +180,11 @@
         <pre><code>pr(x|φ) = N( f⁻¹(x; φ); 0, I ) · |det( ∂f⁻¹(x)/∂x )|
         = N( z; 0, I ) · |det( ∂f(z)/∂z )|⁻¹     where f(z; φ) = x</code></pre>
 
-        <p>The second line uses the inverse function theorem: the Jacobian of the inverse is the inverse of the Jacobian, so its determinant is the reciprocal. Intuitively, the determinant tracks how much the transformation stretches or squeezes volume — if <code>f</code> expands a region, the density there must shrink to keep total probability at 1.</p>
+        <p>The second line uses the inverse function theorem: the Jacobian of the inverse is the inverse of the Jacobian, so its determinant is the reciprocal.</p>
 
-        <p>So in order to evaluate the likelihood, the generator <code>f(z; φ)</code> <strong>must be invertible</strong>. And not just in theory — we need to actually <strong>invert it and compute the determinant of the Jacobian efficiently</strong>. For a general invertible matrix, the determinant is an <code>O(n³)</code> operation, which is hopeless for image-sized dimensions. This constraint shapes the entire design of normalizing flows.</p>
+        <p>So in order to evaluate the likelihood, the generator <code>f(z; φ)</code> <strong>must be invertible</strong>. And not just in theory — we should also be able to <strong>invert it and compute the determinant of its Jacobian efficiently</strong>. For a general invertible matrix, the determinant is an <code>O(n³)</code> operation, which is not feasible for image-sized dimensions.</p>
 
-        <p>One thing I found clarifying: the model runs in <strong>both directions</strong>, and each direction has a different job.</p>
+        <p>The network runs in <strong>both directions</strong>, and each direction has a different job: the inverse mapping evaluates the likelihood of real samples during training, and the forward mapping turns noise into samples during generation.</p>
 
         <pre><code>  <---- inverse mapping: evaluate likelihood of real samples (training)
 
@@ -220,7 +211,7 @@ P: permutation matrix (fixed during training)
 L: lower triangular, diagonal fixed to 1
 U: upper triangular, diagonal set to s_i = sign(s_i) · exp(α_i)</code></pre>
 
-        <p>The diagonal of <code>U</code> is the only place invertibility can fail, so we force it non-zero by construction: <code>sign(s_i)</code> is fixed at the beginning, and we train <code>α_i</code> (initialized as <code>log|s_i|</code>). Since <code>exp(α_i) &gt; 0</code> always, the determinant can never hit zero. I find this a very statistician-flavored trick — reparameterize your way out of a constraint instead of fighting it with penalties.</p>
+        <p>The diagonal of <code>U</code> is the only place invertibility can fail, so we force it non-zero by construction: <code>sign(s_i)</code> is fixed at the beginning, and we train <code>α_i</code> (initialized as <code>log|s_i|</code>). Since <code>exp(α_i) &gt; 0</code> always, the determinant can never hit zero — the constraint is handled by the parameterization itself rather than enforced during optimization.</p>
 
         <p>Initialization is also thoughtful:</p>
         <ol>
@@ -258,7 +249,7 @@ solve  Lz = Pᵀ(Y - β)   then   Ux = z      ← both O(n²)</code></pre>
 y₂ = f(x₂; φ(x₁))                ← element-wise flow, parameters
                                     determined by x₁</code></pre>
 
-        <p>Here's the part that surprised me when I first saw it: <strong><code>φ</code> does not need to be invertible</strong> — it can be an arbitrary neural network. Only the element-wise map <code>f</code> acting on <code>x₂</code> needs to be invertible, because at inversion time we already know <code>x₁</code>:</p>
+        <p>Note that <strong><code>φ</code> does not need to be invertible</strong> — it can be an arbitrary neural network. Only the element-wise map <code>f</code> acting on <code>x₂</code> needs to be invertible, because at inversion time we already know <code>x₁</code>:</p>
 
         <pre><code>x₁ = y₁
 x₂ = f⁻¹(y₂; φ(x₁))</code></pre>
@@ -290,22 +281,17 @@ x₂ = f⁻¹(y₂; φ(x₁))</code></pre>
                    ≈ argmin_φ { (1/n) Σ log p_φ(x̂_i) - (1/n) Σ log q(x̂_i) }
                                               where x̂_i sampled from our model</code></pre>
 
-        <p>A question I had to sit with: if we can evaluate <code>q</code>, why not just maximize <code>E[log q(x̂)]</code> directly and skip the entropy term? Because then <strong>all samples would collapse to the mode of <code>q</code></strong> — the single highest-density point. The entropy term is what prevents this from happening; it forces the model to keep spreading out.</p>
+        <p>So why not just maximize <code>E[log q(x̂)]</code> directly and skip the entropy term, since we can evaluate <code>q</code> easily? Because that would make <strong>all samples collapse to the mode of <code>q</code></strong> — the single highest-density point. The entropy term is what prevents this from happening; it forces the model to keep spreading out.</p>
 
         <p>Notice we still need to evaluate <code>log p_φ(x̂_i)</code>, like in the standard flow — but since we generated <code>x̂_i</code> ourselves, we already know its <code>z_i</code>, so <strong>we don't need to invert the network</strong>. One subtle caveat from the note: consider the Box transformation for why we cannot just maximize the likelihood of transformed data — we must maximize the likelihood of the observations themselves, with the Jacobian correction included, otherwise the objective is meaningless (you could inflate the "likelihood" arbitrarily by squeezing everything to a point).</p>
 
         <h2>Summary</h2>
         <ul>
-            <li>Normalizing flow learns <code>p(x)</code> <strong>directly and exactly</strong> — the only mainstream generative family with tractable exact likelihood.</li>
+            <li>Normalizing flow learns <code>p(x)</code> <strong>directly and exactly</strong>, by pushing a simple base distribution through an invertible generator.</li>
             <li>The price: the generator must be <strong>invertible</strong>, with a cheap inverse and a cheap Jacobian determinant.</li>
             <li>Linear flows (PLU-parameterized) mix features; element-wise flows add non-linearity; <strong>coupling flows</strong> get arbitrary neural network expressiveness while keeping the determinant a simple diagonal product.</li>
             <li>Maximum likelihood training is forward KL; reverse KL turns flows into samplers for densities you can evaluate but not sample — with the entropy term guarding against mode collapse.</li>
         </ul>
-
-        <h2>My Take</h2>
-        <p>What I enjoy most about normalizing flows is how honest the tradeoff is. The whole architecture — PLU decompositions, triangular Jacobians, coupling layers — exists because of one calculus formula and one computational complaint (<code>O(n³)</code> determinants). Every design decision traces back to "can I invert this and take its determinant cheaply?" It feels like the model family a statistician would design: no lower bounds, no adversarial games, just the change of variables formula taken seriously.</p>
-
-        <p>The downside is equally honest: invertibility means the latent space must have the <strong>same dimension</strong> as the data, so no compression, and the constrained layers mean you typically need many of them to match the sample quality of GANs or diffusion models. In practice flows have been somewhat eclipsed for image generation — but the core machinery lives on, and the reverse-KL trick makes them genuinely useful as trainable samplers in Bayesian and physics settings, which is where I find them most compelling today.</p>
 
         <h2>References</h2>
         <ul>

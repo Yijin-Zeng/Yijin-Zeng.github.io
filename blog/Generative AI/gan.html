@@ -152,10 +152,7 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/GAN.pdf">PDF</a>.</p>
 
-        <p>Before diffusion models took over, GANs were the way to generate realistic images — and the idea behind them is almost suspiciously simple:
-           train a <strong>generator</strong> to produce images that cannot be distinguished from real images by a trained <strong>discriminator</strong>.
-           Two networks, playing a game against each other. What I find more interesting than the idea itself is <strong>why GANs are so notoriously hard to train</strong> —
-           the two classic failure modes (mode collapse and vanishing gradients) both fall out of a careful look at the loss function, and that analysis is the real point of this note.</p>
+        <p>Generative adversarial networks (GANs) train a <strong>generator</strong> to produce images that a trained <strong>discriminator</strong> cannot tell apart from real ones. The generator's job is to fool the discriminator; the discriminator's job is to keep catching it. That is the entire idea, and it is genuinely simple to state. What is not simple is training GANs in practice — they are notoriously unstable, and the two classic failure modes, <strong>mode collapse</strong> and <strong>vanishing gradients</strong>, both fall out of a careful look at what the loss function is actually measuring. That analysis is the point of this note.</p>
 
         <h2>The Setup</h2>
         <p>The pipeline looks like this:</p>
@@ -266,11 +263,6 @@ S_i,k = Σ_{j=1}^{B} C(x_i,k , x_j,k)              (B = batch size)</code></pre>
             <li><strong>Vanishing gradients</strong> happen because KL/JSD is blind to the gap between disjoint distributions; a too-good discriminator kills the training signal.</li>
             <li><strong>WGAN</strong> swaps in the Wasserstein distance (via its dual form, with a Lipschitz constraint) so gradients survive even when distributions don't overlap.</li>
         </ul>
-
-        <h2>My Take</h2>
-        <p>It is quite satisfying to me that both classic GAN failure modes are not engineering mysteries but <strong>direct consequences of the loss function</strong>. Mode collapse is baked in from the start — the generator's objective literally does not contain a coverage term, so of course it trades diversity for quality unless the discriminator forces it not to. And vanishing gradients come down to a property of KL divergence that you could state in one sentence: it doesn't care how far apart two disjoint distributions are.</p>
-
-        <p>What I take away from this is a general lesson: when a model trains badly, before reaching for tricks (Batch Norm, leaky ReLU, learning rate schedules...), it is worth asking what the loss is actually measuring at the optimum. The WGAN fix is a great example — the architecture barely changes, but replacing the divergence changes the geometry of the whole training problem. That said, WGAN is not a free lunch either: enforcing the Lipschitz constraint is its own can of worms, and the gradient penalty is an approximation rather than a guarantee.</p>
 
         <h2>References</h2>
         <ul>

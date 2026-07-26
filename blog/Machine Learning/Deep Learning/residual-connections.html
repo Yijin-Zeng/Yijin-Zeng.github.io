@@ -156,19 +156,15 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Residual Connections.pdf">PDF</a>.</p>
 
-        <p>Here's an experiment that puzzled people back in the AlexNet era: take a network that works, stack more layers on top of it, and watch it get <strong>worse</strong>. Not just worse on the validation set -- worse on the <strong>training set</strong> too. It is quite surprising to me when I first learned this, because a deeper network can trivially represent a shallower one (just make the extra layers identity mappings), so in theory more depth should never hurt training loss. And yet it did.</p>
-
-        <p>Residual connections are one of the main reasons deep neural networks can be trained at all today. If you've ever looked inside a transformer, every single block in a modern LLM carries them -- attention output gets added back to its input, MLP output gets added back to its input, all the way up hundreds of layers. So this is not some historical CNN trick; it's load-bearing infrastructure for basically everything we train now.</p>
-
-        <h2>The Problem: Deeper Networks Fail to Train</h2>
-
-        <p>A standard deep network is just a composition of functions:</p>
+        <p>Residual connections are one of the main reasons deep neural networks can be trained at all. A standard deep network is just a composition of functions:</p>
 
         <pre><code>y = fₙ( ... f₃( f₂( f₁(x; φ₁); φ₂ ); φ₃ ) ... ; φₙ)</code></pre>
 
-        <p>The observation from AlexNet-style architectures: as n grows (i.e. the network becomes deeper), <strong>both training and validation loss go up</strong>.</p>
+        <p>The observation from AlexNet-style architectures: as n grows, i.e. the network gets deeper, <strong>both training and validation loss go up</strong>. That's a strange result on its own -- a deeper network can always represent a shallower one, by setting the extra layers to the identity, so depth should never hurt training loss even in the worst case.</p>
 
-        <p>This detail matters more than it looks. If only validation loss went up while training loss went down, we'd say the deeper model is overfitting -- a generalization problem. But training loss going up means <strong>the problem is not generalization, it's the training itself</strong>. The optimizer simply can't find a good solution, even though we know one exists.</p>
+        <h2>The Problem: Deeper Networks Fail to Train</h2>
+
+        <p>This detail matters more than it looks. If only validation loss went up while training loss went down, we'd call it overfitting -- a generalization problem. But training loss going up too means <strong>the problem is not generalization, it's the training itself</strong>. The optimizer can't find a good solution, even though we know one exists (the identity extension of the shallower network).</p>
 
         <h2>A Possible Explanation: Shattered Gradients</h2>
 
@@ -205,7 +201,7 @@ y  = h₂ + f₃(h₂; φ₃)</code></pre>
      │       ▼   │       ▼   │       ▼
 x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ──→ ⊕ ──→ y</code></pre>
 
-        <p>Now here's the part I find genuinely illuminating. Unroll the recursion:</p>
+        <p>So what does this actually buy us? Unroll the recursion:</p>
 
         <pre><code>y = x
   + f₁(x; φ₁)
@@ -264,7 +260,7 @@ var: 1               2                  3                   4</code></pre>
 
         <p>Each branch now contributes a fixed variance-1 amount, so the total variance grows <strong>linearly instead of exponentially</strong> -- and crucially, the skip path is never scaled down.</p>
 
-        <p>There's an interesting side effect: at variance k on the stream, each new layer's variance-1 contribution is relatively small. So <strong>at the beginning of training, the network is effectively shallower</strong> -- later layers barely move the output, and depth gets "switched on" gradually as training progresses. I don't think this side effect is even bad; it's arguably part of why these networks train so smoothly.</p>
+        <p>There's a side effect worth noting: at variance k on the stream, each new layer's variance-1 contribution is relatively small next to it. So <strong>at the beginning of training, the network is effectively shallower</strong> -- later layers barely move the output, and depth gets "switched on" gradually as training progresses.</p>
 
         <h2>So Why Does It Work?</h2>
 
@@ -277,11 +273,16 @@ var: 1               2                  3                   4</code></pre>
             <li><strong>With many different paths, there may be one with a good prior</strong> -- this connects to the lottery ticket hypothesis: among exponentially many subnetworks/paths, some are well-initialized winners, and the residual structure lets them carry the load.</li>
         </ol>
 
-        <h2>My Take</h2>
+        <h2>Summary</h2>
 
-        <p>What I love about residual connections is the mismatch between how trivial the idea looks and how much it changed. One extra addition -- <code>x + f(x)</code> instead of <code>f(x)</code> -- and networks went from struggling at ~20 layers to training at hundreds. The unrolled-sum view is the framing that made it click for me: a "deep" residual network is secretly a wide ensemble of shallow networks sharing weights, and shallow networks were never hard to train in the first place.</p>
-
-        <p>The other lesson I take from the variance analysis: the elegant idea is not enough on its own. Get the order of operations wrong and your blocks can only push in one direction; skip the normalization and your activations explode; normalize the wrong way (the 1/√2 trick) and you quietly destroy the very identity path you were trying to protect. The details are where the actual engineering lives.</p>
+        <ul>
+            <li>Deeper AlexNet-style networks got worse on <strong>training</strong> loss too, not just validation loss -- the problem is the training itself, not generalization.</li>
+            <li>One explanation is shattered gradients: as depth grows, the chain-rule product ∂y/∂f₁ becomes wildly sensitive to small changes in x, so the loss surface looks like noise instead of a smooth function.</li>
+            <li>A residual connection replaces "each layer replaces its input" with "each layer adds to it." Unrolling the recursion shows the output is a sum of terms at every depth -- the raw input, plus depth-1 terms, plus depth-2 terms, and so on.</li>
+            <li>That sum view gives three things directly: lower-level information is never destroyed, the network behaves like an ensemble of networks of different depths, and there are many paths from input to output.</li>
+            <li>Implementation matters: a block that ends in ReLU can only add positive values, so linear layers belong at both ends of the block. Left unchecked, variance also grows exponentially through the additions; rescaling by 1/√2 stabilizes variance but crushes the identity path, so batch norm inside each branch is the better fix.</li>
+            <li>Several explanations for why it works are probably all partially true: each layer only has to learn a residual instead of a full transformation, gradients flow more directly to lower layers, the network acts as an ensemble, and among many paths some may already have a good prior.</li>
+        </ul>
 
         <h2>References</h2>
 

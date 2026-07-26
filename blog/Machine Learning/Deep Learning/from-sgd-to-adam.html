@@ -156,30 +156,24 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Adam.pdf">PDF</a>.</p>
 
-        <p>Almost every deep learning model I've trained -- at work or in side projects -- uses Adam (or AdamW) as the default optimizer, and for a long time I just accepted that without asking why. Plain SGD is such a clean idea: compute the gradient, take a small step downhill, repeat. Why do we need momentum terms, exponential moving averages, and bias corrections on top of it? It turns out each piece of Adam is a targeted fix for a concrete failure mode of SGD, and once you walk through them one by one, the final algorithm stops looking like alphabet soup and starts looking inevitable.</p>
-
-        <p>This matters in practice: if your loss curve is noisy, if training stalls in a flat region, or if your model has parameters with wildly different gradient scales (embeddings vs. dense layers, say), knowing <strong>which</strong> ingredient of Adam addresses <strong>which</strong> problem tells you what knob to turn. Let's build it up.</p>
-
-        <h2>Starting Point: SGD</h2>
-
-        <p>Stochastic gradient descent is one line:</p>
+        <p>Stochastic gradient descent (SGD) updates the parameters using the gradient of the loss, computed over a batch rather than the full dataset -- that's the "stochastic" part:</p>
 
         <pre><code>θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾)</code></pre>
 
-        <p>where the gradient is computed <strong>over a batch</strong>, not the whole dataset -- that's the "stochastic" part. Simple, but it has real problems: the batch gradients are noisy, it crawls through flat regions, and one global learning rate η has to fit every parameter. The rest of this post is about fixing those, one at a time.</p>
+        <p>Adam is not a separate idea from SGD. It's SGD with a small number of fixes stacked on top of each other, and each fix addresses one concrete failure mode. Going through them in order -- momentum, Nesterov's tweak to momentum, then AdaGrad-style per-coordinate scaling -- is the most direct way to see why the final Adam update looks the way it does.</p>
 
-        <h2>Momentum: Remember Where You Were Going</h2>
+        <h2>Momentum: Keeping a Running Velocity Instead of Just the Gradient</h2>
 
-        <p>Momentum keeps a running velocity vector m and updates it with the gradient, instead of using the gradient directly:</p>
+        <p>Momentum introduces a velocity term m, updates it using the gradient, and then moves θ by m instead of by the gradient directly:</p>
 
         <pre><code>m⁽ᵗ⁺¹⁾ ← α m⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾)
 θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ + m⁽ᵗ⁺¹⁾</code></pre>
 
-        <p>Why is this better? Two reasons.</p>
+        <p>This has two advantages over plain SGD.</p>
 
-        <h3>It accelerates -- by a lot</h3>
+        <h3>It accelerates when the gradient direction is consistent</h3>
 
-        <p>Suppose the gradient is a constant, ∇L(θ⁽ᵗ⁾) = g (think of a long, consistent slope). Then the velocity builds up as a geometric series:</p>
+        <p>Suppose the gradient is a constant g at every step. Unrolling the recursion for m gives a geometric series:</p>
 
         <pre><code>m⁽¹⁾ = −ηg
 m⁽²⁾ = −ηg − αηg
@@ -187,94 +181,106 @@ m⁽³⁾ = −ηg − αηg − α²ηg
   ⋮
 m⁽ⁿ⁾ = −(1 + α + ... + αⁿ⁻¹) ηg  =  −(1 − αⁿ)/(1 − α) · ηg</code></pre>
 
-        <p>As n → ∞ this converges to −ηg / (1 − α). With the typical α = 0.9, that's <strong>10× the plain SGD step</strong>. It was quite satisfying when I first worked this out: the mysterious default 0.9 is really saying "accelerate up to 10 times when the gradient direction is consistent". If you set α = 0.99, you're asking for up to 100×, which explains why that setting can blow up.</p>
+        <p>As n → ∞, m⁽ⁿ⁾ → −ηg / (1 − α). With α = 0.9, that limit is −9ηg, i.e. <strong>10 times the plain gradient step</strong>. So momentum accelerates the update whenever the gradient keeps pointing the same way for a stretch of steps.</p>
 
-        <p>There's a second, subtler benefit in the stochastic setting: batch gradients are noisy, but the noise is roughly random from batch to batch. Averaging over time means <strong>the random parts cancel out</strong> while the consistent part accumulates:</p>
+        <p>There's a second benefit that shows up specifically in the stochastic setting. Batch gradients are noisy, and that noise is roughly random from one batch to the next. Averaging the gradient over time (which is what the recursion for m does) means the random component tends to cancel out while the consistent component keeps accumulating:</p>
 
         <pre><code>without momentum:          with momentum:
-      ↗                          ↗
-    ↘   ↗                       ↗
-      ↗   ↘                    ↗      (random parts
-    ↘   ↗                     ↗        cancel out)
-      ↗                      ↗</code></pre>
+                                  ↗
+        ↗                       ↗
+      ↘   ↗                    ↗
+        ↗    (random parts    ↗
+      ↘        cancel out)   ↗</code></pre>
 
-        <h3>It can skip local minima</h3>
+        <h3>It can skip a local minimum</h3>
 
-        <p>Because the update carries velocity from previous steps, momentum can coast through a small dip that would trap vanilla SGD:</p>
+        <p>Because momentum carries velocity from previous steps, it can coast through a small dip in the loss surface that would trap plain SGD:</p>
 
         <pre><code>\
- \            momentum can skip it easier
-  \          ↗ - - - ↘             /
-   \        /         ↘          /
-    \_  _  /            ↘ _ _ _ /
-      \/  ← SGD can get
+ \                 momentum can skip it easier
+  \             ↗ - - - ↘              /
+   \           /         ↘          /
+    \_  _  _  /            ↘_ _  _/
+      \/  ← SGD gets
             stuck here</code></pre>
 
-        <p>Whether that's a pro or a con depends on the dip, of course -- sometimes the minimum you skipped was the one you wanted. In deep learning it's usually a pro.</p>
+        <h2>Nesterov Accelerated Gradient: Take the Gradient Where Momentum Is About to Land</h2>
 
-        <h2>Nesterov: Look Before You Leap</h2>
+        <p>Nesterov's observation is that the momentum vector, in general, already points roughly towards the minimum. If that's true, why take the gradient at the current, stale point?</p>
 
-        <p>Nesterov Accelerated Gradient (NAG) is a small but clever tweak. Instead of taking the gradient at the current point, take it at the point where momentum is <strong>about</strong> to carry you:</p>
+        <p>Plain momentum goes from point A to B by adding the gradient at A, then from B to C by adding momentum. Nesterov instead <strong>applies the momentum step first</strong>: it jumps from A to the lookahead point D = θ⁽ᵗ⁾ + αm⁽ᵗ⁾, takes the gradient there, and only then combines that gradient with the momentum term:</p>
 
         <pre><code>m⁽ᵗ⁺¹⁾ ← α m⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾ + α m⁽ᵗ⁾)
 θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ + m⁽ᵗ⁺¹⁾</code></pre>
 
-        <p>The key observation: <strong>in general the momentum vector already points in the right direction</strong> (i.e. towards the minimum). So why evaluate the gradient at the stale point A? Standard momentum goes from A to B by adding the gradient at A, then B to C by adding momentum. Nesterov instead <strong>applies the momentum first</strong> -- jump from A to the lookahead point D = θ + αm -- and takes the gradient at D, which in general points towards the minimum better. Then combine gradient and momentum as usual. It's a peek one step ahead, essentially for free.</p>
+        <p>Since D is where the momentum is about to carry the parameters anyway, the gradient at D points towards the minimum better than the gradient at the current point A does.</p>
 
-        <h2>AdaGrad / RMSProp: One Learning Rate Doesn't Fit All</h2>
+        <h2>One Learning Rate Doesn't Fit a Steep, Narrow Valley</h2>
 
-        <p>Momentum fixes the direction and speed problem, but there's a separate issue: what if the loss surface is <strong>much steeper in one direction than another</strong>? Picture an elongated valley -- contour lines like squashed ellipses, gradient steep horizontally, shallow vertically:</p>
+        <p>Momentum addresses the direction and speed of a single combined step, but a separate problem shows up when the loss surface is much steeper in one direction than another -- an elongated valley, with contour lines like nested ellipses:</p>
 
-        <pre><code>        _______________
-      /   ___________   \
-     /   /  _______  \   \
-    |   |  ( ∗ ←--- )  |  |   ← steep left-right,
-     \   \  ‾‾‾‾‾‾‾  /   /      shallow up-down
-      \   ‾‾‾‾‾‾‾‾‾‾‾   /
-        ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾</code></pre>
+        <pre><code>   ______________________
+  (    ___________________)
+  (   (        *          ))    ← steep left-right,
+  (   (___________________))       shallow up-down
+  (______________________)</code></pre>
 
-        <p>Now try to pick one learning rate η that (1) makes good progress in <strong>both</strong> directions and (2) stays stable. You can't:</p>
+        <p>With a surface like that, no single learning rate η can satisfy both requirements we care about: making good progress in both directions, and staying stable.</p>
 
         <ul>
-            <li><strong>Tune η for the steep (horizontal) direction</strong> and training is stable but painfully slow, because the shallow direction has a much smaller gradient and barely moves.</li>
-            <li><strong>Tune η for the shallow (vertical) direction</strong> and the steep direction overshoots wildly -- you zigzag across the valley walls and training is very unstable.</li>
+            <li>Choose η to suit the <strong>steep</strong> direction and training is stable, but very slow along the shallow direction, since the gradient there is much smaller.</li>
+            <li>Choose η to suit the <strong>shallow</strong> direction and the steep direction becomes very unstable -- the update zigzags back and forth across the valley instead of moving down it.</li>
         </ul>
 
-        <p>The fix: give <strong>each coordinate its own effective learning rate</strong> by tracking how big the gradients have been in that coordinate, and dividing by it. Keep an exponential moving average of the squared gradients (this is the RMSProp variant of the AdaGrad idea):</p>
+        <p>AdaGrad's fix is to scale each coordinate by how large its gradients have been. It keeps a running average of the squared gradient, s, and divides the gradient by (roughly) its own square root before taking the step:</p>
 
         <pre><code>s⁽ᵗ⁺¹⁾ ← β s⁽ᵗ⁾ + (1 − β) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)      ← pointwise product
 θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ − η ∇L(θ⁽ᵗ⁾) ⊘ √(s⁽ᵗ⁺¹⁾ + ε)          ← pointwise division</code></pre>
 
-        <p>Dividing the gradient by (roughly) its own recent magnitude <strong>rescales every direction to the same size</strong>, so the optimizer moves about the same distance along each axis -- straight down the valley instead of ricocheting off its walls. The ε is just there to avoid dividing by zero.</p>
+        <p>This scales both directions so the update moves about the same distance along each axis, instead of zigzagging along the steep one:</p>
 
-        <p>But there's a catch, and I find it a genuinely illuminating one: this rescaling means the optimizer <strong>only cares about directions and is agnostic about the actual size of the gradient</strong>. Near the minimum, the gradient becomes tiny -- which normally would be the signal to slow down and stop -- but after dividing by √s, the step size stays about the same. So it <strong>doesn't converge to the exact minimum; it oscillates around it</strong>, because it doesn't know the gradient is small and it needs to stop.</p>
+        <pre><code>zigzag without scaling:          scaled, moves down the valley:
+  \    /\    /\                        ↗
+   \  /  \  /  \                      ↗
+    \/    \/    \                    ↗
+                                     ↗</code></pre>
 
-        <h2>Adam: Combine Both</h2>
+        <p>But this comes with a cost. Because the scaling only cares about direction and is agnostic to the actual size of the gradient, AdaGrad <strong>does not converge to the exact minimum -- it oscillates around it</strong>. Near the minimum the gradient shrinks, which should be the signal to slow down, but after dividing by √s the step size stays roughly the same, so the optimizer keeps taking steps of a similar size and never settles:</p>
 
-        <p>Here we are. Adam is literally momentum plus the adaptive scaling, glued together with one small correction:</p>
+        <pre><code>        ____
+       /    \
+      |  *   |   ← oscillates around the minimum,
+       \____/       step size doesn't shrink</code></pre>
 
-        <pre><code>1.  m⁽ᵗ⁺¹⁾ ← β₁ m⁽ᵗ⁾ − (1 − β₁) ∇L(θ⁽ᵗ⁾)                  ← momentum
+        <h2>Adam: Combining Momentum and AdaGrad</h2>
+
+        <p>Adam combines the two, plus a bias correction for the moving averages:</p>
+
+        <pre><code>1.  m⁽ᵗ⁺¹⁾ ← β₁ m⁽ᵗ⁾ − (1 − β₁) ∇L(θ⁽ᵗ⁾)                 ← momentum
 2.  s⁽ᵗ⁺¹⁾ ← β₂ s⁽ᵗ⁾ + (1 − β₂) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)       ← adaptive learning rate
 3.  m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 − β₁ᵗ⁺¹)   ┐
 4.  ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 − β₂ᵗ⁺¹)   ┘  bias correction
 5.  θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ + η m̂⁽ᵗ⁺¹⁾ ⊘ √(ŝ⁽ᵗ⁺¹⁾ + ε)</code></pre>
 
-        <p>Each line earns its place:</p>
+        <p>Step 1 is momentum. Step 2 is the AdaGrad-style adaptive learning rate. Notably, step 1 also helps step 2 converge: the momentum average of the gradient shrinks near the minimum (unlike the squared-magnitude average s), so combining the two counteracts the oscillation problem AdaGrad has on its own.</p>
+
+        <p>Steps 3 and 4 are the bias correction. Because m and s are both initialized at 0, the moving averages are biased towards 0 in the early iterations. Dividing by 1 − βᵗ corrects for this.</p>
+
+        <p>Step 5 is the update itself: move in the direction given by the bias-corrected momentum, scaled coordinate-wise by the bias-corrected second moment.</p>
+
+        <p>Adam, then, is not one idea but three: velocity (momentum), per-coordinate scaling (AdaGrad), and a correction for how the moving averages start at zero. Each addresses a specific, visualizable failure mode of plain SGD.</p>
+
+        <p>The learning rate η in step 5 multiplies the whole update, which is also exactly where things go wrong if you add ordinary L2 weight decay to Adam. That problem, and why AdamW exists, is covered in <a href="adam-and-adamw.html">Adam and AdamW</a>.</p>
+
+        <h2>Summary</h2>
 
         <ul>
-            <li><strong>Step 1 is momentum</strong> -- acceleration, noise cancellation, skipping shallow local minima. And notice it also patches the AdaGrad flaw above: the momentum average of gradients (unlike the squared magnitude) does shrink near the minimum, so <strong>it helps the AdaGrad part converge</strong> instead of oscillating forever.</li>
-            <li><strong>Step 2 is the per-coordinate scaling</strong> -- the elongated-valley fix, so no single learning rate has to serve both steep and shallow directions.</li>
-            <li><strong>Steps 3–4 are bias correction.</strong> Because m and s are initialized at 0, the moving averages are <strong>biased towards 0</strong> in the early iterations (after one step, m is only (1 − β₁) of the gradient). Dividing by 1 − βᵗ exactly undoes this, and the correction fades away as t grows.</li>
-            <li><strong>Step 5</strong> puts it together: move in the smoothed direction, scaled coordinate-wise.</li>
+            <li>Plain SGD moves opposite the batch gradient; it's noisy, one learning rate has to serve every direction, and it can get stuck in shallow dips.</li>
+            <li>Momentum keeps a running velocity instead of using the gradient directly. Under a constant gradient it accelerates towards −ηg/(1 − α) -- 10× the plain step at α = 0.9 -- and it averages away batch-to-batch noise.</li>
+            <li>Nesterov Accelerated Gradient takes the gradient at the point momentum is about to reach, not at the current point, since the momentum vector already points roughly towards the minimum.</li>
+            <li>AdaGrad divides each coordinate's gradient by a running average of its own squared magnitude, so a valley that's steep in one direction and shallow in another gets one effective learning rate per direction. The cost: it becomes agnostic to the true gradient magnitude near the minimum, so it oscillates instead of settling.</li>
+            <li>Adam combines momentum and AdaGrad's per-coordinate scaling, plus bias correction for both moving averages since they start at zero. The momentum term also helps counteract AdaGrad's oscillation near the minimum.</li>
         </ul>
-
-        <p>That's the whole story. Adam isn't one idea -- it's three small ideas (velocity, per-coordinate scaling, bias correction) each solving a specific, visualizable problem with plain SGD.</p>
-
-        <h2>My Take</h2>
-
-        <p>What I like most about deriving Adam this way is that none of the steps require any deep theory -- a geometric series, a squashed ellipse, and a "we started the average at zero" bookkeeping fix. Yet before writing this note, Adam felt like a black box of hyperparameters to me. Now β₁ = 0.9 reads as "up to 10× acceleration on consistent slopes", β₂ reads as "how long a memory the per-coordinate scale has", and ε reads as "don't divide by zero". The other thing that stuck with me is the AdaGrad oscillation argument: an optimizer that normalizes away gradient magnitude literally cannot tell it has arrived. Momentum smuggles that magnitude information back in. It's a nice reminder that combining two methods can fix a flaw that neither fixes alone.</p>
-
-        <p>One loose end: in step 5 I wrote the learning rate multiplying everything, which is also exactly where <strong>weight decay goes wrong</strong> when you add L2 regularization to Adam. That story -- and why AdamW exists -- continues in <a href="adam-and-adamw.html">Adam and AdamW</a>.</p>
 
         <h2>References</h2>
 

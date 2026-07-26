@@ -152,20 +152,18 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/VAE.pdf">PDF</a>.</p>
 
-        <p>Real images live on some incredibly complicated distribution — think of all the pixel combinations that make a valid photo of a cat versus random noise.
-           It is quite surprising to me when I first learned that you can approximate such a monster distribution with nothing more than a <strong>weighted average of simple Gaussians</strong>.
-           That single observation is the seed of the Variational Autoencoder (VAE), a probabilistic generative model that writes the "true" distribution as:</p>
+        <p>Variational autoencoders (VAEs) are a type of probabilistic generative model. The core idea is to write the "true" distribution over the data as an integral over a latent variable:</p>
 
         <pre><code>pr(x) = ∫ pr(z) pr(x|z) dz
 
 pr(z)    : latent variable (something we never observe)
 pr(x|z)  : conditional likelihood given the latent variable</code></pre>
 
-        <p>Why does this matter? Because if you can model <code>pr(x)</code>, you can <strong>generate new samples</strong> — new images, new molecules, new anything.
-           VAEs were one of the first deep generative models to make this practical, and modern diffusion models (the engines behind today's image generators) can be viewed as their direct descendants. More on that at the end.</p>
+        <p>If we can model <code>pr(x)</code> this way, we can <strong>generate new samples</strong> from it — new images, new molecules, new anything.
+           VAEs were one of the first deep generative models to make this practical, and modern diffusion models can be viewed as their direct descendants. More on that at the end.</p>
 
-        <h2>Simple Pieces, Complex Whole</h2>
-        <p>First, what does that integral actually buy us? Two examples from my note make it concrete.</p>
+        <h2>Two Examples: Averaging Simple Gaussians</h2>
+        <p>What does that integral actually buy us? Two examples make it concrete.</p>
 
         <p><strong>1. Gaussian Mixture Model.</strong> The latent variable is just cluster membership: <code>z_ij = 1</code> if point <code>x_i</code> belongs to cluster <code>C_j</code>, and 0 otherwise.
            The conditional likelihood is a plain Gaussian, <code>pr(x_i | z_ij = 1) = N(x_i; μ_j, Σ_j)</code>.
@@ -216,7 +214,7 @@ pr(x|z)  : conditional likelihood given the latent variable</code></pre>
 change φ : move the ELBO (and the target) up
 change θ : push the ELBO closer to the target</code></pre>
 
-        <p>Here's a perspective I like: <strong>a VAE is just the neural network architecture built to maximize the ELBO</strong>. The encoder and decoder are what fall out when you take this objective seriously.</p>
+        <p>Another way to see it: <strong>a VAE is just the neural network architecture built to maximize the ELBO</strong>. The encoder and decoder are what fall out when you take this objective seriously.</p>
 
         <h2>Reading The ELBO, Twice</h2>
         <p>The ELBO can be decomposed in two different ways, and each tells us something different.</p>
@@ -303,23 +301,34 @@ change θ : push the ELBO closer to the target</code></pre>
         <p>The encoder lives under a genuine tension: it needs to <strong>encode as much information about the image as possible</strong> to minimize reconstruction error,
            versus it needs to <strong>stay simple enough</strong> that <code>KL(q(z|x, θ) ‖ N(0, I))</code> is small. The loss makes it negotiate both.</p>
 
-        <h2>Some Things That Surprised Me</h2>
-        <p><strong>1. The marginal likelihood doesn't depend on the encoder at all.</strong> Remember the target is to maximize <code>pr(x|φ)</code>, but the VAE loss maximizes the ELBO directly. What about the gap? From decomposition 1:</p>
+        <h2>Three Consequences Worth Noting</h2>
+        <p><strong>1. The marginal likelihood doesn't depend on the encoder at all.</strong> The target is to maximize <code>pr(x|φ)</code>, but the VAE loss maximizes the ELBO directly. What about the gap? From decomposition 1:</p>
 
         <pre><code>log pr(x|φ) = ELBO(θ, φ) + KL( q(z|x, θ) ‖ pr(z|x, φ) )</code></pre>
 
-        <p>For a given decoder <code>φ</code>, the left side is a constant with respect to the encoder. So as long as the encoder is pushing the ELBO up, it is <em>automatically</em> minimizing the distance to the true posterior <code>pr(z|x, φ)</code> — even though we never know what that posterior is. You can think of <strong>the encoder as only existing to help the decoder learn</strong>: without an encoder, the decoder would need to evaluate the whole latent space to estimate <code>pr(x|φ)</code>; with an encoder, the search is narrowed down to <code>q(z|x, θ)</code>.</p>
+        <p>For a given decoder <code>φ</code>, the left side is a constant with respect to the encoder. So as long as the encoder is pushing the ELBO up, it is <em>automatically</em> minimizing the distance to the true posterior <code>pr(z|x, φ)</code> — even though we never know what that posterior is. The encoder only exists to help the decoder learn: without an encoder, the decoder would need to evaluate the whole latent space to estimate <code>pr(x|φ)</code>; with an encoder, the search is narrowed down to <code>q(z|x, θ)</code>.</p>
 
         <p><strong>2. Generation throws the encoder away entirely.</strong> To generate a new image, just sample from the independent Gaussian prior and decode:</p>
 
         <pre><code>z ~ N(0, I) → decoder → generated image</code></pre>
 
-        <p><strong>3. Up-weighting the KL term gives you β-VAE.</strong> If we replace the KL term with <code>β·KL(q(z|x, θ) ‖ pr(z))</code> and increase <code>β</code> (e.g. 2), we encourage the latent features to be <strong>disentangled</strong> — each latent dimension tends to capture one independent factor of variation. A one-character change to the loss, a qualitatively different representation.</p>
+        <p><strong>3. Up-weighting the KL term gives you β-VAE.</strong> If we replace the KL term with <code>β·KL(q(z|x, θ) ‖ pr(z))</code> and increase <code>β</code>, we encourage the latent features to be <strong>disentangled</strong> — each latent dimension tends to capture one independent factor of variation. A one-character change to the loss, a qualitatively different representation.</p>
 
-        <h2>My Take</h2>
-        <p>What I find most satisfying about the VAE is that <strong>nothing in the architecture is arbitrary</strong>. Start from "maximize the likelihood of a latent variable model", hit the wall that random sampling in a high-dimensional latent space is hopeless, apply Jensen's inequality, and the encoder-decoder pair falls out of the math — the encoder is literally just an importance-sampling device that tells the decoder where to look. I used to think of autoencoders as a compression heuristic with noise sprinkled in; the ELBO derivation reframes every component as a term in a principled bound.</p>
+        <h2>Where The Gaussian Assumption Runs Out</h2>
+        <p>To improve the quality of images generated from a VAE, it is not enough to model both the prior <code>pr(z)</code> and the posterior approximation <code>pr(z|x)</code> as Gaussian.
+           Diffusion models generate higher-quality images, and can be viewed as VAEs with <strong>hierarchical priors</strong> — many small latent steps chained together instead of one big Gaussian leap from <code>z</code> to <code>x</code>.</p>
 
-        <p>The honest downside is baked into the same derivation: forcing both the prior <code>pr(z)</code> and the posterior approximation <code>q(z|x)</code> to be Gaussian is a strong restriction, and it shows — vanilla VAE samples are famously blurry. It seems not enough to model everything as Gaussian if you want high-quality images. That is exactly the door diffusion models walked through: they generate far sharper images and <strong>can be viewed as VAEs with hierarchical priors</strong>, stacking many small latent steps instead of one big Gaussian leap. Understanding the VAE first makes diffusion feel much less mysterious.</p>
+        <h2>Summary</h2>
+        <ul>
+            <li>A weighted average of simple Gaussian distributions can approximate a very complicated distribution — that's the seed idea behind a VAE.</li>
+            <li>Maximizing <code>pr(x|φ)</code> directly is intractable: the integral has no analytical form, and Monte-Carlo sampling from the prior <code>N(0, I)</code> almost always lands on a <code>z</code> that decodes to nothing like <code>x</code>.</li>
+            <li>Multiplying and dividing by a proposal <code>q(z)</code> and applying Jensen's inequality gives the ELBO, a tractable lower bound on <code>log pr(x|φ)</code>.</li>
+            <li>Decomposition 1 shows the ELBO's gap to the true log-likelihood is exactly <code>KL(q(z|x,θ) ‖ pr(z|x,φ))</code>. Decomposition 2 turns the ELBO into a loss: reconstruction error plus a KL penalty against the prior.</li>
+            <li>Making <code>q(z|θ) = q(z|x, θ)</code> a Gaussian whose mean and covariance are neural networks of <code>x</code> gives the encoder; sampling from it and decoding gives the reconstruction term — this is the VAE architecture.</li>
+            <li>The reparameterization trick (<code>z = μ + Σ^(1/2)ε</code>) is what lets gradients flow through the sampling step.</li>
+            <li>The encoder exists only to help the decoder learn, and gets thrown away at generation time. Up-weighting its KL term (β-VAE) encourages disentangled latents.</li>
+            <li>Both the prior and posterior being Gaussian is a real restriction; diffusion models relax it with hierarchical priors.</li>
+        </ul>
 
         <h2>References</h2>
         <ul>
