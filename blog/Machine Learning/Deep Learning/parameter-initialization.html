@@ -156,7 +156,7 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Parameter Initialization.pdf">PDF</a>.</p>
 
-        <p>The first time I trained a deep network with weights drawn from a plain N(0, 1), the loss just sat there. Not diverging, not improving -- just flat. It turns out the network was dead before the first gradient step even happened, and the culprit was something I had treated as an afterthought: <strong>how you initialize the parameters</strong>. Why would random numbers you pick <strong>before</strong> training matter so much? Let's work it out.</p>
+        <p>It is well-known that proper parameters initialization is critical for training (especially deep) neural networks.</p>
 
         <h2>What Goes Wrong Without Proper Initialization</h2>
 
@@ -165,30 +165,37 @@
         <pre><code>f<sub>k</sub> = β<sub>k</sub> + Ω<sub>k</sub>h<sub>k</sub>
    = β<sub>k</sub> + Ω<sub>k</sub> a(f<sub>k-1</sub>)</code></pre>
 
-        <p>where a(·) is the activation function (say, ReLU). Suppose we initialize β<sub>k</sub> to 0 and every element of Ω<sub>k</sub> independently from N(0, σ²). What happens as the signal flows forward?</p>
+        <p>where a(·) is the activation function (say, ReLU). Suppose we initialize β<sub>k</sub> to 0 and every element of Ω<sub>k</sub> independently from N(0, σ²). Then during forward process:</p>
 
         <ul>
             <li>If σ is small (e.g. 0.001), the magnitude of f<sub>k</sub> is much <strong>smaller</strong> than f<sub>k-1</sub> -- activations shrink at every layer.</li>
             <li>If σ is large (e.g. 100), the magnitude of f<sub>k</sub> is much <strong>larger</strong> than f<sub>k-1</sub> -- activations blow up.</li>
         </ul>
 
-        <p>In a deep network this compounds: <strong>the magnitude problem gets worse and worse through each layer</strong>. Twenty layers of "slightly too small" is exponentially too small.</p>
+        <p>In a deep network this snowballs: <strong>the magnitude problem gets worse and worse through each layer</strong>. </p>
 
-        <p>And the backward pass has exactly the same disease. The gradient flowing into layer k-1 is:</p>
+        <p>And the backward pass has exactly the same problem. The gradient flowing into layer k-1 is:</p>
 
         <pre><code>∂L/∂f<sub>k-1</sub> = (∂L/∂f<sub>k</sub>) · (∂f<sub>k</sub>/∂f<sub>k-1</sub>)
-        = (∂L/∂f<sub>k</sub>) · Ω<sub>k</sub> · diag(𝟙{f<sub>k-1</sub> ≥ 0})    (if a = ReLU)</code></pre>
+        = (∂L/∂f<sub>k</sub>) · Ω<sub>k</sub> · diag(I{f<sub>k-1</sub> ≥ 0})    (if a = ReLU)</code></pre>
 
-        <p>The gradient gets multiplied by Ω<sub>k</sub> at every layer, so its scale depends directly on the scale of Ω<sub>k</sub>. Initialize badly and the gradients either shrink towards zero (vanishing) or grow without bound (exploding). Either way: <strong>hard to train</strong>. This isn't a "training is a bit slow" problem -- with vanishing gradients, training effectively never starts.</p>
+        <p>The gradient gets multiplied by Ω<sub>k</sub> at every layer, 
+            so its scale depends directly on the scale of Ω<sub>k</sub>.
+            Initialize badly and the gradients either shrink towards zero (vanishing) 
+            or grow without bound (exploding). Either way, the training would be unstable and hard. 
+        </p>
 
-        <h2>The Fix: Keep the Variance Constant</h2>
+        <h2>Proper Initialization to Keep the Variance Constant</h2>
 
-        <p>So what would "good" initialization look like? The idea is simple and, I think, quite elegant: choose σ² so that the <strong>variance stays unchanged</strong> as signals pass through each layer, in both directions:</p>
+        <p>So what would "proper" initialization look like? 
+           The idea is to choose σ² well so that the 
+           <strong>variance stays unchanged</strong> as signals pass through each layer, in both directions:</p>
 
         <pre><code>Forward pass:   Var(f<sub>k</sub>) ≈ Var(f<sub>k-1</sub>)
 Backward pass:  Var(∂L/∂f<sub>k-1</sub>) ≈ Var(∂L/∂f<sub>k</sub>)</code></pre>
 
-        <p>If neither the activations nor the gradients change scale layer by layer, we can stack as many layers as we like without the signal degrading. Let's derive what σ² has to be.</p>
+        <p>If neither the activations nor the gradients change scale layer by layer, 
+            we can stack as many layers as we like without the signal degrading.</p>
 
         <h2>Forward Pass: Deriving the Variance</h2>
 
@@ -200,66 +207,77 @@ Backward pass:  Var(∂L/∂f<sub>k-1</sub>) ≈ Var(∂L/∂f<sub>k</sub>)</cod
       = 0 + Σⱼ E(Ω<sub>ij</sub>) E(a(f<sub>j</sub>))    (weights independent of layer outputs)
       = Σⱼ 0 · E(a(f<sub>j</sub>)) = 0</code></pre>
 
-        <p>The expectation splits because <strong>the parameters are initialized independently of the layer outputs</strong> -- the weights haven't seen any data yet. Now the variance:</p>
+        <p>The expectation splits because the parameters are initialized independently of the layer outputs. For the variance:</p>
 
         <pre><code>Var(f′<sub>i</sub>) = Var(Σⱼ Ω<sub>ij</sub> a(f<sub>j</sub>))
         = Σⱼ Var(Ω<sub>ij</sub>) Var(a(f<sub>j</sub>))
         = Σⱼ σ²<sub>Ω</sub> (E(a(f<sub>j</sub>)²) - E²(a(f<sub>j</sub>)))
         = Σⱼ σ²<sub>Ω</sub> E(a(f<sub>j</sub>)²)</code></pre>
 
-        <p>Now use the fact that a = ReLU and split by the law of total expectation:</p>
+        <p>Use the fact that a = ReLU and split by the law of total expectation:</p>
 
         <pre><code>E(a(f<sub>j</sub>)²) = P(f<sub>j</sub> &gt; 0) E(a(f<sub>j</sub>)² | f<sub>j</sub> &gt; 0) + P(f<sub>j</sub> ≤ 0) E(a(f<sub>j</sub>)² | f<sub>j</sub> ≤ 0)
-         = ½ E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0) + 0</code></pre>
+         = 1/2 *  E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0) + 0</code></pre>
 
-        <p>Here I'm assuming the input is <strong>symmetric around 0</strong> (reasonable if we preprocess each input to standard normal), so f<sub>j</sub> is positive half the time and the negative half gets killed by ReLU. Using symmetry again, E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0) contributes exactly half of the full second moment, so E(a(f<sub>j</sub>)²) = ½ σ²<sub>f</sub>. Putting it together:</p>
+        <p>Here we assume that the input is <strong>symmetric around 0</strong> 
+            (reasonable if we preprocess each input to standard normal), 
+            so f<sub>j</sub> is positive half the time and the negative half gets zeor out by ReLU.
+            Using the symmetry again, E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0)
+             contributes exactly half of the full second moment, so E(a(f<sub>j</sub>)²) = 1/2 * σ²<sub>f</sub>. 
+             Putting it together, we have:</p>
 
-        <pre><code>Var(f′<sub>i</sub>) = ½ m σ²<sub>Ω</sub> σ²<sub>f</sub></code></pre>
+        <pre><code>Var(f′<sub>i</sub>) = 1/2 *  m σ²<sub>Ω</sub> σ²<sub>f</sub></code></pre>
 
-        <p>This is the punchline. If we want σ²<sub>f′</sub> = σ²<sub>f</sub>, we need:</p>
+        <p>So, if we want σ²<sub>f′</sub> = σ²<sub>f</sub>, we need to let:</p>
 
         <pre><code>σ²<sub>Ω</sub> = 2/m        (He initialization)</code></pre>
 
         <p>where m is the number of neurons in the previous layer (i.e. the number of columns of Ω<sub>k</sub>, the "fan-in"). The factor of 2 exists purely because <strong>ReLU throws away half the variance</strong> -- I find that a satisfying way to remember it.</p>
 
-        <h2>Backward Pass: Same Logic, Different Direction</h2>
+        <h2>Backward Pass</h2>
 
-        <p>Does the same σ² also keep gradients stable? Almost. Denote g′ = ∂L/∂f<sub>k</sub> and g = ∂L/∂f<sub>k-1</sub>, so g<sub>i</sub> = Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> 𝟙{f<sub>i</sub> ≥ 0}, now summing over the m′ neurons of the <strong>next</strong> layer. The mean is 0 by the same independence argument. For the variance:</p>
+        <p>For the backward pass, the logic is similar. Denote g′ = ∂L/∂f<sub>k</sub> and g = ∂L/∂f<sub>k-1</sub>, so g<sub>i</sub> = Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> 𝟙{f<sub>i</sub> ≥ 0}, now summing over the m′ neurons of the <strong>next</strong> layer. The mean is 0 by the same independence argument. For the variance:</p>
 
-        <pre><code>Var(g<sub>i</sub>) = E((Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> 𝟙{f<sub>i</sub> ≥ 0})²)
-        = Σⱼ E(g′<sub>j</sub>²) E(Ω<sub>ji</sub>²) E(𝟙{f<sub>i</sub> ≥ 0}²)    (cross terms vanish; assuming independence)
-        = m′ σ²<sub>g′</sub> σ²<sub>Ω</sub> · ½</code></pre>
+        <pre><code>Var(g<sub>i</sub>) = E((Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> I{f<sub>i</sub> ≥ 0})²)
+        = Σⱼ E(g′<sub>j</sub>²) E(Ω<sub>ji</sub>²) E(I{f<sub>i</sub> ≥ 0}²)    (cross terms vanish; assuming independence)
+        = m′ σ²<sub>g′</sub> σ²<sub>Ω</sub> · 1/2</code></pre>
 
-        <p>The indicator is 1 with probability ½ (symmetry again), which is where the final ½ comes from. So if we want σ²<sub>g</sub> = σ²<sub>g′</sub>, we need:</p>
+        <p>The indicator is 1 with probability 1/2 (symmetry again), which is where the final 1/2 comes from. 
+            So if we want σ²<sub>g</sub> = σ²<sub>g′</sub>, we need to have:</p>
 
         <pre><code>σ²<sub>Ω</sub> = 2/m′</code></pre>
 
-        <p>Same formula, but with m′ -- the <strong>fan-out</strong> -- instead of the fan-in m. The forward and backward passes are pulling in slightly different directions.</p>
+        <p>Overall, to keep the variance unchanged during backward propogation, we need to initialize
+            the variance of the parameters to be m′ (fan-out).</p>
 
         <h2>When Fan-In and Fan-Out Disagree</h2>
 
         <p>Here we are with a small conflict: the forward pass wants σ² = 2/m, the backward pass wants σ² = 2/m′.</p>
 
         <ul>
-            <li>If m = m′ (equal layer widths), there's no conflict -- one choice keeps <strong>both forward and backward passes stable</strong>. One more reason networks with uniform hidden widths are pleasant to work with.</li>
-            <li>If m ≠ m′, we compromise by replacing m (or m′) with their average (m + m′)/2, giving <strong>σ²<sub>Ω</sub> = 4/(m + m′)</strong>.</li>
+            <li>If m = m′ (equal layer widths), there's no conflict, we
+            can keep <strong>both forward and backward passes stable</strong>. 
+            (One reason we should choose networks with uniform hidden widths.)</li>
+            <li>If m ≠ m′, we compromise by replacing m 
+                (or m′) with their average (m + m′)/2, 
+                so σ²<sub>Ω</sub> = 4/(m + m′).</li>
         </ul>
 
-        <p>Neither pass is perfectly preserved in the second case, but neither is badly broken either -- and in practice that's enough. This averaging trick is the same move Glorot and Bengio made for linear/tanh activations (where the factor is 2/(m + m′) instead, no ReLU halving); He et al. adapted the analysis to ReLU, which is where the extra 2 comes from.</p>
+        <p>Neither pass is perfectly preserved in the second case, 
+            but neither is badly broken either,
+            and in practice it works. This averaging trick is the same move 
+            Glorot and Bengio made for linear/tanh activations
+            (where the factor is 2/(m + m′) instead, no ReLU halving); He et al. adapted the analysis to ReLU, 
+            which is where the extra 2 comes from.</p>
 
         <h2>Summary</h2>
 
         <ul>
-            <li>Bad initialization compounds layer by layer: activations and gradients either vanish or explode, and with vanishing gradients <strong>training never really starts</strong>.</li>
-            <li>The fix is a design principle, not a trick: pick σ²<sub>Ω</sub> so that <strong>variance is preserved</strong> through each layer, forwards and backwards.</li>
-            <li>For ReLU, the forward pass demands σ² = 2/m (He initialization); the backward pass demands σ² = 2/m′; the factor 2 is ReLU's fault for killing half the signal.</li>
-            <li>When m ≠ m′, split the difference: σ² = 4/(m + m′).</li>
-            <li>The derivation leans on assumptions worth remembering: weights independent of activations, inputs symmetric around 0 (hence: standardize your inputs), and independence across terms in the backward sum.</li>
+            <li>Bad initialization snowballs layer by layer: activations and gradients either vanish or explode.</li>
+            <li>To fix this, we need to initialize the parameters well by choosing σ²<sub>Ω</sub> so that <strong>variance is preserved</strong> through each layer for both forwards and backwards.</li>
+            <li>For ReLU, the forward pass demands σ² = 2/m (He initialization); the backward pass demands σ² = 2/m′; the factor 2 is ReLU's fault for zero out half the signal.</li>
+            <li>When m ≠ m′, we compromise with σ² = 4/(m + m′).</li>
         </ul>
-
-        <h2>My Take</h2>
-
-        <p>What I like about this derivation is how little machinery it needs -- it's just means, variances, and the law of total expectation, yet it produces a formula that every deep learning framework ships as a default (<code>kaiming_normal_</code> in PyTorch is exactly σ² = 2/m). Before working through this, "He initialization" was a magic string I passed to an initializer; now the 2 in 2/m reads as "ReLU deletes half the variance, so pre-inflate by 2". I also think the caveats deserve more attention than they usually get: the whole argument assumes symmetric, standardized inputs and independence everywhere, which is exactly true only at step zero of training. The moment gradients update the weights, the assumptions start eroding -- initialization buys you a good starting point, not a guarantee. But in deep networks, a good starting point is the difference between training and staring at a flat loss curve.</p>
 
         <h2>References</h2>
 
