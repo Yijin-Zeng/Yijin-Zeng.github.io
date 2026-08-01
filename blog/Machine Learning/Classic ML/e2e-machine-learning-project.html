@@ -160,29 +160,35 @@
 
         <h2>Step 1: Look at the Big Picture</h2>
 
-        <p><strong>What is the task?</strong> Input to output, and whether it's classification, regression, or outlier detection. Sometimes it is possible to frame the same problem in different ways -- e.g. detecting spam email can be considered either a classification problem or an outlier detection problem. How we frame the problem is crucial in many cases: it decides the difficulty, and whether the problem can be solved successfully at all.</p>
-
-        <p><strong>How will the model be used?</strong> It could be used directly in a production pipeline, or it could feed another model. For example, if we are training an embedding model to be used by another classification model downstream, the quality of the embedding matters more than the output accuracy of the embedding model itself.</p>
-
-        <p><strong>Any constraints?</strong> Latency requirements, business requirements (e.g. if we are pricing a product, the business partner may want a margin of 10-15%), and these constraints could change frequently. If the requirements for a constraint change often, it is worth designing the pipeline so that constraint can be processed modularly, rather than retraining an end-to-end model every time it changes.</p>
-
-        <p><strong>How would we evaluate the success of the project?</strong> It is important to have a baseline model to compare against, either a naive solution or an older model. The actual metric -- A/B test accuracy, latency, simplicity -- depends a lot on how the model will be used.</p>
-
-        <p><strong>Timeline and compute.</strong> If the project is 1 month vs. 1 year, the solution is probably very different, depending on how much resource we have. Plan the project beforehand: there will always be more things to do with the data and the model, but we must stop at some point.</p>
+        <ul>
+            <li><strong>What is the task?</strong> Input to output, and whether it's classification, regression, or outlier detection. Sometimes it is possible to frame the same problem in different ways -- e.g. detecting spam email can be considered either a classification problem or an outlier detection problem. <strong>How we frame the problem is crucial</strong> in many cases: it decides the difficulty, and whether the problem can be solved successfully at all.</li>
+            <li><strong>How will the model be used?</strong> It could be used directly in a production pipeline, or it could feed another model. For example, if we are training an embedding model to be used by another classification model downstream, <strong>the quality of the embedding matters more than the output accuracy</strong> of the embedding model itself.</li>
+            <li><strong>Any constraints?</strong> Latency requirements, business requirements (e.g. if we are pricing a product, the business partner may want a margin of 10-15%), and these constraints could change frequently. If the requirements for a constraint change often, it is worth <strong>designing the pipeline so that constraint can be processed modularly</strong>, rather than retraining an end-to-end model every time it changes.</li>
+            <li><strong>How would we evaluate the success of the project?</strong> It is important to have a <strong>baseline model</strong> to compare against, either a naive solution or an older model. The actual metric -- A/B test accuracy, latency, simplicity -- depends a lot on how the model will be used.</li>
+            <li><strong>Timeline and compute.</strong> If the project is 1 month vs. 1 year, the solution is probably very different, depending on how much resource we have. Plan the project beforehand: there will always be more things to do with the data and the model, but <strong>we must stop at some point</strong>.</li>
+        </ul>
 
         <h2>Step 2: Get the Data</h2>
 
-        <p>This step is actually non-trivial in many cases. Say we want to predict how likely a customer will buy a book. We probably need to fetch from several tables: customer metadata (age, gender, ...), customer purchase history, book info (year, genre, publisher, ...), and maybe publisher info too.</p>
+        <p>This step is actually <strong>non-trivial in many cases</strong>. Say we want to predict how likely a customer will buy a book. We probably need to fetch from several tables: customer metadata (age, gender, ...), customer purchase history, book info (year, genre, publisher, ...), and maybe publisher info too.</p>
 
-        <p>Because data are usually stored in different places, it is usually non-trivial to get all the data and join them into the form we want. Sometimes we also use a specific scope of data -- e.g. one model for customers in the US, one for Europe -- and there may be laws that prevent using certain features for customers in a given region.</p>
-
-        <p>To make things worse, each table may have different versions. In the worst case, always check that the column names still match.</p>
+        <ul>
+            <li>Because data are usually stored in different places, it is usually non-trivial to get all the data and <strong>join them into the form we want</strong>.</li>
+            <li>Sometimes we also use a <strong>specific scope of data</strong> -- e.g. one model for customers in the US, one for Europe -- and there may be laws that prevent using certain features for customers in a given region.</li>
+            <li>To make things worse, each table may have <strong>different versions</strong>. In the worst case, always check that the column names still match.</li>
+        </ul>
 
         <h2>Step 3: Get the Insights From the Data</h2>
 
-        <p>Spend more time on the data than the model, because it saves a lot of headaches later. If a model doesn't work as expected, the answer is very likely in the data.</p>
+        <p><strong>Spend more time on the data than the model</strong> -- it saves a lot of headaches later. If a model doesn't work as expected, the answer is very likely in the data.</p>
 
-        <p>Things to consider (standard for almost all ML projects): duplication, missing data, outliers, data distributions, feature correlations, whether the train and validation data come from the same distribution, and -- for classification -- whether the labels are balanced.</p>
+        <p>Things to consider (standard for almost all ML projects):</p>
+
+        <ul>
+            <li>Duplication, missing data, outliers, data distributions, feature correlations</li>
+            <li>Whether the train and validation data come from the <strong>same distribution</strong></li>
+            <li>For classification -- whether the labels are <strong>balanced</strong></li>
+        </ul>
 
         <p>There is more to consider in a real project:</p>
 
@@ -191,39 +197,47 @@
             <li><strong>Is the data IID?</strong> A business configuration change at a certain point in time can have a big impact on the data.</li>
         </ul>
 
-        <p>The reason it is better to spend more time on the data: issues related to the data are normally very hidden, unless we have good insight into the data. A real example: training data from 2025-01-01 to 2025-12-31 gave a good model, but validation data from 2026-01-01 to 2026-03-31 made the model perform much worse. The reason turned out to be a big configuration change for one very big partner in 2026.</p>
+        <p>The reason it is better to spend more time on the data: issues related to the data are normally <strong>very hidden</strong>, unless we have good insight into the data.</p>
+
+        <blockquote>A real example: training data from 2025-01-01 to 2025-12-31 gave a good model, but validation data from 2026-01-01 to 2026-03-31 made the model perform much worse. The reason turned out to be a <strong>big configuration change for one very big partner in 2026</strong>.</blockquote>
 
         <h2>Step 4: Pre-process the Data for Training</h2>
 
-        <p>This is more standard: impute missing data, remove outliers, scale the data. If the input is sequential (e.g. RNN or Transformer), use a sliding window. Also feature selection and feature engineering.</p>
-
-        <p>One thing to consider: how sensitive is the model to preprocessing choices? E.g. mean imputation vs. hot-deck imputation, or an RNN being sensitive to the window size.</p>
+        <ul>
+            <li>This is more standard: <strong>impute missing data, remove outliers, scale the data</strong>.</li>
+            <li>If the input is sequential (e.g. RNN or Transformer), use a <strong>sliding window</strong>.</li>
+            <li>Also <strong>feature selection and feature engineering</strong>.</li>
+            <li>One thing to consider: <strong>how sensitive is the model to preprocessing choices?</strong> E.g. mean imputation vs. hot-deck imputation, or an RNN being sensitive to the window size.</li>
+        </ul>
 
         <h2>Step 5: Model Training</h2>
 
-        <p>The most enjoyable part, and surprisingly, the easy part.</p>
+        <p>The most enjoyable part, and surprisingly, <strong>the easy part</strong>.</p>
 
-        <p>Start from a simple model -- e.g. linear regression and logistic regression, or for time series, using the last data point as the prediction, etc. This gives us two things: a baseline for any more complex model, and additional insight about the data and the problem.</p>
-
-        <p>Plan experiments carefully. Different hyperparameters take time and compute -- if constrained, think about what is a must-run and what can be sacrificed (e.g. some experiments run on a smaller dataset to save time and compute). Instead of pushing all experiments at once, always start from simpler, smaller experiments first, to make sure things work as expected.</p>
-
-        <p>After model training, there may be some post-processing needed to satisfy constraints (e.g. one partner may ask all products to have an average margin of 10%). There will also sometimes be approaches to improve performance further, e.g. ensembling, or if a certain type of data isn't working well with the main model, maybe routing it to a simpler model instead.</p>
+        <ul>
+            <li><strong>Start from a simple model</strong> -- e.g. linear regression and logistic regression, or for time series, using the last data point as the prediction, etc. This gives us two things: a <strong>baseline</strong> for any more complex model, and additional insight about the data and the problem.</li>
+            <li><strong>Plan experiments carefully.</strong> Different hyperparameters take time and compute -- if constrained, think about what is a must-run and what can be sacrificed (e.g. some experiments run on a smaller dataset to save time and compute). Instead of pushing all experiments at once, <strong>always start from simpler, smaller experiments first</strong>, to make sure things work as expected.</li>
+            <li>After model training, there may be some <strong>post-processing</strong> needed to satisfy constraints (e.g. one partner may ask all products to have an average margin of 10%).</li>
+            <li>There will also sometimes be approaches to improve performance further, e.g. <strong>ensembling</strong>, or if a certain type of data isn't working well with the main model, maybe <strong>routing</strong> it to a simpler model instead.</li>
+        </ul>
 
         <h2>Step 6: Model Evaluation</h2>
 
-        <p>It can be easy: just look at the loss function for all models and pick the best one. For classification, check which class performs the best; for regression, consider analyzing why some data points have a worse prediction.</p>
+        <ul>
+            <li><strong>Can be easy:</strong> just look at the loss function for all models and pick the best one. For classification, check which class performs the best; for regression, consider analyzing why some data points have a worse prediction.</li>
+            <li><strong>Can also be comprehensive:</strong> how does performance change over time, by partner, or by location? Among all hyperparameters, <strong>which one has the biggest impact on model performance</strong> (e.g. run a random forest using hyperparameters as inputs and losses as targets), so we can spend more time and compute fine-tuning that parameter.</li>
+            <li>And how do we <strong>connect the offline result to online performance</strong>?</li>
+        </ul>
 
-        <p>It can also be comprehensive: how does performance change over time, by partner, or by location? Among all hyperparameters, which one has the biggest impact on model performance (e.g. run a random forest using hyperparameters as inputs and losses as targets), so we can spend more time and compute fine-tuning that parameter. And how do we connect the offline result to online performance?</p>
-
-        <p>Steps 3, 4, 5, and 6 are iterative. In the end, we get better at understanding the data, the model, and the task together.</p>
+        <p>Steps 3, 4, 5, and 6 are <strong>iterative</strong>. In the end, we get better at understanding the data, the model, and the task together.</p>
 
         <h2>Step 7: Model Deploy, Monitor, and Maintain</h2>
 
-        <p><strong>Deploy:</strong> check the environment, and for different parts of the pipeline, choose reasonable compute resources. Consider how much traffic we'll get if A/B testing is needed.</p>
-
-        <p><strong>Monitor:</strong> data quality checks, automatic model performance monitoring, and when to scale the traffic up or down.</p>
-
-        <p><strong>Maintain:</strong> prepare to update parts of the pipeline, and be ready to update the whole pipeline. If something unexpected happens, consider how to fall back safely.</p>
+        <ul>
+            <li><strong>Deploy:</strong> check the environment, and for different parts of the pipeline, choose reasonable compute resources. Consider how much traffic we'll get if A/B testing is needed.</li>
+            <li><strong>Monitor:</strong> data quality checks, automatic model performance monitoring, and when to scale the traffic up or down.</li>
+            <li><strong>Maintain:</strong> prepare to update parts of the pipeline, and be ready to update the whole pipeline. If something unexpected happens, consider <strong>how to fall back safely</strong>.</li>
+        </ul>
 
         <h2>Summary</h2>
 
