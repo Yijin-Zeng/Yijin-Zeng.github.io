@@ -156,42 +156,42 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/E2E Machine Learning Project.pdf">PDF</a>.</p>
 
-        <p>I wrote this note after about a year working as a ml scientist as a reflection, also a checklist for myself: 
-           whenever I'm assigned a new ML project, what should I actually be thinking about? 
+        <p>I wrote this note after about a year working as an ML scientist, as a reflection and also a checklist for myself:
+           whenever I'm assigned a new ML project, what should I actually be thinking about?
         </p>
 
         <h2>Step 1: Look at the Big Picture</h2>
 
         <ul>
-            <li><strong>What is the task?</strong> At the begining, ask what is the input and the output, and
-                                                   then decide what problem the task is, whether it's classification, regression, or outlier detection. 
+            <li><strong>What is the task?</strong> At the beginning, ask what the input and the output are, and
+                                                   then decide what kind of problem it is: classification, regression, or outlier detection.
                                                    Understand the scale of the data and the model. These are all important for framing the problem at hand.
                                                    Sometimes it is possible to frame the same problem in different ways.
-                                                   For example, detecting spam email can be considered either a classification problem or an outlier detection problem. 
+                                                   For example, detecting spam email can be considered either a classification problem or an outlier detection problem.
                                                    <strong>How we frame the problem is crucial</strong> in many cases: it decides the difficulty, and whether the problem
                                                    can be solved successfully at all.</li>
             <li><strong>How will the model be used?</strong> It could be used directly in a production pipeline, to extract internal knowledge, or it could feed another model.
-                                                   How the model will be used is a big factor in deciding the approaches for the task.
-                                                   For example, if we are training an embedding model to be used by another classification model downstream, 
+                                                   How the model will be used is a big factor in deciding the approach for the task.
+                                                   For example, if we are training an embedding model to be used by another classification model downstream,
                                                    <strong>the quality of the embedding matters more than the output accuracy</strong> of the embedding model itself.</li>
-            <li><strong>Any constraints?</strong> Ask if there is any hard constraints (must have), any soft constraints (better to have), and also think if these constraints
-                                                  could change. There would often be latency requirements, business requirements (e.g. if we are pricing a product, the business 
-                                                  partner may want a margin of 10-15% for the product), and these constraints could change frequently. If this is the case, 
-                                                  it is worth <strong>designing the pipeline so that constraint can be processed modularly</strong>, rather than retraining an 
+            <li><strong>Any constraints?</strong> Ask if there are any hard constraints (must have), any soft constraints (better to have), and also think about whether these constraints
+                                                  could change. There will often be latency requirements, business requirements (e.g. if we are pricing a product, the business
+                                                  partner may want a margin of 10-15% for the product), and these constraints could change frequently. If this is the case,
+                                                  it is worth <strong>designing the pipeline so that constraint can be processed modularly</strong>, rather than retraining an
                                                   end-to-end model every time it changes.</li>
-            <li><strong>How would we evaluate the success of the project?</strong> It's useful to think at the begining how to measure success of the project, because there could
+            <li><strong>How would we evaluate the success of the project?</strong> It's useful to think at the beginning about how to measure the success of the project, because there could
                                                                                    be many factors to decide this. For example, would a classification model with similar
                                                                                    accuracy but less latency be a win? If the new model has smaller loss compared to the older
-                                                                                   model in general, but work worse for more important business partners, should we decide this is a win or lose?
-                                                                                   Normally, it's better to have a decisive metric, but also it's important to have a set of guardrail
-                                                                                   metrics to make sure things are not going very wrong at some dimensions.
-                                                                                   It is also very important to have a <strong>baseline model</strong> to compare against, 
+                                                                                   model in general, but performs worse for more important business partners, should we decide this is a win or a loss?
+                                                                                   Normally, it's better to have a decisive metric, but it's also important to have a set of guardrail
+                                                                                   metrics to make sure things are not going very wrong along some other dimension.
+                                                                                   It is also very important to have a <strong>baseline model</strong> to compare against,
                                                                                    either a naive solution or an older model.</li>
 
-            <li><strong>Timeline and compute.</strong> If the project is 1 month vs 1 year, the solution is probably very different, 
-                                                       depending on how much resource we have. Plan the project beforehand: there will always be more things to do with the data and the model, 
-                                                       but we must stop at some point. For this reason, it's always better to get each part (data, model, evaluation) at a basic level,
-                                                       rather than digging too much into the model, and realized that in the end of the project the data has serious issues.</li>
+            <li><strong>Timeline and compute.</strong> If the project is 1 month vs 1 year, the solution is probably very different,
+                                                       depending on how much resource we have. Plan the project beforehand: there will always be more things to do with the data and the model,
+                                                       but we must stop at some point. For this reason, it's always better to get each part (data, model, evaluation) to a basic level first,
+                                                       rather than digging too deep into the model, only to realize at the end of the project that the data has serious issues.</li>
         </ul>
 
         <h2>Step 2: Get the Data</h2>
@@ -201,7 +201,7 @@
         <ul>
             <li>Because data are usually stored in different places, it is usually non-trivial to get all the data and join them into the form we want.</li>
             <li>Sometimes we also only use a specific scope of data, e.g. one model for customers in the US, one for Europe (there may be laws that prevent using certain features for customers in a given region).</li>
-            <li>To make things worse, each table may have different versions. In the worst case, always check that the column names match for each table.</li>
+            <li>To make things worse, each table may have different versions. In the worst case, always check that the column names match across tables.</li>
         </ul>
 
         <h2>Step 3: Get the Insights From the Data</h2>
@@ -217,13 +217,13 @@
             <li>For classification, whether the labels are <strong>balanced</strong></li>
         </ul>
 
-        <p>There is many more to consider in a real project case by case. For example:</p>
+        <p>There is much more to consider in a real project, case by case. For example:</p>
 
         <ul>
-            <li><strong>Is the data source reliable?</strong> Can we trust the data? 
-                E.g. if we have browsing data, is it generated by humans or by malicious bots? 
-                It's also normal that some business logic is needed to derive certain features, e.g. 
-                <code>price = f(location, month, product)</code> is this logic implemented correctly?</li>
+            <li><strong>Is the data source reliable?</strong> Can we trust the data?
+                E.g. if we have browsing data, is it generated by humans or by malicious bots?
+                It's also normal that some business logic is needed to derive certain features, e.g.
+                <code>price = f(location, month, product)</code> -- is this logic implemented correctly?</li>
             <li><strong>Is there any business changes behind the data?</strong> A business configuration change at a certain point in time can have a big impact on the data.</li>
         </ul>
 
@@ -235,8 +235,8 @@
         <h2>Step 4: Pre-process the Data for Training</h2>
 
         <ul>
-            <li>This step is in general more standard: impute missing data, remove outliers, scale the data, feature selection and featrue engineering.</li>
-            <li>If the input is sequential (e.g. RNN or Transformer), using a sliding window.</li>
+            <li>This step is in general more standard: impute missing data, remove outliers, scale the data, feature selection and feature engineering.</li>
+            <li>If the input is sequential (e.g. RNN or Transformer), use a sliding window.</li>
             <li>One thing worth to consider is how sensitive is the model to preprocessing choices? 
                 E.g. mean imputation vs. hot-deck imputation, or an RNN being sensitive to the window size.</li>
         </ul>
@@ -257,15 +257,15 @@
                                                             Instead of pushing all experiments at once, <strong>always start from simpler, smaller experiments first</strong>, 
                                                             to make sure things work as expected.</li>
             <li>After model training, there may be some <strong>post-processing</strong> needed to satisfy constraints (e.g. one partner may ask all products to have an average margin of 10%).</li>
-            <li>There will also sometimes be approaches to improve performance further, e.g. <strong>ensembling</strong>, 
-                or if a certain type of data isn't working well with the main model, maybe training a seperate model for it, or
-                routin it to a simpler model instead. Again, this process also help us understand the data and the model better.</li>
+            <li>There will also sometimes be approaches to improve performance further, e.g. <strong>ensembling</strong>,
+                or if a certain type of data isn't working well with the main model, maybe training a separate model for it, or
+                routing it to a simpler model instead. Again, this process also helps us understand the data and the model better.</li>
         </ul>
 
         <h2>Step 6: Model Evaluation</h2>
 
-        <p>Depends on what the project is about and how much resources we have, model evalaution can be very different.</p>
-        
+        <p>Depending on what the project is about and how many resources we have, model evaluation can be very different.</p>
+
         <ul>
             <li><strong>Can be easy:</strong> just look at the loss function for all models and pick the best one. </li>
             <li><strong>Can also be comprehensive:</strong>  For classification, check which class performs the best; for regression, 
@@ -274,7 +274,7 @@
                                                     Among all hyperparameters, which one has the biggest impact on model performance
                                                     (e.g. run a random forest using hyperparameters as inputs and losses as targets), 
                                                     so we can spend more time and compute fine-tuning that parameter.</li>
-            <li>Because evaluation is often done offline, think about how cab we connect the offline result to online performance.</li>
+            <li>Because evaluation is often done offline, think about how we can connect the offline result to online performance.</li>
         </ul>
 
         <p>Steps 3, 4, 5, and 6 are <strong>iterative</strong>. In the end, we get better at understanding the data, the model, and the task together.</p>
@@ -282,8 +282,8 @@
         <h2>Step 7: Model Deploy, Monitor, and Maintain</h2>
 
         <ul>
-            <li><strong>Deploy:</strong> check the environment for deploy, 
-                                         and for different parts of the pipeline, 
+            <li><strong>Deploy:</strong> check the environment for deployment,
+                                         and for different parts of the pipeline,
                                          choose reasonable compute resources. Consider how much traffic we'll get if A/B testing is needed.</li>
             <li><strong>Monitor:</strong> data quality checks, automatic model performance monitoring, and when to scale the traffic up or down.</li>
             <li><strong>Maintain:</strong> prepare to update parts of the pipeline, and be ready to update the whole pipeline. 
