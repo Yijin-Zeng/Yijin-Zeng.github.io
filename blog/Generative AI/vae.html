@@ -152,25 +152,22 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/VAE.pdf">PDF</a>.</p>
 
-        <p>Variational autoencoders (VAEs) are a type of probabilistic generative model. The core idea is to write the "true" distribution over the data as an integral over a latent variable:</p>
+        <p>Variational autoencoders (VAE) are a type of probabilistic generative model. The core idea is to model the "true" distribution as an integral over a latent variable:</p>
 
         <pre><code>pr(x) = ∫ pr(z) pr(x|z) dz
 
-pr(z)    : latent variable (something we never observe)
+pr(z)    : latent variable
 pr(x|z)  : conditional likelihood given the latent variable</code></pre>
 
-        <p>If we can model <code>pr(x)</code> this way, we can <strong>generate new samples</strong> from it — new images, new molecules, new anything.
-           VAEs were one of the first deep generative models to make this practical, and modern diffusion models can be viewed as their direct descendants. More on that at the end.</p>
+        <h2>Examples</h2>
+        <p>Two examples of what this buys us.</p>
 
-        <h2>Two Examples: Averaging Simple Gaussians</h2>
-        <p>What does that integral actually buy us? Two examples make it concrete.</p>
+        <p><strong>1. Gaussian Mixture Model.</strong> The latent variable is cluster membership: <code>z_ij = 1</code> if point <code>x_i</code> belongs to cluster <code>C_j</code>, 0 otherwise.
+           The conditional likelihood is just a Gaussian, <code>pr(x_i | z_ij = 1) = N(x_i; μ_j, Σ_j)</code>.
+           Both pieces are simple, but a weighted average of them — say <code>p(z=1) = 0.5</code>, <code>p(z=2) = 0.5</code> — can already model a complex, bimodal distribution.</p>
 
-        <p><strong>1. Gaussian Mixture Model.</strong> The latent variable is just cluster membership: <code>z_ij = 1</code> if point <code>x_i</code> belongs to cluster <code>C_j</code>, and 0 otherwise.
-           The conditional likelihood is a plain Gaussian, <code>pr(x_i | z_ij = 1) = N(x_i; μ_j, Σ_j)</code>.
-           Each piece is simple, but the weighted average — say <code>p(z=1) = 0.5</code> and <code>p(z=2) = 0.5</code> — produces a bimodal <code>pr(x)</code> that no single Gaussian could describe.</p>
-
-        <p><strong>2. Non-linear latent variable model.</strong> Imagine 2D data scattered along a banana-shaped curve. How to model this distribution?
-           Put a Gaussian prior on a scalar <code>z</code>, map it through a non-linear function <code>f(z; φ)</code>, and place a small Gaussian at every point along the curve:</p>
+        <p><strong>2. 2D non-linear latent variable model.</strong> Say the data is 2D and scattered along a curve. How do we model this distribution?
+           Put a Gaussian prior on a scalar <code>z</code>, map it through a non-linear function <code>f(z; φ)</code>, and place a Gaussian at every point along the curve:</p>
 
         <pre><code>pr(x) = ∫ pr(z) N(x; f(z; φ), Σ) dz
 
@@ -179,26 +176,26 @@ pr(x|z)  : conditional likelihood given the latent variable</code></pre>
         │ f(z; φ)               ○     ○ ○      each circle is a
         ▼                      ○         ○ ○   Gaussian; averaging
     curve in x-space                       ○   them along f(z; φ)
-                                               traces the banana</code></pre>
+                                               traces the curve</code></pre>
 
-        <p>Conclusion for both: a <strong>weighted average of simple Gaussian distributions can approximate a very complicated distribution</strong>. That's the whole game.</p>
+        <p>Conclusion for both: a weighted average of simple Gaussian distributions can be used to approximate a very complicated distribution.</p>
 
-        <h2>Why We Cannot Just Maximize The Likelihood</h2>
-        <p>So let's do maximum likelihood, right? Take <code>pr(x) = ∫ N(z; 0, I) N(x; f(z; φ), σ²I) dz</code> and maximize it. Two problems.</p>
+        <h2>The Problem of VAE</h2>
+        <p>Take the model above and try to do maximum likelihood on it directly:</p>
 
-        <p>First, when <code>f</code> is a neural network, this integral <strong>has no analytical form</strong>. Fine, we can Monte-Carlo it:</p>
+        <pre><code>pr(x) = ∫ pr(z) pr(x|z; φ) dz = ∫ N(z; 0, I) N(x; f(z; φ), σ²I) dz</code></pre>
+
+        <p>This has no analytical form. We can approximate it with Monte Carlo instead, to estimate the marginal likelihood of <code>x</code>:</p>
 
         <pre><code>pr(x) ≈ E_{z~N(0,I)} [ N(x; f(z; φ), σ²I) ]</code></pre>
 
-        <p>Second — and this is the killer — <code>z</code> is high-dimensional. For a given image <code>x</code>, if we sample randomly from <code>z ~ N(0, I)</code>,
-           then it is very likely (&gt;99.9% of the time) that <code>N(x; f(z; φ), σ²I) ≈ 0</code>.
-           Almost every random <code>z</code> decodes to something that looks nothing like our image, contributing essentially zero to the estimate.
-           We would need an absurdly large sample size to get a usable signal. So it is hard to maximize the marginal likelihood <code>pr(x)</code> directly.</p>
+        <p>However, because the dimension of <code>z</code> is high, we need a very large sample size to make this work. For a given image <code>x</code>, if we sample randomly from <code>z ~ N(0, I)</code>,
+           it is very likely (&gt;99.9% of the time) that <code>N(x; f(z; φ), σ²I) ≈ 0</code>. So it is hard to maximize the marginal likelihood <code>pr(x)</code> directly.</p>
 
-        <p>Instead, we will try to <strong>push up a lower bound</strong> of the marginal likelihood.</p>
+        <p>Instead, we will try to push up the lower bound of the marginal likelihood.</p>
 
-        <h2>Deriving The Lower Bound (ELBO)</h2>
-        <p>The trick is to multiply and divide by an arbitrary proposal distribution <code>q(z)</code> inside the log, then apply Jensen's inequality (log of an average ≥ average of the log):</p>
+        <h2>Deriving the ELBO</h2>
+        <p>Multiply and divide by a proposed distribution <code>q(z)</code> inside the log, then apply Jensen's inequality:</p>
 
         <pre><code>log pr(x|φ) = log ( ∫ pr(x, z|φ) dz )
 
@@ -206,69 +203,64 @@ pr(x|z)  : conditional likelihood given the latent variable</code></pre>
 
             ≥ ∫ q(z) log ( pr(x, z|φ) / q(z) ) dz     ← Jensen's inequality</code></pre>
 
-        <p>This last expression is the famous <strong>evidence lower bound (ELBO)</strong>. The proposal <code>q(z)</code> can be anything (as long as it is a valid distribution),
-           and its choice decides how far the ELBO sits below <code>log pr(x|φ)</code>. So why not learn it too? We give it parameters <code>θ</code> and write <code>q(z|θ)</code>:</p>
+        <p>This is known as the evidence lower bound (ELBO). This proposed <code>q(z)</code> can be anything, as long as it is a valid distribution, and it decides how far the ELBO is from <code>pr(x|φ)</code>. We can learn it as well, and denote it as <code>q(z|θ)</code> below:</p>
 
         <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log ( pr(x, z|φ) / q(z|θ) ) dz
 
-change φ : move the ELBO (and the target) up
-change θ : push the ELBO closer to the target</code></pre>
+change θ: push up the ELBO itself
+change φ: move the ELBO (and the target) up together</code></pre>
 
-        <p>Another way to see it: <strong>a VAE is just the neural network architecture built to maximize the ELBO</strong>. The encoder and decoder are what fall out when you take this objective seriously.</p>
+        <p>Another perspective of VAE: the neural network architecture built to maximize the ELBO is the VAE.</p>
 
-        <h2>Reading The ELBO, Twice</h2>
-        <p>The ELBO can be decomposed in two different ways, and each tells us something different.</p>
+        <h2>Analyzing the ELBO</h2>
 
-        <h3>Decomposition 1: How Tight Is The Bound?</h3>
-        <p>Expand <code>pr(x, z|φ) = pr(z|x, φ) pr(x|φ)</code> and split the log:</p>
+        <h3>1. Tightness of the bound</h3>
+        <p>Expand <code>pr(x, z|φ) = pr(z|x, φ) pr(x|φ)</code>:</p>
 
         <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log ( pr(z|x, φ) pr(x|φ) / q(z|θ) ) dz
 
-           = log pr(x|φ) − KL( q(z|θ) ‖ pr(z|x, φ) )</code></pre>
+           = log pr(x|φ) − KL( q(z|θ), pr(z|x, φ) )</code></pre>
 
-        <p>So the gap between the ELBO and the true log-likelihood is exactly a KL divergence.
-           When the proposal <code>q(z|θ) = pr(z|x, φ)</code> — the true posterior — the bound is tight: <code>ELBO(θ, φ) = log pr(x|φ)</code>.
-           However, <code>pr(z|x, φ) = pr(z) pr(x|z, φ) / pr(x|φ)</code> could be very complex (the denominator is the very integral we can't compute), so we can't just set <code>q</code> to it.</p>
+        <p>When the proposed distribution <code>q(z|θ) = pr(z|x, φ)</code>, we have <code>ELBO(θ, φ) = log pr(x|φ)</code>. However, <code>pr(z|x, φ) = pr(z) pr(x|z, φ) / pr(x|φ)</code> could be very complex.</p>
 
-        <h3>Decomposition 2: Turn The ELBO Into A Loss Function</h3>
+        <h3>2. Constructing a loss function from the ELBO</h3>
         <p>Now expand the joint the other way, <code>pr(x, z|φ) = pr(x|z, φ) pr(z)</code>, where <code>pr(z)</code> is the prior <code>z ~ N(0, I)</code>:</p>
 
-        <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log pr(x|z, φ) dz − KL( q(z|θ) ‖ pr(z) )
-             ─────────────────────────    ────────────────────
-             reconstruction term          prior-matching term
-             = E_{z~q(z|θ)}[log pr(x|z,φ)]</code></pre>
+        <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log pr(x|z, φ) dz − KL( q(z|θ), pr(z) )
+             ─────────────────────────    ──────────────────
+             reconstruction error          the proposed distribution q(z|θ) will be
+                                           penalized if it deviates from prior pr(z)
 
-        <p>The first term is the (negative) <strong>reconstruction error</strong>: samples from <code>q</code> should decode back to something close to <code>x</code>.
-           The second term says the proposal <code>q(z|θ)</code> gets <strong>penalized if it deviates from the prior</strong> <code>pr(z)</code>.</p>
+           = E_{z~q(z|θ)} [ log pr(x|z, φ) ]</code></pre>
 
-        <h2>Putting The Pieces Together</h2>
-        <p>Combining the two decompositions, we want three things from <code>q(z|θ)</code> at once:</p>
+        <h2>Putting the Two Analyses Together</h2>
+        <p>Combining the above two analyses, we now know that:</p>
 
-        <ul>
-            <li>It should be close to the true posterior <code>pr(z|x, φ)</code>, so the ELBO approaches the target (decomposition 1).</li>
-            <li>It should minimize reconstruction error, i.e. carry enough information about the observation <code>x</code> (decomposition 2, first term).</li>
-            <li>It should stay close to the prior <code>pr(z)</code>, i.e. stay simple (decomposition 2, second term).</li>
-        </ul>
+        <ol>
+            <li>We want the proposed distribution <code>q(z|θ)</code> to be close to <code>pr(z|x, φ)</code>, so that ELBO → target.</li>
+            <li>We want the proposed distribution to minimize reconstruction error, which means it should provide enough information about the observation <code>x</code>.</li>
+            <li>We also want <code>q(z|θ)</code> to be close to <code>pr(z)</code>, so it should stay simple.</li>
+        </ol>
 
-        <p>Notice the first two both point at the same idea: the good proposal <strong>depends on x</strong>. So we let:</p>
+        <p>Solution: we let</p>
 
-        <pre><code>q(z|θ) = q(z|x, θ) = N( z; g_μ(x; θ), g_Σ(x; θ) )</code></pre>
+        <pre><code>q(z|θ) = q(z|x, θ) = N( z; g_μ(x, θ), g_Σ(x, θ) )</code></pre>
 
-        <p>where <code>g_μ</code> and <code>g_Σ</code> are neural networks that read <code>x</code> and output the mean and covariance. This is the <strong>variational approximation</strong> — and it's also the <strong>encoder</strong>.
-           A caveat worth being honest about: the true posterior <code>pr(z|x, φ)</code> could be very complex, so this Gaussian approximation may not be good, which means the ELBO is not necessarily close to the log marginal likelihood. VAEs live with this gap.</p>
+        <p>where <code>g_μ</code> and <code>g_Σ</code> are neural networks that read <code>x</code> and output a mean and covariance. This is the variational approximation to <code>pr(z|x, φ)</code>, and it is also the encoder. This could be very complex, so this approximation may not be good, in which case the ELBO is not close to the log marginal likelihood.</p>
 
-        <p>The final loss (to minimize) is:</p>
+        <h2>Summary</h2>
+        <p>The loss function is:</p>
 
-        <pre><code>L(θ, φ) = −E_{z~q(·|x,θ)} [ log pr(x|z, φ) ] + KL( q(z|x, θ) ‖ pr(z) )
+        <pre><code>L(θ, φ) = −∫ q(z|x, θ) log pr(x|z, φ) dz + KL( q(z|x, θ), pr(z) )
 
-        ≈ −(1/n) Σᵢ log pr(x|zᵢ, φ)  +  KL( q(z|x, θ) ‖ pr(z) )
+        = −E_{z~q(·|x,θ)} [ log pr(x|z, φ) ] + KL( q(z|x, θ), pr(z) )
+
+        ≈ −(1/n) Σᵢ log pr(x|zᵢ, φ) + KL( q(z|x, θ), pr(z) )
                   zᵢ ~ q(z|x, θ)</code></pre>
 
-        <p>Since <code>q(z|x, θ)</code> is Gaussian and the prior is Gaussian, the KL term has an <strong>explicit closed form</strong> — no sampling needed there.</p>
+        <p>Here <code>z</code> is also high dimension, so why will this approximation work, but <code>∫ pr(z) pr(x|z, φ) dz = E_{z~N(0,I)}[pr(x|z, φ)]</code> will fail?</p>
 
-        <p>Wait — <code>z</code> is still high-dimensional here, so why does <em>this</em> Monte-Carlo estimate work when the naive one <code>E_{z~N(0,I)}[pr(x|z, φ)]</code> failed?
-           The reason: if <code>z ~ N(0, I)</code>, then <code>pr(x|z, φ) ≈ 0</code> for almost every sample. But if <code>z ~ q(·|x, θ)</code>, then <code>pr(x|z, φ) &gt; 0</code> —
-           the encoder narrows the search down to the small region of latent space that actually corresponds to this image:</p>
+        <p>Reason: if <code>z ~ N(0, I)</code>, then <code>pr(x|z, φ) ≈ 0</code>. If, however, <code>z ~ q(·|x, θ)</code>, then <code>pr(x|z, φ) &gt; 0</code>. The compression step (encoder) narrows down the scope in latent space to a small region:</p>
 
         <pre><code>   Latent Space N(0, I)                Sample Space
    ┌───────────────────┐              ┌──────────────────┐
@@ -281,54 +273,35 @@ change θ : push the ELBO closer to the target</code></pre>
      narrows the scope in latent
      space to a small region</code></pre>
 
-        <h2>The Actual Architecture</h2>
-        <p>Here is the full pipeline, exactly as in the note:</p>
+        <p>Since <code>q(z|x, θ)</code> is Gaussian and the prior is Gaussian, the KL term has an explicit form, so no sampling is needed for that term.</p>
 
-        <pre><code>x (image) → encoder → μ, Σ  ── z = μ + L·ε, ε ~ N(0,I) ──→ decoder → f(z; φ)
-            learns q(z|x)       (reparameterization trick)   learns the mean
-                                                                  │
-                              loss: log N( x; f(z; φ), σ²I )  ◄───┘
-                                    σ normally fixed at 1 or 0.5</code></pre>
+        <h2>Encoder and Decoder</h2>
 
-        <p>A few practical details worth flagging:</p>
+        <pre><code>x (image) → encoder → μ, Σ  ── z = μ + Σ^(1/2)·ε, ε ~ N(0,I) ──→ decoder → f(z; φ)
+            learns pr(z|x)      (reparameterization trick)          learns the mean
+                = N(μ, Σ)                                                │
+                                    loss: log N( x; f(z; φ), σ²I )   ◄────┘
+                                          σ normally fixed at 1 or 0.5</code></pre>
 
-        <ul>
-            <li><strong>Reparameterization trick</strong>: instead of sampling <code>z</code> directly from <code>N(μ, Σ)</code> (which blocks gradients), we sample <code>ε ~ N(0, I)</code> and compute <code>z = μ + Σ^(1/2) ε</code>. The randomness is pushed into an input, so gradients flow through <code>μ</code> and <code>Σ</code>.</li>
-            <li><strong>The covariance Σ</strong> needs to be symmetric and semi-positive definite. Normally we just assume <code>Σ = diag(σ₁², ..., σₙ²)</code>; otherwise use the Cholesky decomposition <code>Σ = LLᵀ</code>, where <code>L</code> is lower-triangular with positive diagonal.</li>
-            <li><strong>The decoder normally only learns the mean</strong> <code>f(z; φ)</code>, with <code>σ</code> fixed. Why not learn <code>σ</code> too? If the image is hard, training could push <code>σ → ∞</code> (explain everything as noise); if the image is easy, it would push <code>σ → 0</code> (likelihood blows up). Neither is what we want.</li>
-        </ul>
+        <p>This <code>Σ</code> needs to be symmetric and semi-positive definite. Normally we assume <code>Σ = diag(σ₁², ..., σₙ²)</code>; otherwise we use the Cholesky decomposition <code>Σ = LLᵀ</code>, where <code>L</code> is a lower-triangular matrix with positive values on its diagonal.</p>
 
-        <p>The encoder lives under a genuine tension: it needs to <strong>encode as much information about the image as possible</strong> to minimize reconstruction error,
-           versus it needs to <strong>stay simple enough</strong> that <code>KL(q(z|x, θ) ‖ N(0, I))</code> is small. The loss makes it negotiate both.</p>
+        <p>Why does the decoder not learn <code>σ</code>? If the image is hard, it could push <code>σ → ∞</code>; if the image is easy, it would push <code>σ → 0</code>. So the decoder normally just learns the mean.</p>
 
-        <h2>Three Consequences Worth Noting</h2>
-        <p><strong>1. The marginal likelihood doesn't depend on the encoder at all.</strong> The target is to maximize <code>pr(x|φ)</code>, but the VAE loss maximizes the ELBO directly. What about the gap? From decomposition 1:</p>
+        <p>Underneath this, there's a tension: we need to encode as much information about the image as possible to minimize reconstruction error, versus we need to be simple enough so that <code>KL(q(z|x, θ), N(0, I))</code> is small.</p>
 
-        <pre><code>log pr(x|φ) = ELBO(θ, φ) + KL( q(z|x, θ) ‖ pr(z|x, φ) )</code></pre>
+        <h2>A Few More Notes</h2>
 
-        <p>For a given decoder <code>φ</code>, the left side is a constant with respect to the encoder. So as long as the encoder is pushing the ELBO up, it is <em>automatically</em> minimizing the distance to the true posterior <code>pr(z|x, φ)</code> — even though we never know what that posterior is. The encoder only exists to help the decoder learn: without an encoder, the decoder would need to evaluate the whole latent space to estimate <code>pr(x|φ)</code>; with an encoder, the search is narrowed down to <code>q(z|x, θ)</code>.</p>
+        <p><strong>1.</strong> Remember the target is to maximize <code>pr(x|φ)</code>. The loss function of VAE is maximizing the ELBO directly. So how about the distance between ELBO and <code>pr(x|φ)</code>?</p>
 
-        <p><strong>2. Generation throws the encoder away entirely.</strong> To generate a new image, just sample from the independent Gaussian prior and decode:</p>
+        <pre><code>pr(x|φ) = ELBO(θ, φ) + KL( q(z|θ), pr(z|x, φ) )</code></pre>
 
-        <pre><code>z ~ N(0, I) → decoder → generated image</code></pre>
+        <p>The marginal likelihood depends on the decoder only. So for a given decoder <code>φ</code>, it is a constant for the encoder. As long as the encoder is pushing up ELBO, it is minimizing the distance <code>KL(q(z|θ), pr(z|x, φ))</code>, although we don't know what <code>pr(z|x, φ)</code> is. We can also think the encoder here is only trying to help the decoder learn: without an encoder, the decoder needs to evaluate the whole latent space to evaluate <code>pr(x|φ)</code>; with an encoder, it helps to narrow down the space to <code>q(z|x, θ)</code>.</p>
 
-        <p><strong>3. Up-weighting the KL term gives you β-VAE.</strong> If we replace the KL term with <code>β·KL(q(z|x, θ) ‖ pr(z))</code> and increase <code>β</code>, we encourage the latent features to be <strong>disentangled</strong> — each latent dimension tends to capture one independent factor of variation. A one-character change to the loss, a qualitatively different representation.</p>
+        <p><strong>2.</strong> To generate an image from a VAE:</p>
 
-        <h2>Where The Gaussian Assumption Runs Out</h2>
-        <p>To improve the quality of images generated from a VAE, it is not enough to model both the prior <code>pr(z)</code> and the posterior approximation <code>pr(z|x)</code> as Gaussian.
-           Diffusion models generate higher-quality images, and can be viewed as VAEs with <strong>hierarchical priors</strong> — many small latent steps chained together instead of one big Gaussian leap from <code>z</code> to <code>x</code>.</p>
+        <pre><code>z ~ N(0, I)   (independent Gaussian)   →   decoder   →   generated image</code></pre>
 
-        <h2>Summary</h2>
-        <ul>
-            <li>A weighted average of simple Gaussian distributions can approximate a very complicated distribution — that's the seed idea behind a VAE.</li>
-            <li>Maximizing <code>pr(x|φ)</code> directly is intractable: the integral has no analytical form, and Monte-Carlo sampling from the prior <code>N(0, I)</code> almost always lands on a <code>z</code> that decodes to nothing like <code>x</code>.</li>
-            <li>Multiplying and dividing by a proposal <code>q(z)</code> and applying Jensen's inequality gives the ELBO, a tractable lower bound on <code>log pr(x|φ)</code>.</li>
-            <li>Decomposition 1 shows the ELBO's gap to the true log-likelihood is exactly <code>KL(q(z|x,θ) ‖ pr(z|x,φ))</code>. Decomposition 2 turns the ELBO into a loss: reconstruction error plus a KL penalty against the prior.</li>
-            <li>Making <code>q(z|θ) = q(z|x, θ)</code> a Gaussian whose mean and covariance are neural networks of <code>x</code> gives the encoder; sampling from it and decoding gives the reconstruction term — this is the VAE architecture.</li>
-            <li>The reparameterization trick (<code>z = μ + Σ^(1/2)ε</code>) is what lets gradients flow through the sampling step.</li>
-            <li>The encoder exists only to help the decoder learn, and gets thrown away at generation time. Up-weighting its KL term (β-VAE) encourages disentangled latents.</li>
-            <li>Both the prior and posterior being Gaussian is a real restriction; diffusion models relax it with hierarchical priors.</li>
-        </ul>
+        <p><strong>3.</strong> In order to improve the quality of the generated images from a VAE, it seems not enough to model the prior <code>pr(z)</code> and the latent space <code>pr(z|x)</code> as Gaussian. Diffusion can generate higher quality images, and can be considered a VAE with hierarchical priors.</p>
 
         <h2>References</h2>
         <ul>
