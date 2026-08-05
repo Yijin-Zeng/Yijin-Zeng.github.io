@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singular Value Decomposition (SVD) - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Singular Value Decomposition (SVD)</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/SVD.pdf">PDF</a>.</p>
+
+        <p>Singular value decomposition (SVD) is a highlight of linear algebra -- almost all of the basic but important concepts in the subject show up somewhere in it. Unlike diagonalization, SVD works for <strong>any</strong> matrix <code>A ∈ R^(n×m)</code>. Diagonalization requires the matrix to be square, and even then, not every square matrix is diagonalizable.</p>
+
+        <h2>What Is SVD?</h2>
+
+        <pre><code>A = U &Sigma; V^T</code></pre>
+
+        <ul>
+            <li><code>U</code> is orthonormal, made of the eigenvectors of <code>A A^T</code></li>
+            <li><code>V</code> is orthonormal, made of the eigenvectors of <code>A^T A</code></li>
+            <li><code>&Sigma;</code> is a diagonal matrix of <strong>singular values</strong> <code>σ_1 ≥ σ_2 ≥ ... ≥ σ_r > 0</code></li>
+        </ul>
+
+        <h2>How It Is Derived</h2>
+
+        <p><code>A A^T</code> is a symmetric positive semi-definite matrix, so it is always diagonalizable: <code>A A^T = U Λ U^T</code>, where <code>Λ = diag(σ_u1, ..., σ_um)</code>, every <code>σ_ui ≥ 0</code>, and <code>U</code> is orthonormal.</p>
+
+        <p>Take any eigenvector <code>u_i</code> of <code>A A^T</code> with a non-zero eigenvalue <code>σ_ui</code>:</p>
+
+        <pre><code>A A^T u_i = σ_ui u_i
+=> u_i^T A A^T u_i = σ_ui u_i^T u_i
+=> ||A^T u_i||^2 = σ_ui</code></pre>
+
+        <p>Now look at what happens if we left-multiply by <code>A^T</code> instead:</p>
+
+        <pre><code>A^T A A^T u_i = σ_ui A^T u_i
+=> A^T A (A^T u_i) = σ_ui (A^T u_i)</code></pre>
+
+        <p>So <code>A^T u_i</code> is itself an eigenvector of <code>A^T A</code>, with the <strong>same</strong> eigenvalue <code>σ_ui</code>. Denote its normalized version:</p>
+
+        <pre><code>v_i = A^T u_i / ||A^T u_i|| = A^T u_i / &radic;σ_ui</code></pre>
+
+        <p>Rearranging gives <code>A^T u_i = &radic;σ_ui · v_i</code>. Left-multiplying by <code>A</code>:</p>
+
+        <pre><code>A A^T u_i = A v_i &radic;σ_ui
+=> σ_ui u_i = &radic;σ_ui · A v_i
+=> &radic;σ_ui · u_i = A v_i   (*)</code></pre>
+
+        <p>So for every eigenvector <code>u_i</code> of <code>A A^T</code> with a positive eigenvalue, there is a corresponding eigenvector <code>v_i</code> of <code>A^T A</code> with the <strong>same</strong> eigenvalue, satisfying <code>A v_i = σ_i u_i</code> where <code>σ_i = &radic;σ_ui</code>. The same argument runs the other way: starting from an eigenvector of <code>A^T A</code> gives a matching eigenvector of <code>A A^T</code> with the same eigenvalue.</p>
+
+        <p>Collecting all <code>r</code> such pairs together (ordered by <code>σ_1 ≥ ... ≥ σ_r > 0</code>):</p>
+
+        <pre><code>A (v_1, ..., v_r) = (u_1, ..., u_r) diag(σ_1, ..., σ_r)</code></pre>
+
+        <h2>Why Is r the Rank of A?</h2>
+
+        <p>Two facts, put together:</p>
+
+        <ol>
+            <li><strong>rank(A^T A) = rank(A).</strong> They have the same null space: if <code>Ax = 0</code> then <code>A^T A x = 0</code> trivially; conversely if <code>A^T A x = 0</code> then <code>x^T A^T A x = 0</code>, i.e. <code>||Ax||^2 = 0</code>, so <code>Ax = 0</code>. Same null space means same row space, hence <code>rank(A^T A) = rank(A)</code>, and by the same logic <code>rank(A) = rank(A^T) = rank(A A^T)</code>.</li>
+            <li><strong>A^T A can be diagonalized</strong> as <code>U' Λ U'^T</code> where <code>U'</code> is an invertible (orthonormal) matrix. Multiplying by an invertible matrix never changes rank -- if <code>Mx = 0</code> for invertible <code>M</code> then <code>x = 0</code>, so <code>A^T A</code> and its diagonal form share the same null space. That means <code>rank(A^T A)</code> is exactly the number of non-zero, i.e. positive, eigenvalues.</li>
+        </ol>
+
+        <p>Combining both: the number of positive eigenvalues of <code>A^T A</code> -- which is exactly <code>r</code>, the number of <code>(u_i, v_i)</code> pairs we found above -- equals <code>rank(A)</code>.</p>
+
+        <h2>Assembling the Full Decomposition</h2>
+
+        <p>So far <code>A (v_1, ..., v_r) = (u_1, ..., u_r) diag(σ_1, ..., σ_r)</code>, using only the eigenvectors with positive eigenvalues. Notice <code>u_i ∈ Col(A)</code> (each <code>u_i</code> is a scaled <code>Av_i</code>). Symmetrically, from <code>(*)</code> we also get <code>A^T (u_1, ..., u_r) = diag(σ_1, ..., σ_r)(v_1, ..., v_r)</code>, so each <code>v_i ∈ Col(A^T)</code>.</p>
+
+        <p>Now let <code>u_{r+1}, ..., u_n</code> be an orthonormal basis of <code>null(A^T)</code>, and <code>v_{r+1}, ..., v_m</code> be an orthonormal basis of <code>null(A)</code>. Putting everything together:</p>
+
+        <pre><code>A (v_1, ..., v_r, v_{r+1}, ..., v_m) = (u_1, ..., u_r, u_{r+1}, ..., u_n) &Sigma;</code></pre>
+
+        <p>where <code>Σ ∈ R^(n×m)</code> is <code>diag(σ_1, ..., σ_r)</code> padded with zeros. Since <code>(v_1, ..., v_m)</code> and <code>(u_1, ..., u_n)</code> are both full orthonormal bases (orthogonal matrices), we can right-multiply both sides by <code>V^T</code> to get the familiar form:</p>
+
+        <pre><code>A = U &Sigma; V^T</code></pre>
+
+        <p>This is exactly the decomposition we started with -- what this derivation shows is that it always <strong>exists</strong>, for any matrix <code>A</code>, by building it directly out of the eigenvectors of <code>A A^T</code> and <code>A^T A</code>.</p>
+    </div>
+</article>
+
+</body>
+</html>

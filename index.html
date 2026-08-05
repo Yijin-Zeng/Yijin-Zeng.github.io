@@ -1083,7 +1083,7 @@
                         <div class="stat-label"><span data-zh="软件包">Packages</span><span class="stat-arrow">→</span></div>
                     </div>
                     <div class="stat-item" data-section="notes" title="Browse my notes">
-                        <div class="stat-number" data-target="42">0</div>
+                        <div class="stat-number" data-target="45">0</div>
                         <div class="stat-label"><span data-zh="笔记">Notes</span><span class="stat-arrow">→</span></div>
                     </div>
                     <div class="stat-item" data-section="projects" title="Check out my projects">
@@ -1494,6 +1494,24 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="subtopic">
+                        <div class="subtopic-heading" onclick="this.parentElement.classList.toggle('open')">
+                            <span class="subtopic-toggle">&#9654;</span><span data-zh="检索与推荐">Retrieval &amp; Recommendation</span>
+                        </div>
+                        <div class="subtopic-entries">
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Retrieval & Recommendation/dense-retrieval.html">Dense Retrieval</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Retrieval & Recommendation/Dense Retrieval .pdf">[pdf]</a>
+                                <span class="entry-desc">Bi-encoders, cross-encoders, and late-interaction (ColBERT)</span>
+                            </div>
+                            <div class="book-entry">
+                                <a href="blog/Machine Learning/Retrieval & Recommendation/sparse-retrieval.html">Sparse Retrieval</a>
+                                <a class="entry-pdf" href="notes/Machine Learning/Retrieval & Recommendation/Sparse Retrieval.pdf">[pdf]</a>
+                                <span class="entry-desc">TF-IDF, BM25, and sparse-but-semantic SPLADE</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1560,6 +1578,11 @@
                         <a href="blog/Math & Statistics/wasserstein-distance.html">Wasserstein Distance</a>
                         <a class="entry-pdf" href="notes/Math & Statistics/Wasserstein Distance.pdf">[pdf]</a>
                         <span class="entry-desc">Earth mover's view of comparing distributions</span>
+                    </div>
+                    <div class="book-entry">
+                        <a href="blog/Math & Statistics/svd.html">Singular Value Decomposition (SVD)</a>
+                        <a class="entry-pdf" href="notes/Math & Statistics/SVD.pdf">[pdf]</a>
+                        <span class="entry-desc">Deriving A = UΣV^T from the eigenvectors of AA^T</span>
                     </div>
                     <div class="book-entry">
                         <a href="blog/Math & Statistics/change-point-detection.html">A concise review for change point detection methods</a>
@@ -1664,42 +1687,45 @@
                 <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px;">2026</div>
                 <div class="timeline-bar">
                     <a href="blog/Machine Learning/Classic ML/shap-and-lime.html" class="timeline-dot" data-topic="machine-learning" style="left: 2.5%"><span class="timeline-tooltip">SHAP and LIME</span></a>
-                    <a href="blog/LLM/Architecture/ffn-and-moes.html" class="timeline-dot" data-topic="llm" style="left: 5.17%"><span class="timeline-tooltip">FFN and Mixture of Experts</span></a>
-                    <a href="blog/Computer Science/Leetcode Style Question/partition-equal-subset-sum.html" class="timeline-dot" data-topic="cs" style="left: 7.83%"><span class="timeline-tooltip">416. Partition Equal Subset Sum</span></a>
-                    <a href="blog/LLM/Architecture/massive-attention-and-attention-sink.html" class="timeline-dot" data-topic="llm" style="left: 10.5%"><span class="timeline-tooltip">Massive Attention and Attention Sink</span></a>
-                    <a href="blog/LLM/Training & Inference/rlhf.html" class="timeline-dot" data-topic="llm" style="left: 13.17%"><span class="timeline-tooltip">RLHF</span></a>
-                    <a href="blog/Math & Statistics/fourier-transform.html" class="timeline-dot" data-topic="math" style="left: 15.83%"><span class="timeline-tooltip">Fourier Transform</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/slerp-model-merging.html" class="timeline-dot" data-topic="machine-learning" style="left: 18.5%"><span class="timeline-tooltip">SLERP for Model Merging</span></a>
-                    <a href="blog/LLM/Architecture/flash-attention.html" class="timeline-dot" data-topic="llm" style="left: 21.17%"><span class="timeline-tooltip">FlashAttention</span></a>
-                    <a href="blog/Computer Science/Fundamentals/dijkstra-algorithm.html" class="timeline-dot" data-topic="cs" style="left: 23.83%"><span class="timeline-tooltip">Dijkstra's Algorithm</span></a>
-                    <a href="blog/LLM/Training & Inference/rag.html" class="timeline-dot" data-topic="llm" style="left: 26.5%"><span class="timeline-tooltip">RAG</span></a>
-                    <a href="blog/LLM/Training & Inference/direct-preference-optimization.html" class="timeline-dot" data-topic="llm" style="left: 29.17%"><span class="timeline-tooltip">Direct Preference Optimization</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/contrastive-learning.html" class="timeline-dot" data-topic="machine-learning" style="left: 31.83%"><span class="timeline-tooltip">Contrastive Learning</span></a>
-                    <a href="blog/LLM/Interpretability & Safety/polysemanticity-and-superposition.html" class="timeline-dot" data-topic="llm" style="left: 34.5%"><span class="timeline-tooltip">Polysemanticity and Superposition</span></a>
-                    <a href="blog/LLM/Interpretability & Safety/text-watermarking.html" class="timeline-dot" data-topic="llm" style="left: 37.17%"><span class="timeline-tooltip">Text Watermarking</span></a>
-                    <a href="blog/Computer Science/Fundamentals/bits-and-bytes.html" class="timeline-dot" data-topic="cs" style="left: 39.83%"><span class="timeline-tooltip">Bits and Bytes</span></a>
-                    <a href="blog/LLM/Training & Inference/speculative-decoding.html" class="timeline-dot" data-topic="llm" style="left: 42.5%"><span class="timeline-tooltip">Speculative Decoding</span></a>
-                    <a href="blog/Computer Science/Fundamentals/binary-indexed-tree.html" class="timeline-dot" data-topic="cs" style="left: 45.17%"><span class="timeline-tooltip">Binary Indexed Tree</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/shallow-and-deep-neural-networks.html" class="timeline-dot" data-topic="machine-learning" style="left: 47.83%"><span class="timeline-tooltip">Shallow and Deep Neural Networks</span></a>
-                    <a href="blog/Math & Statistics/constrained-optimization.html" class="timeline-dot" data-topic="math" style="left: 50.5%"><span class="timeline-tooltip">Constrained Optimization</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/backpropagation.html" class="timeline-dot" data-topic="machine-learning" style="left: 53.17%"><span class="timeline-tooltip">Backpropagation</span></a>
-                    <a href="blog/Computer Science/Fundamentals/disjoint-set-union.html" class="timeline-dot" data-topic="cs" style="left: 55.83%"><span class="timeline-tooltip">Disjoint Set Union</span></a>
-                    <a href="blog/Generative AI/gan.html" class="timeline-dot" data-topic="genai" style="left: 58.5%"><span class="timeline-tooltip">Generative Adversarial Networks</span></a>
-                    <a href="blog/Generative AI/conditional-and-style-gan.html" class="timeline-dot" data-topic="genai" style="left: 61.17%"><span class="timeline-tooltip">Conditional and Style GAN</span></a>
-                    <a href="blog/Generative AI/vae.html" class="timeline-dot" data-topic="genai" style="left: 63.83%"><span class="timeline-tooltip">Variational Autoencoders</span></a>
-                    <a href="blog/Generative AI/normalizing-flow.html" class="timeline-dot" data-topic="genai" style="left: 66.5%"><span class="timeline-tooltip">Normalizing Flow</span></a>
-                    <a href="blog/Generative AI/diffusion.html" class="timeline-dot" data-topic="genai" style="left: 69.17%"><span class="timeline-tooltip">Diffusion Models</span></a>
-                    <a href="blog/Machine Learning/Classic ML/gaussian-mixture-model-and-em-algorithm.html" class="timeline-dot" data-topic="machine-learning" style="left: 71.83%"><span class="timeline-tooltip">Gaussian Mixture Model and EM</span></a>
-                    <a href="blog/Math & Statistics/linear-programming.html" class="timeline-dot" data-topic="math" style="left: 74.5%"><span class="timeline-tooltip">Linear Programming</span></a>
-                    <a href="blog/Math & Statistics/wasserstein-distance.html" class="timeline-dot" data-topic="math" style="left: 77.17%"><span class="timeline-tooltip">Wasserstein Distance</span></a>
-                    <a href="blog/Computer Science/Fundamentals/huffman-encoding.html" class="timeline-dot" data-topic="cs" style="left: 79.83%"><span class="timeline-tooltip">Huffman Encoding</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/from-sgd-to-adam.html" class="timeline-dot" data-topic="machine-learning" style="left: 82.5%"><span class="timeline-tooltip">From SGD to Adam</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/adam-and-adamw.html" class="timeline-dot" data-topic="machine-learning" style="left: 85.17%"><span class="timeline-tooltip">Adam and AdamW</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/sgd-and-implicit-regularization.html" class="timeline-dot" data-topic="machine-learning" style="left: 87.83%"><span class="timeline-tooltip">SGD and Implicit Regularization</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/parameter-initialization.html" class="timeline-dot" data-topic="machine-learning" style="left: 90.5%"><span class="timeline-tooltip">Parameter Initialization</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/residual-connections.html" class="timeline-dot" data-topic="machine-learning" style="left: 93.17%"><span class="timeline-tooltip">Residual Connections</span></a>
-                    <a href="blog/Machine Learning/Deep Learning/bias-variance-trade-off-and-double-descent.html" class="timeline-dot" data-topic="machine-learning" style="left: 95.83%"><span class="timeline-tooltip">Bias-Variance Trade-off and Double Descent</span></a>
-                    <a href="blog/Machine Learning/Classic ML/e2e-machine-learning-project.html" class="timeline-dot" data-topic="machine-learning" style="left: 98.5%"><span class="timeline-tooltip">E2E Machine Learning Project Checklist</span></a>
+                    <a href="blog/LLM/Architecture/ffn-and-moes.html" class="timeline-dot" data-topic="llm" style="left: 4.96%"><span class="timeline-tooltip">FFN and Mixture of Experts</span></a>
+                    <a href="blog/Computer Science/Leetcode Style Question/partition-equal-subset-sum.html" class="timeline-dot" data-topic="cs" style="left: 7.42%"><span class="timeline-tooltip">416. Partition Equal Subset Sum</span></a>
+                    <a href="blog/LLM/Architecture/massive-attention-and-attention-sink.html" class="timeline-dot" data-topic="llm" style="left: 9.88%"><span class="timeline-tooltip">Massive Attention and Attention Sink</span></a>
+                    <a href="blog/LLM/Training & Inference/rlhf.html" class="timeline-dot" data-topic="llm" style="left: 12.35%"><span class="timeline-tooltip">RLHF</span></a>
+                    <a href="blog/Math & Statistics/fourier-transform.html" class="timeline-dot" data-topic="math" style="left: 14.81%"><span class="timeline-tooltip">Fourier Transform</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/slerp-model-merging.html" class="timeline-dot" data-topic="machine-learning" style="left: 17.27%"><span class="timeline-tooltip">SLERP for Model Merging</span></a>
+                    <a href="blog/LLM/Architecture/flash-attention.html" class="timeline-dot" data-topic="llm" style="left: 19.73%"><span class="timeline-tooltip">FlashAttention</span></a>
+                    <a href="blog/Computer Science/Fundamentals/dijkstra-algorithm.html" class="timeline-dot" data-topic="cs" style="left: 22.19%"><span class="timeline-tooltip">Dijkstra's Algorithm</span></a>
+                    <a href="blog/LLM/Training & Inference/rag.html" class="timeline-dot" data-topic="llm" style="left: 24.65%"><span class="timeline-tooltip">RAG</span></a>
+                    <a href="blog/LLM/Training & Inference/direct-preference-optimization.html" class="timeline-dot" data-topic="llm" style="left: 27.12%"><span class="timeline-tooltip">Direct Preference Optimization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/contrastive-learning.html" class="timeline-dot" data-topic="machine-learning" style="left: 29.58%"><span class="timeline-tooltip">Contrastive Learning</span></a>
+                    <a href="blog/LLM/Interpretability & Safety/polysemanticity-and-superposition.html" class="timeline-dot" data-topic="llm" style="left: 32.04%"><span class="timeline-tooltip">Polysemanticity and Superposition</span></a>
+                    <a href="blog/LLM/Interpretability & Safety/text-watermarking.html" class="timeline-dot" data-topic="llm" style="left: 34.5%"><span class="timeline-tooltip">Text Watermarking</span></a>
+                    <a href="blog/Computer Science/Fundamentals/bits-and-bytes.html" class="timeline-dot" data-topic="cs" style="left: 36.96%"><span class="timeline-tooltip">Bits and Bytes</span></a>
+                    <a href="blog/LLM/Training & Inference/speculative-decoding.html" class="timeline-dot" data-topic="llm" style="left: 39.42%"><span class="timeline-tooltip">Speculative Decoding</span></a>
+                    <a href="blog/Computer Science/Fundamentals/binary-indexed-tree.html" class="timeline-dot" data-topic="cs" style="left: 41.88%"><span class="timeline-tooltip">Binary Indexed Tree</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/shallow-and-deep-neural-networks.html" class="timeline-dot" data-topic="machine-learning" style="left: 44.35%"><span class="timeline-tooltip">Shallow and Deep Neural Networks</span></a>
+                    <a href="blog/Math & Statistics/constrained-optimization.html" class="timeline-dot" data-topic="math" style="left: 46.81%"><span class="timeline-tooltip">Constrained Optimization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/backpropagation.html" class="timeline-dot" data-topic="machine-learning" style="left: 49.27%"><span class="timeline-tooltip">Backpropagation</span></a>
+                    <a href="blog/Computer Science/Fundamentals/disjoint-set-union.html" class="timeline-dot" data-topic="cs" style="left: 51.73%"><span class="timeline-tooltip">Disjoint Set Union</span></a>
+                    <a href="blog/Generative AI/gan.html" class="timeline-dot" data-topic="genai" style="left: 54.19%"><span class="timeline-tooltip">Generative Adversarial Networks</span></a>
+                    <a href="blog/Generative AI/conditional-and-style-gan.html" class="timeline-dot" data-topic="genai" style="left: 56.65%"><span class="timeline-tooltip">Conditional and Style GAN</span></a>
+                    <a href="blog/Generative AI/vae.html" class="timeline-dot" data-topic="genai" style="left: 59.12%"><span class="timeline-tooltip">Variational Autoencoders</span></a>
+                    <a href="blog/Generative AI/normalizing-flow.html" class="timeline-dot" data-topic="genai" style="left: 61.58%"><span class="timeline-tooltip">Normalizing Flow</span></a>
+                    <a href="blog/Generative AI/diffusion.html" class="timeline-dot" data-topic="genai" style="left: 64.04%"><span class="timeline-tooltip">Diffusion Models</span></a>
+                    <a href="blog/Machine Learning/Classic ML/gaussian-mixture-model-and-em-algorithm.html" class="timeline-dot" data-topic="machine-learning" style="left: 66.5%"><span class="timeline-tooltip">Gaussian Mixture Model and EM</span></a>
+                    <a href="blog/Math & Statistics/linear-programming.html" class="timeline-dot" data-topic="math" style="left: 68.96%"><span class="timeline-tooltip">Linear Programming</span></a>
+                    <a href="blog/Math & Statistics/wasserstein-distance.html" class="timeline-dot" data-topic="math" style="left: 71.42%"><span class="timeline-tooltip">Wasserstein Distance</span></a>
+                    <a href="blog/Computer Science/Fundamentals/huffman-encoding.html" class="timeline-dot" data-topic="cs" style="left: 73.88%"><span class="timeline-tooltip">Huffman Encoding</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/from-sgd-to-adam.html" class="timeline-dot" data-topic="machine-learning" style="left: 76.35%"><span class="timeline-tooltip">From SGD to Adam</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/adam-and-adamw.html" class="timeline-dot" data-topic="machine-learning" style="left: 78.81%"><span class="timeline-tooltip">Adam and AdamW</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/sgd-and-implicit-regularization.html" class="timeline-dot" data-topic="machine-learning" style="left: 81.27%"><span class="timeline-tooltip">SGD and Implicit Regularization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/parameter-initialization.html" class="timeline-dot" data-topic="machine-learning" style="left: 83.73%"><span class="timeline-tooltip">Parameter Initialization</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/residual-connections.html" class="timeline-dot" data-topic="machine-learning" style="left: 86.19%"><span class="timeline-tooltip">Residual Connections</span></a>
+                    <a href="blog/Machine Learning/Deep Learning/bias-variance-trade-off-and-double-descent.html" class="timeline-dot" data-topic="machine-learning" style="left: 88.65%"><span class="timeline-tooltip">Bias-Variance Trade-off and Double Descent</span></a>
+                    <a href="blog/Machine Learning/Classic ML/e2e-machine-learning-project.html" class="timeline-dot" data-topic="machine-learning" style="left: 91.12%"><span class="timeline-tooltip">E2E Machine Learning Project Checklist</span></a>
+                    <a href="blog/Machine Learning/Retrieval & Recommendation/dense-retrieval.html" class="timeline-dot" data-topic="machine-learning" style="left: 93.58%"><span class="timeline-tooltip">Dense Retrieval</span></a>
+                    <a href="blog/Machine Learning/Retrieval & Recommendation/sparse-retrieval.html" class="timeline-dot" data-topic="machine-learning" style="left: 96.04%"><span class="timeline-tooltip">Sparse Retrieval</span></a>
+                    <a href="blog/Math & Statistics/svd.html" class="timeline-dot" data-topic="math" style="left: 98.5%"><span class="timeline-tooltip">Singular Value Decomposition</span></a>
                 </div>
                 <div class="timeline-labels">
                     <span>Jan</span>
@@ -1994,7 +2020,10 @@
         { title: "416. Partition Equal Subset Sum", url: "blog/Computer Science/Leetcode Style Question/partition-equal-subset-sum.html", desc: "Brute force → memoization → bottom-up DP", topic: "Computer Science", color: "#d97706" },
         { title: "142. Linked List Cycle II", url: "blog/Computer Science/Leetcode Style Question/linked-list-cycle-ii.html", desc: "Floyd's algorithm: why reset-to-head works", topic: "Computer Science", color: "#d97706" },
         { title: "Change Point Detection Methods", url: "blog/Math & Statistics/change-point-detection.html", desc: "Finding structural shifts in time series data", topic: "Math & Statistics", color: "#eab308" },
-        { title: "E2E Machine Learning Project Checklist", url: "blog/Machine Learning/Classic ML/e2e-machine-learning-project.html", desc: "A 7-step checklist from framing the problem to production", topic: "Machine Learning", color: "#2563eb" }
+        { title: "E2E Machine Learning Project Checklist", url: "blog/Machine Learning/Classic ML/e2e-machine-learning-project.html", desc: "A 7-step checklist from framing the problem to production", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Dense Retrieval", url: "blog/Machine Learning/Retrieval & Recommendation/dense-retrieval.html", desc: "Bi-encoders, cross-encoders, and late-interaction (ColBERT)", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Sparse Retrieval", url: "blog/Machine Learning/Retrieval & Recommendation/sparse-retrieval.html", desc: "TF-IDF, BM25, and sparse-but-semantic SPLADE", topic: "Machine Learning", color: "#2563eb" },
+        { title: "Singular Value Decomposition (SVD)", url: "blog/Math & Statistics/svd.html", desc: "Deriving A = UΣV^T from the eigenvectors of AA^T", topic: "Math & Statistics", color: "#eab308" }
     ];
 
     function shuffleRandomCards() {

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sparse Retrieval - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Sparse Retrieval</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Retrieval & Recommendation/Sparse Retrieval.pdf">PDF</a>.</p>
+
+        <p>Sparse retrieval represents data using sparse vectors. It has two branches: exact keyword matching (e.g. TF-IDF, BM25), and sparse embedding (e.g. SPLADE).</p>
+
+        <h2>TF-IDF (Term-Frequency Inverse-Document-Frequency)</h2>
+
+        <p><strong>TF</strong> is the count of a word w<sub>i</sub> in a document D<sub>j</sub>, written f(w<sub>i</sub>, D<sub>j</sub>). The intuition: if a word appears frequently in a document, this document is more likely to be about this word.</p>
+
+        <p><strong>IDF</strong> is defined as:</p>
+
+        <pre><code>IDF(w<sub>i</sub>) = log(N / DF)</code></pre>
+
+        <p>where N is the total number of documents, and DF is the number of documents containing this word. Note that IDF is a function of w<sub>i</sub> only. The intuition: if a word appears in all (or most) documents, it is probably not very important, e.g. "the", "a", "an".</p>
+
+        <p>How TF-IDF works:</p>
+
+        <ol>
+            <li>Let w<sub>1</sub>, w<sub>2</sub>, ..., w<sub>q</sub> be the words in the query.</li>
+            <li>Compute f(w<sub>i</sub>, D<sub>j</sub>) for all i = 1, ..., q, j = 1, ..., N.</li>
+            <li>Compute IDF(w<sub>i</sub>) for all i = 1, ..., q.</li>
+            <li>For a given document D<sub>j</sub>, the score of TF-IDF for this query is:</li>
+        </ol>
+
+        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1</sub><sup>q</sup> f(w<sub>i</sub>, D<sub>j</sub>) · IDF(w<sub>i</sub>)</code></pre>
+
+        <p>A couple of things to note. First, in TF-IDF the term frequency in the query itself is not used (it is always set to 1). Second, the score of TF-IDF scales linearly with the word frequency in the document — if word i appears 10 times more, the score for this word is 10 times larger. This biases the retrieval results towards long documents. Also, if a word already appears many times, the importance of this word should somehow be saturated rather than growing infinitely.</p>
+
+        <h2>BM25 (Best Matching 25)</h2>
+
+        <p>BM25 improves on TF-IDF. For a given document D<sub>j</sub>, the BM25 score for the query (with b normally between 1-2) is:</p>
+
+        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1</sub><sup>q</sup> IDF(w<sub>i</sub>) · [ f(w<sub>i</sub>,D<sub>j</sub>)(k<sub>1</sub>+1) ] / [ f(w<sub>i</sub>,D<sub>j</sub>) + k<sub>1</sub>(1 - b + b · d<sub>j</sub>/avg<sub>k</sub>(d<sub>k</sub>)) ]</code></pre>
+
+        <p>where d<sub>j</sub> is the document length of D<sub>j</sub>, and avg<sub>k</sub>(d<sub>k</sub>) is the average document length. This can be rewritten as:</p>
+
+        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1</sub><sup>q</sup> IDF(w<sub>i</sub>) · (k<sub>1</sub>+1) / [ 1 + k<sub>1</sub>(1 - b + b · d<sub>j</sub>/avg<sub>k</sub>(d<sub>k</sub>)) / f(w<sub>i</sub>,D<sub>j</sub>) ]</code></pre>
+
+        <p>The (1 - b + b · d<sub>j</sub>/avg) term penalizes D<sub>j</sub> if d<sub>j</sub> is large. This "saturates" f(w<sub>i</sub>,D<sub>j</sub>) — the whole fraction approaches a constant as f grows, instead of scaling linearly like TF-IDF did.</p>
+
+        <h2>SPLADE (Sparse Lexical AND Expansion)</h2>
+
+        <p>SPLADE is a combination of sparse and dense retrieval. Why? Because the vector it produces is sparse but encodes semantic meaning.</p>
+
+        <p>How SPLADE encodes a query (or document): take an example query, "Can you recommend me a cheap laptop? I will mainly use for video games." This is passed through a fine-tuned BERT (or other encoder) to get a contextual embedding for each word (paying attention to the whole sequence, including itself). This embedding is then used to get logits for all words — e.g. if we mask the word "cheap" we may get logits: cheap 7.3, affordable 5.4, reasonable 2.1, ... (most words are 0.0).</p>
+
+        <p>If L<sub>ij</sub> is the logit for word j at query position i, the final weight w<sub>j</sub> is:</p>
+
+        <pre><code>w<sub>j</sub> = max<sub>i</sub> [ log(1 + ReLU(L<sub>ij</sub>)) ]</code></pre>
+
+        <p>taking the max over positions i in the query. This filters out "extreme" logits (those that are small), so the embedding vector w for the query ends up very sparse. We do the same for each document to get a sparse embedding for each document as well. Retrieval is then just the dot product between the embeddings of the query and the documents — this is quick because the embeddings are sparse.</p>
+
+        <h3>How Is BERT Fine-Tuned for SPLADE?</h3>
+
+        <pre><code>L = L<sub>contrastive</sub> + λ<sub>q</sub> · L<sub>flops</sub>(q) + λ<sub>d</sub> · L<sub>flops</sub>(d)</code></pre>
+
+        <p>The FLOPS term encourages sparsity for the query/document embedding:</p>
+
+        <pre><code>L<sub>flops</sub> = Σ<sub>j</sub> (w̄<sub>j</sub>)²,   where w̄<sub>j</sub> = (B/|batch|) Σ |w<sub>j</sub>|</code></pre>
+
+        <p>This is spoken of as "sparsity regularization" for the embedding. Because it is computed across the batch, if a word is non-zero for one sequence in the batch, the penalty on that word's loss ends up penalizing the outcome for many sequences in the batch.</p>
+
+        <p>For the contrastive part, with batch size B and pairs q<sub>1</sub>↔d<sub>1</sub>, q<sub>2</sub>↔d<sub>2</sub>, ..., q<sub>B</sub>↔d<sub>B</sub>:</p>
+
+        <pre><code>L<sub>contrastive</sub> = -Σ<sub>i</sub> log( e<sup>sim(q<sub>i</sub>,d<sub>i</sub>)</sup> / Σ<sub>j</sub> e<sup>sim(q<sub>i</sub>,d<sub>j</sub>)</sup> )</code></pre>
+
+        <p>where sim(·,·) is the dot product (or cosine similarity) of the embeddings of q<sub>i</sub> and d<sub>j</sub>. Unlike CLIP, this loss is <strong>not symmetric</strong> — the sum in the denominator scales across documents only, because we care only about, given one query, which document matches the most. In CLIP, we care about both directions.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>Sparse retrieval represents data with sparse vectors, either through exact keyword matching (TF-IDF, BM25) or sparse embedding (SPLADE).</li>
+            <li>TF-IDF scores a document by summing f(w<sub>i</sub>,D<sub>j</sub>) · IDF(w<sub>i</sub>) over query words, but it scales linearly with term frequency and is biased towards long documents.</li>
+            <li>BM25 fixes this by adding a saturating term (via k<sub>1</sub>) and document-length normalization (via b).</li>
+            <li>SPLADE gets a sparse-but-semantic embedding by turning masked-LM-style contextual logits into a sparse weight vector via max-over-query-positions of log(1+ReLU(logit)), then retrieves via a fast sparse dot product.</li>
+            <li>SPLADE is trained with a FLOPS sparsity regularizer on both query and document embeddings, plus a contrastive loss that — unlike CLIP's — is asymmetric, since retrieval only cares about which document best matches a given query.</li>
+        </ul>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Robertson, S. &amp; Zaragoza, H. (2009). The Probabilistic Relevance Framework: BM25 and Beyond. <em>Foundations and Trends in Information Retrieval</em>.</li>
+            <li>Formal, T., Piwowarski, B. &amp; Clinchant, S. (2021). SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking. <em>SIGIR</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

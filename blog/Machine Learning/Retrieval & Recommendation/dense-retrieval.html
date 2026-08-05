@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dense Retrieval - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Dense Retrieval</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Retrieval & Recommendation/Dense Retrieval .pdf">PDF</a>.</p>
+
+        <p>Dense retrieval uses dense vectors for retrieval, i.e. semantic retrieval. There are three main approaches: <strong>bi-encoders</strong> (fast but relatively low retrieval quality), <strong>cross-encoders</strong> (slow but very high retrieval quality), and <strong>late-interaction</strong> models (in the middle for both speed and quality).</p>
+
+        <h2>Bi-Encoders</h2>
+
+        <p>In a bi-encoder, the query and each document are encoded completely separately:</p>
+
+        <pre><code>Query      --> encoder --> embedding
+Document   --> encoder --> embedding</code></pre>
+
+        <p>Normally the same encoder (the same model, tied weights) is used for both the query and the documents. During retrieval, we can use Approximate Nearest Neighbors (ANN) methods such as HNSW to find the top-k documents efficiently.</p>
+
+        <h3>Example: Sentence-BERT</h3>
+
+        <p>Sentence-BERT fine-tunes BERT for embedding sentences. To use it for comparing the similarity of two paragraphs:</p>
+
+        <pre><code>Sentence A --> BERT --> mean pooling --> vector u
+Sentence B --> BERT (same model, tied weights) --> mean pooling --> vector v
+u, v --> cosine similarity</code></pre>
+
+        <p>How is it fine-tuned? u and v are mean-pooled, order-independent vectors. For the Natural Language Inference (NLI) task, the order of the two sentences is crucial, but cosine similarity of u and v alone loses that order information. So instead, Sentence-BERT builds a longer feature vector containing u, v, and |u-v|, and uses this to classify whether B is:</p>
+
+        <ol>
+            <li><strong>Entailment</strong> of A: A =&gt; B, if A is true, B is true.</li>
+            <li><strong>Contradiction</strong> of A: A ≠&gt; B, if A is true, B is false.</li>
+            <li><strong>Neutral</strong>: A -/-&gt; B or A -/-&gt; ¬B.</li>
+        </ol>
+
+        <p>Why is |u-v| in there? If A and B are very similar, BERT produces similar u and v, so the model learns that when |u-v| is small, the pair is likely entailment. In other words, BERT and the final classification network learn to exploit the fact that a small |u-v| signals entailment, and so they learn to push u ≈ v when entailment is true. (The underlying assumption is that the neural net will choose the easy thing to learn.)</p>
+
+        <p><strong>Pros of bi-encoder:</strong> fast and efficient — all documents are embedded and stored as vectors ahead of time, ready for retrieval.<br>
+        <strong>Cons of bi-encoder:</strong> the embedding quality is relatively low.</p>
+
+        <h2>Cross-Encoders</h2>
+
+        <p>Cross-encoders are also called early interaction models. The input is:</p>
+
+        <pre><code>&lt;CLS&gt; + Query + &lt;SEP&gt; + Document + &lt;/SEP&gt;
+--> fine-tuned BERT
+--> relevance score, using the contextual embedding of &lt;CLS&gt;
+
+Score = w<sup>T</sup> · &lt;CLS&gt;</code></pre>
+
+        <p>How is BERT fine-tuned for a cross-encoder? Two common ways:</p>
+
+        <ol>
+            <li>BERT + a sigmoid adapter at the end, trained as a classification task (1 if the query matches the document, 0 if not).</li>
+            <li>BERT + a sigmoid adapter at the end, trained with a pairwise loss: <code>-log(sigmoid(sig(q,d+) - sig(q,d-)))</code>, where d+ is the matched document and d- is the unmatched document.</li>
+        </ol>
+
+        <p>Why is a cross-encoder much more powerful than a bi-encoder? In a bi-encoder, the query and the document are embedded completely independently. At best, a document's embedding only captures what the document is generally about — the best it can do is "be average" over all the queries it might be relevant to, because it never sees the query while being embedded, so it has to work reasonably well for all related queries. A cross-encoder, by contrast, learns the relevance between the document and the specific query.</p>
+
+        <p><strong>Cons of cross-encoder:</strong> it is very slow — we need to embed the query together with every document, for every single retrieval.</p>
+
+        <h2>Late-Interaction (ColBERT)</h2>
+
+        <p>ColBERT stands for contextualized late interaction over BERT. In a bi-encoder, we use one single embedding vector for the whole query and the whole document. In ColBERT, the embedding for each token is kept instead.</p>
+
+        <p>So a document i with 500 words becomes an embedding matrix E<sub>i</sub> ∈ ℝ<sup>500×d</sup> (e.g. d = 1024). A query j with 10 words becomes E<sub>qj</sub> ∈ ℝ<sup>10×d</sup>. The relevance score is:</p>
+
+        <pre><code>S(q_j, d_i) = Σ_{tokens in query} max_{tokens in document} ( E_qj · E_di<sup>T</sup>, dim=-1 )</code></pre>
+
+        <p>That is: for each token in the query, compute its similarity against every token in the document and take the maximum (the most similar document token); then sum these maximum similarities across all tokens in the query.</p>
+
+        <p><strong>Pros:</strong> this is better than a bi-encoder because it captures token-level detail instead of collapsing everything into one sentence-level vector.<br>
+        <strong>Cons:</strong> it takes a huge amount of storage room, since every token of every document needs its own embedding.</p>
+
+        <h2>Summary</h2>
+
+        <ul>
+            <li>Dense retrieval uses dense vectors for semantic retrieval, with three main approaches trading off speed against quality.</li>
+            <li><strong>Bi-encoders</strong> embed the query and documents independently, enabling fast ANN search (e.g. HNSW), but embeddings can only be "average" over related queries, so quality is lower.</li>
+            <li><strong>Sentence-BERT</strong> fine-tunes bi-encoders using NLI, building a feature vector of u, v, and |u-v| so the model can learn that small |u-v| signals entailment.</li>
+            <li><strong>Cross-encoders</strong> jointly encode the query and document together, learning relevance specific to that pair, which makes them much more powerful — but very slow, since every document must be re-encoded with the query at retrieval time.</li>
+            <li><strong>Late-interaction models (ColBERT)</strong> keep per-token embeddings and score with a sum-of-max operation, landing in the middle: better quality than bi-encoders via token-level detail, but with much larger storage cost.</li>
+        </ul>
+
+        <h2>References</h2>
+
+        <ul>
+            <li>Reimers, N. &amp; Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. <em>EMNLP</em>.</li>
+            <li>Khattab, O. &amp; Zaharia, M. (2020). ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT. <em>SIGIR</em>.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>
