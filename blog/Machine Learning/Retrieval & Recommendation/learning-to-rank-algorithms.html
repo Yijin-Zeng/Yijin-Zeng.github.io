@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning to Rank Algorithms - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Learning to Rank Algorithms</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Retrieval & Recommendation/Learning To Rank Algorithms.pdf">PDF</a>.</p>
+
+        <p>Learning to rank is to learn how to optimally order a list of items based on their relevance to a specific context (e.g. a search query or a user profile). There are mainly three types of losses: pointwise loss, pairwise loss, and listwise loss. Here we cover each of them and consider how to evaluate the results.</p>
+
+        <h2>Pointwise Loss</h2>
+
+        <p>The data looks like: for query <code>q_i</code>, documents <code>D_i,1, ..., D_i,K_i</code> with scores <code>S_i,1, ..., S_i,K_i</code> (the rank of them, <code>K_i</code> to 1, top to bottom).</p>
+
+        <p>Depending on whether the label is a real score or a binary relevance judgment, the loss is either squared error or a classification loss:</p>
+
+        <pre><code>L_pointwise = Σ_{i=1}^n Σ_{j=1}^{K_i} ( f_θ(q_i, D_i,j) - S_i,j )²
+
+L_pointwise = -Σ_{i=1}^n Σ_{j=1}^{K_i} 1(S_i,j = 1) log( sigmoid( f_θ(q_i, D_i,j) ) )</code></pre>
+
+        <p><strong>Pros:</strong></p>
+        <ol>
+            <li>Very easy to train.</li>
+            <li>Absolute scores can be useful, e.g. the probability of a user click, conversion probability.</li>
+        </ol>
+
+        <p><strong>Cons:</strong></p>
+        <ol>
+            <li><strong>Position agnostic.</strong> If the real rank is 100 (top) and the prediction is 80, versus the real rank is 1 (bottom) and the prediction is 21, both have the same loss. However, getting the top ranking correct matters more.</li>
+            <li><strong>Query imbalance problem.</strong> If a query is general, it could have more candidate documents, so <code>K_i</code> is large and it dominates the loss. On the other hand, the order for a general query is less important. We could try to mitigate this, e.g. scale the score by the number of documents.</li>
+            <li><strong>Ignoring comparison.</strong> Minimizing the total squared error for each document independently does not guarantee the relative order between two documents comes out correct -- it's possible to end up with a set of predictions with a smaller total loss that gets a pair of documents' relative order wrong, while a set with a larger total loss gets that pair's order right. The target we actually care about is the comparison, not the total loss.</li>
+        </ol>
+
+        <h2>Pairwise Loss</h2>
+
+        <p>The data now looks like: for query <code>q_i</code>, documents <code>D_i,1</code> and <code>D_i,2</code> with <code>S_i,1 &gt; S_i,2</code> -- no need to know the exact scores.</p>
+
+        <pre><code>L_pairwise = Σ_{S_i,1 &gt; S_i,2} log( sigmoid( f_θ(q_i, D_i,1) - f_θ(q_i, D_i,2) ) )</code></pre>
+
+        <p>Training: one batch <code>(Q_i, D_i,1), ..., (Q_i, D_i,K)</code> (<code>K</code> could be 2, or larger) goes through the model <code>f_θ</code> to get scores <code>ŝ = ( f_θ(q_i,D_i,1), ..., f_θ(q_i,D_i,K) )</code>, then we compute the loss for all <code>K(K-1)</code> pairs (broadcasting <code>ŝ</code> against itself). To stabilize the gradient, one batch will normally include several queries and their corresponding documents.</p>
+
+        <p><strong>Pros:</strong></p>
+        <ol>
+            <li>The model focuses on the actual goal: we care about the comparison between each document given the query.</li>
+            <li>Practically, it is easier to get pairwise labels (it's easier to compare two things than to rank a whole list of things for a human).</li>
+        </ol>
+
+        <p><strong>Cons:</strong></p>
+        <ol>
+            <li>If <code>K</code> is large, the loss function takes longer to compute.</li>
+            <li>It is still position blind.</li>
+            <li>The query imbalance problem persists (can scale by <code>K(K-1)/2</code>).</li>
+        </ol>
+
+        <h2>Listwise Loss</h2>
+
+        <p>The data is the same as pointwise: query <code>q_i</code>, documents <code>D_i,1, ..., D_i,K_i</code>, scores <code>S_i,1, ..., S_i,K_i</code>. Compute the probability of each document being ranked at the top.</p>
+
+        <p>Predicted probability:</p>
+
+        <pre><code>p̂_θ(D_i,j ranked at the top) = exp( f_θ(q_i, D_i,j) ) / Σ_{j'=1}^{K_i} exp( f_θ(q_i, D_i,j') )</code></pre>
+
+        <p>The real probability of each document ranked at the top:</p>
+
+        <pre><code>p(D_i,j ranked at the top) = exp(S_i,j) / Σ_{j'=1}^{K_i} exp(S_i,j')</code></pre>
+
+        <p>Then the loss is the cross-entropy between the true and predicted distributions:</p>
+
+        <pre><code>L_listwise = -Σ_{i} Σ_{j} p(D_i,j) log( p̂_θ(D_i,j) )</code></pre>
+
+        <p>Training: a batch <code>(Q_i, D_i,1), ..., (Q_i, D_i,K)</code> goes through the model <code>f_θ</code> to get <code>ŝ</code>, then we compute the cross-entropy loss.</p>
+
+        <p><strong>Pros:</strong> it considers the rank of all documents in the query simultaneously, and solves the position blindness problem of the pointwise and pairwise approaches.</p>
+
+        <p><strong>Cons:</strong> it will focus heavily on the top 1. If there are 100 documents, the top document takes weight <code>exp(100) / Σ_{i=1}^{100} exp(i)</code> and the loss has bad quality for top 2, top 3, etc.</p>
+
+        <h2>References</h2>
+        <ul>
+            <li>Burges, C. et al. (2005). Learning to Rank using Gradient Descent. <em>ICML</em>. (RankNet, pairwise loss)</li>
+            <li>Cao, Z. et al. (2007). Learning to Rank: From Pairwise Approach to Listwise Approach. <em>ICML</em>. (ListNet, listwise loss)</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

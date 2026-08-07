@@ -135,6 +135,10 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+
+        .post-content strong {
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
@@ -152,186 +156,169 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/Gaussian Mixture Model and EM Algorithm.pdf">PDF</a>.</p>
 
-        <p>If you have ever run K-means on real data, you have probably seen it fail in a very particular way: an elongated, elliptical cluster gets sliced in half, or a small tight cluster gets swallowed by a big diffuse one nearby. Why? Because <strong>K-means draws circles (or balls) around its centers, and it uses the same distance measure (normally L2) for every cluster</strong>. It has no notion of a cluster's shape or spread.</p>
+        <p>Gaussian mixture model (GMM) is a type of clustering model that assumes the instances are generated from a mixture of Gaussian distributions.</p>
 
-        <p>Gaussian Mixture Model (GMM) fixes exactly this. It is a clustering model that assumes the instances are generated from a <strong>mixture of Gaussian distributions</strong> — each cluster gets its own mean <code>μ_j</code> and its own covariance <code>Σ_j</code>, so elliptical clusters and clusters with different variances are handled naturally. The price we pay is that fitting it is genuinely harder, and that is where the EM algorithm comes in.</p>
+        <h2>Compare with K-means</h2>
 
-        <h2>The Assumptions Behind GMM</h2>
+        <p>K-means cannot cluster elliptical clusters well, because it creates circles or balls around its centers. It also cannot deal with clusters with different variance well, because it uses the same distance measure (normally L2) for different clusters. GMM handles both, since each cluster gets its own mean <code>μ_j</code> and its own covariance <code>Σ_j</code>.</p>
 
-        <p>Start from the likelihood of the observations <code>x_1, ..., x_n</code>. Three assumptions get us to the mixture form:</p>
+        <h2>Assumptions of Gaussian Mixture Model</h2>
 
-        <pre><code>pr(x_1, ..., x_n) = pr(x_1) ⋯ pr(x_n)                       (independence)
+        <p>Start from the likelihood of the observations:</p>
 
-                  = ∏_{i=1}^{n} Σ_j p(x_i ∈ cluster j) · p(x_i | x_i ∈ cluster j)
-                                                              (law of total probability)
+        <pre><code>pr(x_1, ..., x_n) = pr(x_1) ⋯ pr(x_n)                           (independence assumption)
 
-                  = ∏_{i=1}^{n} Σ_{j=1}^{K} π_j · N(x_i ; μ_j, Σ_j)
-                                                              (Gaussian assumption)</code></pre>
+                  = ∏_{i=1}^{n} p(x_i ∈ cluster j) p(x_i | x_i ∈ cluster j)
+                                                                  (law of total probability)
 
-        <p>There is a nice generative story behind this. To generate one observation: first a <strong>latent variable</strong> <code>z</code> picks a cluster, i.e. <code>z = j</code> with probability <code>π_j</code>; then, within that cluster, the observation is drawn from the corresponding Gaussian <code>N(μ_j, Σ_j)</code>. So <code>z</code> is a discrete variable telling us which component produced the point — we just never get to observe it.</p>
+                  = ∏_{i=1}^{n} Σ_{j=1}^{K} λ_j N(x_i ; μ_j, Σ_j)
+                                                                  (Gaussian assumption)</code></pre>
 
-        <h2>Why We Cannot Just Maximize the Likelihood</h2>
+        <p><strong>Generation process:</strong> the latent variable <code>z</code> is a discrete variable equal to <code>z_i</code> (where <code>z_i = 1, ..., K</code>) with probability <code>λ_i</code>. Given this latent variable, the likelihood of the data <code>x</code> is normally distributed with mean <code>= μ_i</code>, variance <code>= σ_i²</code>. In other words: <code>z</code> goes to each cluster with probability <code>λ_i</code>, and within each cluster the data is generated from the corresponding Gaussian distribution <code>N(μ_i, σ_i²)</code>, giving the observation <code>x</code>.</p>
 
-        <p>The obvious move is to minimize the negative log-likelihood over <code>π, μ, Σ</code>:</p>
+        <h2>It Is Hard to Maximize the Likelihood Function Directly</h2>
 
-        <pre><code>min  - Σ_{i=1}^{n} log( Σ_{j=1}^{K} π_j · N(x_i ; μ_j, Σ_j) )
+        <pre><code>pr(x_1, ..., x_n) = ∏_{i=1}^n Σ_{j=1}^K λ_j N(x_i ; μ_j, Σ_j)</code></pre>
 
-s.t. Σ_j π_j = 1,   Σ_j symmetric and positive semi-definite</code></pre>
+        <p>Minimize negative log-likelihood:</p>
 
-        <p>And here everything goes wrong at once:</p>
+        <pre><code>min_{λ,μ,Σ}  ( -l(λ, μ, Σ; x_1, ..., x_n) ) = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j N(x_i ; μ_j, Σ_j) )
 
-        <ul>
-            <li>Because of the <strong>sum inside the log</strong>, the log cannot cancel out the exp in the Gaussian density. There is no analytical form if we take gradients w.r.t. <code>π, μ, Σ</code> and set them to zero.</li>
-            <li>The parameters need to satisfy constraints (<code>π</code> sums to one, <code>Σ_j</code> must stay positive semi-definite), so directly running gradient descent is not ideal either.</li>
-            <li>The problem is also <strong>ill-defined</strong>: if we let <code>μ_j → x_i</code> and <code>Σ_j → 0</code>, then <code>pr(x_1, ..., x_n) → ∞</code>. A component can "cheat" by collapsing onto a single data point and claiming infinite likelihood. It is quite surprising to me when I first realized the global maximum of this likelihood is literally useless.</li>
-        </ul>
+    = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j (1 / ((2π)^{d/2} |Σ_j|^{1/2})) exp{ -½ (x_i-μ_j)ᵀ Σ_j⁻¹ (x_i-μ_j) } )
 
-        <h2>The EM Algorithm</h2>
+s.t.  Σ_j λ_j = 1,   Σ_j symmetric and positive semi-definite</code></pre>
 
-        <p>So <code>argmax_θ L(θ; x)</code> is hard. The key observation: if we introduce some latent variables <code>z</code>, then <code>argmax_θ L(θ; x, z)</code> — the <strong>complete-data</strong> log-likelihood — is easy. If someone told us which cluster each point belongs to, fitting the Gaussians would be trivial.</p>
+        <p>Because of this sum, we cannot use log to cancel out exp. There is no analytical form if we take the gradient w.r.t. <code>λ, μ, Σ</code> and set the gradients to 0. We also need to satisfy the constraints, so directly using gradient descent is not ideal.</p>
 
-        <p>EM exploits this by iterating:</p>
+        <p>The problem is also ill-defined. If <code>μ_j → x_i</code>, <code>Σ_j → 0</code>, then <code>pr(x_1, ..., x_n) → ∞</code>.</p>
 
-        <pre><code>θ^(t+1) = argmax_θ  E_{z ~ p(·|x, θ^(t))} [ L(θ; x, z) ]
-          ────────  ─────────────────────────────────────
-           M-step                  E-step</code></pre>
+        <p>Below we consider how to use the E-M algorithm to solve these issues.</p>
 
-        <p>In words: guess the latent variables using the current parameters (E-step), then maximize the complete-data log-likelihood as if that guess were the truth (M-step), and repeat.</p>
+        <h2>EM Algorithm</h2>
 
-        <h3>Why Does EM Actually Work?</h3>
+        <p><strong>Problem:</strong> <code>argmax_θ l(θ; x)</code> — this is hard.</p>
 
-        <p>This is my favorite part of the note. Notice that <code>p(x, z; θ) = p(x; θ) · p(z|x; θ)</code>, which in log form gives</p>
+        <p><strong>Observation:</strong> if we introduce some latent variables <code>z</code>, then <code>argmax_θ l(θ; x, z)</code> — this is easy.</p>
 
-        <pre><code>L(θ; x) = L(θ; x, z) - L(θ; z|x)
-  target    the one we can maximize easily</code></pre>
+        <p><strong>EM algorithm:</strong></p>
 
-        <p>Take expectation on both sides w.r.t. <code>z ~ p(·|x, θ^(t))</code> — the left side does not depend on <code>z</code>, so it is unchanged. Do the same at <code>θ = θ^(t)</code> and subtract:</p>
+        <pre><code>θ^(t+1) = argmax_θ  E_{z~p(·|x, θ^(t))} [ l(θ; x, z) ]
+          ────────  ────────────────────────────────────
+           M-step                E-step</code></pre>
 
-        <pre><code>L(θ; x) - L(θ^(t); x) = E[L(θ; x, z)] - E[L(θ^(t); x, z)]
-                        + KL( p(z|x, θ^(t)) ‖ p(z|x, θ) )
-                          ────────────────────────────────
-                                       ≥ 0</code></pre>
+        <h3>Why Does EM Algorithm Work?</h3>
 
-        <p>The KL divergence is always non-negative. And since <code>θ^(t+1)</code> is chosen to maximize <code>E[L(θ; x, z)]</code>, the first difference is non-negative at <code>θ = θ^(t+1)</code> too. So:</p>
+        <p>Notice that <code>p(x, z, θ) = p(x; θ) p(z|x; θ)</code>:</p>
 
-        <pre><code>L(θ^(t+1); x) ≥ L(θ^(t); x)</code></pre>
+        <pre><code>=> l(θ; x, z) = l(θ; x) + l(θ; z|x)
 
-        <p>i.e. <strong>EM leads to a non-decreasing likelihood at each step</strong>. Two caveats worth being honest about: non-decreasing does not mean it converges to the global maximum (it can happily sit at a local optimum, so initialization matters), and the expected complete log-likelihood is exactly the ELBO-style lower bound that shows up later in variational inference — same trick, bigger stage.</p>
+=> l(θ; x) = l(θ; x, z) - l(θ; z|x)
+              ────────    ───────────────────────
+              target      the one we can maximize easily</code></pre>
 
-        <h2>EM for GMM</h2>
+        <p>Take expectation on both sides w.r.t. <code>z ~ p(·|x, θ^(t))</code>:</p>
 
-        <p>Now apply this machinery to the mixture model. Introduce latent variables <code>z_ij = 1</code> if <code>x_i ∈ C_j</code>, and 0 otherwise. To run EM we need two things: the joint distribution <code>p(x, z; θ)</code> and the conditional distribution <code>p(z|x; θ^(t))</code>.</p>
+        <pre><code>l(θ; x) = E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ; z|x) ]
 
-        <h3>E-Step: Compute the Responsibilities</h3>
+=> l(θ^(t); x) = E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ^(t); z|x) ]
 
-        <p>The joint distribution has a clean product form (each point picks exactly one component):</p>
+=> l(θ; x) - l(θ^(t); x) = E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ]
 
-        <pre><code>p(x, z; π, μ, Σ) = ∏_{i=1}^{n} ∏_{j=1}^{K} ( π_j · N(x_i ; μ_j, Σ_j) )^{z_ij}
+                          - E_{z~p(·|x,θ^(t))}[ l(θ; z|x) ] + E_{z~p(·|x,θ^(t))}[ l(θ^(t); z|x) ]
 
-=> L(π, μ, Σ; x, z) = Σ_i Σ_j z_ij · ( log π_j + log N(x_i ; μ_j, Σ_j) )</code></pre>
+                          = E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ]
 
-        <p>For the conditional distribution, Bayes' theorem gives us the <strong>responsibility</strong> — the posterior probability that point <code>i</code> came from component <code>j</code>:</p>
+                          + KL( p(z|x, θ^(t)), p(z|x, θ) )
+                            ─────────────────────────────
+                                        ≥ 0</code></pre>
 
-        <pre><code>p_ij^(t) = p(z_ij = 1 | x_i ; θ^(t))
+        <p>Since <code>θ^(t+1) = argmax_θ E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ]</code>, we have</p>
 
-         =        π_j^(t) · N(x_i ; μ_j^(t), Σ_j^(t))
-           ─────────────────────────────────────────────
-            Σ_{j'=1}^{K} π_j'^(t) · N(x_i ; μ_j'^(t), Σ_j'^(t))</code></pre>
+        <pre><code>E_{z~p(·|x,θ^(t))}[ l(θ^(t+1); x, z) ]  ≥  E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ]</code></pre>
 
-        <p>This is just "prior times likelihood, normalized". Plugging it in, the expected complete-data log-likelihood becomes</p>
+        <p>So <code>l(θ^(t+1); x) ≥ l(θ^(t); x)</code>, i.e. the EM algorithm leads to a non-decreasing likelihood function at each step.</p>
 
-        <pre><code>E_{z ~ p(·|x, θ^(t))}[ L(π, μ, Σ; x, z) ]
-    = Σ_i Σ_j p_ij^(t) · ( log π_j + log N(x_i ; μ_j, Σ_j) )</code></pre>
+        <h2>EM Algorithm for Gaussian Mixture Model</h2>
 
-        <p>Notice that the <code>log π_j</code> term and the <code>log N</code> term <strong>can be maximized independently</strong> — that is exactly why introducing <code>z</code> made the problem easy. Compare this with the original objective: the log now sits directly on the Gaussian density, so exp gets cancelled and everything becomes tractable.</p>
+        <p>Introduce latent variables:</p>
 
-        <h3>M-Step, Part 1: Maximize π</h3>
+        <pre><code>z_ij = 1  if x_i ∈ C_j
+     = 0  otherwise</code></pre>
 
-        <p>Maximize <code>Σ_i Σ_j p_ij^(t) ln π_j</code> subject to <code>π_1 + ... + π_K = 1</code>. (The constraint <code>0 ≤ π_j ≤ 1</code> is not necessary to enforce — since we are dealing with logs, <code>π_j &gt; 0</code> automatically, and the sum-to-one constraint takes care of the rest.) Use a Lagrange multiplier:</p>
+        <p>In order to use the EM algorithm, we need the joint distribution <code>p(x, z; θ^(t))</code> and the conditional distribution <code>p(z|x; θ^(t))</code>.</p>
 
-        <pre><code>𝓛(π_1, ..., π_K, λ) = Σ_i Σ_j p_ij^(t) ln π_j + λ(π_1 + ... + π_K - 1)
+        <h3>E-Step</h3>
 
-∂𝓛/∂π_j = ( Σ_i p_ij^(t) ) / π_j + λ = 0
+        <p>Joint distribution:</p>
 
-=> π_j = Σ_i p_ij^(t) / Σ_i Σ_j' p_ij'^(t)   =   Σ_i p_ij^(t) / n</code></pre>
+        <pre><code>p(x, z; λ, μ, Σ) = ∏_{i=1}^n ∏_{j=1}^K ( λ_j N(x_i; μ_j, Σ_j) )^{z_ij}
 
-        <p>So the new mixture weight is simply the average responsibility that component claims. Intuitive.</p>
+=> l(λ, μ, Σ; x, z) = Σ_i Σ_j z_ij ( log λ_j + log N(x_i; μ_j, Σ_j) )</code></pre>
+
+        <p>Conditional distribution, by Bayes' theorem:</p>
+
+        <pre><code>p(z_ij=1 | x; λ^(t), μ^(t), Σ^(t)) = p(z_ij=1 | x_i, λ^(t), μ^(t), Σ^(t))
+
+    = [ p(z_ij=1; λ^(t)) p(x_i | z_ij=1; λ^(t), μ^(t), Σ^(t)) ]
+      ────────────────────────────────────────────────────────
+      Σ_{j'=1}^K p(z_ij'=1; λ^(t)) p(x_i | z_ij'=1; λ^(t), μ^(t), Σ^(t))
+
+    = [ λ_j^(t) N(x_i; μ_j^(t), Σ_j^(t)) ]
+      ─────────────────────────────────────────────
+      Σ_{j'=1}^K λ_j'^(t) N(x_i; μ_j'^(t), Σ_j'^(t))
+
+    = p_ij^(t)</code></pre>
+
+        <p>So we have:</p>
+
+        <pre><code>E_{z~p(·|x,λ^(t),μ^(t),Σ^(t))}[ l(λ, μ, Σ; x, z) ] = Σ_i Σ_j p_ij^(t) ( log λ_j + log N(x_i; μ_j, Σ_j) )</code></pre>
+
+        <p>Notice that we can maximize the <code>log λ_j</code> term and the <code>log N</code> term independently.</p>
+
+        <h3>M-Step, Part 1: Maximize λ</h3>
+
+        <pre><code>argmax_{λ_1,...,λ_K}  Σ_i Σ_j p_ij^(t) ln λ_j
+
+s.t.  0 ≤ λ_j ≤ 1</code></pre>
+
+        <p>This constraint is not necessary. Since we are dealing with logs, <code>λ_j &gt; 0</code>, and <code>λ_1 + ... + λ_K = 1</code>, so <code>λ_j ≤ 1</code>. The result will satisfy this automatically if it exists.</p>
+
+        <p>Lagrange form (using <code>ℓ</code> for the Lagrange multiplier, to keep it distinct from <code>λ_j</code>):</p>
+
+        <pre><code>𝓛(λ_1, ..., λ_K, ℓ) = Σ_i Σ_j p_ij^(t) ln λ_j + ℓ(λ_1 + ... + λ_K - 1)
+
+∂𝓛/∂λ_j = Σ_i p_ij^(t) / λ_j + ℓ = 0
+
+=> λ_j = Σ_i p_ij^(t) / (-ℓ) = Σ_i p_ij^(t) / Σ_i Σ_j p_ij^(t)</code></pre>
+
+        <p>(putting <code>λ_1 + ... + λ_K = 1</code> gives <code>Σ_i Σ_j p_ij^(t) / (-ℓ) = 1</code>.)</p>
 
         <h3>M-Step, Part 2: Maximize μ and Σ</h3>
 
-        <p>Now maximize <code>Σ_i Σ_j p_ij^(t) ln N(x_i ; μ_j, Σ_j)</code>. Expanding the log-density, this is equivalent to maximizing</p>
+        <pre><code>argmax_{μ_j, Σ_j}  Σ_i Σ_j p_ij^(t) ln N(x_i; μ_j, Σ_j)
 
-        <pre><code>Σ_i Σ_j p_ij^(t) · ( -d/2 · ln(2π) - ½ ln(det Σ_j) - ½ (x_i - μ_j)ᵀ Σ_j⁻¹ (x_i - μ_j) )</code></pre>
+⟺ argmax_{μ_j, Σ_j}  Σ_i Σ_j p_ij^(t) ( -d/2 ln(2π) - ½ ln(det Σ_j) - ½ (x_i-μ_j)ᵀ Σ_j⁻¹ (x_i-μ_j) )</code></pre>
 
-        <p>Taking the derivative w.r.t. <code>μ_j</code> (using the identity <code>∂/∂x (xᵀAx) = (A + Aᵀ)x</code>) and setting it to zero:</p>
+        <p>Take the derivative w.r.t. <code>μ_j</code> (using <code>∂/∂x (xᵀAx) = (A + Aᵀ)x</code>):</p>
 
-        <pre><code>Σ_i p_ij^(t) · 2 Σ_j⁻¹ (x_i - μ_j) = 0
+        <pre><code>Σ_i p_ij^(t) 2 Σ_j⁻¹ (x_i - μ_j) = 0
+
+=> Σ_i p_ij^(t) Σ_j⁻¹ x_i = Σ_i p_ij^(t) Σ_j⁻¹ μ_j
 
 => μ_j = Σ_i p_ij^(t) x_i / Σ_i p_ij^(t)</code></pre>
 
-        <p>A responsibility-weighted average of the data — the soft version of the K-means centroid update.</p>
+        <p>For the covariance, let <code>Λ_j = Σ_j⁻¹</code> (the precision matrix), and take the derivative w.r.t. <code>Λ_j</code> instead — if you take it w.r.t. <code>Σ_j</code> you will get the same result, but it is much harder. Using <code>∂/∂A ln(det A) = (A⁻¹)ᵀ</code> and <code>∂/∂A (xᵀAx) = xxᵀ</code>:</p>
 
-        <p>For the covariance, a neat trick from the note: differentiate w.r.t. the <strong>precision matrix</strong> <code>Λ_j = Σ_j⁻¹</code> rather than <code>Σ_j</code> itself (if you go w.r.t. <code>Σ_j</code> you get the same result, but it is much harder). Using <code>∂/∂A ln(det A) = (A⁻¹)ᵀ</code> and <code>∂/∂A (xᵀAx) = xxᵀ</code>:</p>
+        <pre><code>Σ_i p_ij^(t) ( Σ_j - (x_i-μ_j)(x_i-μ_j)ᵀ ) = 0     (up to a factor of ½)
 
-        <pre><code>Σ_i p_ij^(t) · ( Σ_j - (x_i - μ_j)(x_i - μ_j)ᵀ ) = 0     (up to a factor of ½)
+=> Σ_j = Σ_i p_ij^(t) (x_i-μ_j)(x_i-μ_j)ᵀ / Σ_i p_ij^(t)</code></pre>
 
-=> Σ_j = Σ_i p_ij^(t) (x_i - μ_j)(x_i - μ_j)ᵀ / Σ_i p_ij^(t)</code></pre>
-
-        <p>A responsibility-weighted covariance. One caveat flagged in the note: <strong>the variance collapses to 0 when <code>p_ij^(t) = 1</code> for a single point <code>i</code></strong> — this is the ill-defined singularity from earlier sneaking back in. EM does not magically remove it; in practice you handle it with covariance regularization (e.g. adding a small ridge to <code>Σ_j</code>) or by restarting components that collapse.</p>
-
-        <h2>GMM vs K-means, Revisited</h2>
-
-        <p>After the derivation, the relationship becomes clear. K-means is essentially a hard, degenerate special case of GMM:</p>
-
-        <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-            <tr style="border-bottom: 2px solid var(--border);">
-                <th style="padding: 12px; text-align: left; color: var(--text);">Aspect</th>
-                <th style="padding: 12px; text-align: left; color: var(--text);">K-means</th>
-                <th style="padding: 12px; text-align: left; color: var(--text);">GMM</th>
-            </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding: 12px; color: var(--text-secondary);">Assignment</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Hard (each point belongs to one cluster)</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Soft (responsibilities p_ij)</td>
-            </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding: 12px; color: var(--text-secondary);">Cluster shape</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Circles/balls, same scale everywhere</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Ellipses via per-cluster Σ_j</td>
-            </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding: 12px; color: var(--text-secondary);">Cluster size/variance</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Implicitly equal</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Each cluster has its own π_j and Σ_j</td>
-            </tr>
-            <tr>
-                <td style="padding: 12px; color: var(--text-secondary);">Output</td>
-                <td style="padding: 12px; color: var(--text-secondary);">Cluster labels</td>
-                <td style="padding: 12px; color: var(--text-secondary);">A full generative probability model</td>
-            </tr>
-        </table>
-
-        <h2>Summary</h2>
-
-        <ul>
-            <li><strong>GMM assumes data comes from a mixture of Gaussians</strong> — each cluster gets its own mean, covariance, and weight, which is exactly what K-means lacks.</li>
-            <li>Direct maximum likelihood fails three ways: no closed form (sum inside the log), awkward constraints, and an <strong>ill-defined objective</strong> that blows up when a component collapses onto a point.</li>
-            <li><strong>EM alternates between guessing the latent variables (E-step) and maximizing the complete-data log-likelihood (M-step)</strong>, and a short KL argument shows the likelihood never decreases.</li>
-            <li>For GMM the updates are pleasantly interpretable: responsibilities from Bayes' theorem, then responsibility-weighted averages for <code>π_j</code>, <code>μ_j</code>, and <code>Σ_j</code>.</li>
-            <li>EM guarantees monotone improvement, not the global optimum — and the collapse singularity still lurks, so regularize your covariances.</li>
-        </ul>
-
-        <h2>My Take</h2>
-
-        <p>What I like most about this derivation is how honest it is about failure modes. Most textbook treatments jump straight to "here are the EM updates", but the interesting part for me is <strong>why the naive approach breaks</strong>: the sum trapped inside the log, and that sneaky singularity where a Gaussian collapses onto one point and the likelihood shoots to infinity. Once you have seen that, EM stops feeling like a magic recipe and starts feeling like the obvious workaround — move the log inside by conditioning on the latent labels, and pay for it with an expectation.</p>
-
-        <p>The other thing that stuck with me: the "why does EM work" proof is only about half a page, and the same decomposition (expected complete log-likelihood plus a KL term) is the seed of the ELBO in variational inference and VAEs. Learning this one derivation properly buys you a surprising amount elsewhere. Also, differentiating w.r.t. the precision matrix instead of the covariance is one of those small tricks that saves you twenty minutes of matrix calculus pain — worth remembering.</p>
+        <p>Note: the variance collapses to 0 when <code>p_ij^(t) = 1</code> for a single point <code>i</code>.</p>
 
         <h2>References</h2>
-
         <ul>
+            <li>Dempster, A. P., Laird, N. M., &amp; Rubin, D. B. (1977). Maximum Likelihood from Incomplete Data via the EM Algorithm. <em>Journal of the Royal Statistical Society: Series B</em>, 39(1), 1-22.</li>
             <li>Bishop, C. M. (2006). <em>Pattern Recognition and Machine Learning</em>. Springer. (Chapter 9: Mixture Models and EM)</li>
-            <li>Dempster, A. P., Laird, N. M., &amp; Rubin, D. B. (1977). Maximum likelihood from incomplete data via the EM algorithm. <em>Journal of the Royal Statistical Society: Series B</em>, 39(1), 1-22.</li>
         </ul>
     </div>
 </article>

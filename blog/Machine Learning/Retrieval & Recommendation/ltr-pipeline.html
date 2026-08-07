@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LTR Pipeline - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">LTR Pipeline</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Retrieval & Recommendation/LTR Pipeline.pdf">PDF</a>.</p>
+
+        <p>Here we consider how a learning to rank (LTR) pipeline works end to end, from data collection to inference. This builds on the pointwise, pairwise, and listwise losses covered in <a href="learning-to-rank-algorithms.html">Learning to Rank Algorithms</a>.</p>
+
+        <h2>Data Part</h2>
+
+        <p>Data collection for learning to rank splits into explicit feedback and implicit feedback.</p>
+
+        <p><strong>Explicit feedback:</strong> query <code>q_i</code> gives documents <code>D_i,1, ..., D_i,K_i</code>, a human sorts the results, and we get scores (e.g. ranks) <code>S_i,1, ..., S_i,K_i</code>.</p>
+
+        <p><strong>Pros:</strong> the dataset is clean and unbiased.<br>
+        <strong>Cons:</strong> too expensive, and cannot scale easily.</p>
+
+        <p><strong>Implicit feedback</strong> relies on actual user data for labeling. We focus on implicit feedback here because it is more practical. We log different users' behavior, such as:</p>
+
+        <ol>
+            <li><strong>Impression:</strong> which item was physically shown to the user. E.g. if the user didn't scroll down to item 7, then it should not be logged as an impression.</li>
+            <li><strong>Click:</strong> which item is clicked.</li>
+            <li><strong>Dwell time:</strong> how long a user stays on an item.</li>
+            <li><strong>Conversions:</strong> if a user paid for an item.</li>
+        </ol>
+
+        <p>And more. Using the logged info, we can start training models for prediction (e.g. click-through rate, conversion rate, etc.).</p>
+
+        <h2>Pointwise Approach</h2>
+
+        <p>Click-through rate (CTR) model: we can train a model to predict CTR using the items given an impression:</p>
+
+        <pre><code>context info, user info, product info, display position info, match score  →  model  →  P(click | impression)</code></pre>
+
+        <p>Similarly, we can train a conversion rate model using the items clicked: <code>P(conversion | click)</code>. Then we can compute the score for an item as:</p>
+
+        <pre><code>Expected revenue = P(click | impression) · P(conversion | click) · revenue</code></pre>
+
+        <p>where revenue comes from the business side, since we care about revenue.</p>
+
+        <p><strong>Pros:</strong> get well calibrated probabilities (not perfectly, though).<br>
+        <strong>Cons:</strong> it ignores the rank (score) between recommended documents completely. Two predictions can have the same relative ordering error, but very different loss, depending only on how confident (or wrong) each individual probability is -- the loss doesn't care whether the ordering between documents comes out correct.</p>
+
+        <h2>Listwise or Pairwise Approach</h2>
+
+        <p>To train listwise or pairwise models, we need to score each item, e.g.:</p>
+
+        <pre><code>purchase   → score 4
+add to cart → score 3
+click       → score 2
+dwell       → score 1</code></pre>
+
+        <p>Then we can scale the score by the location of each item. E.g. if both item 1 and item 2 are clicked, but item 1 is ranked on top, we give item 2 a higher score -- getting a click while ranked lower is a stronger signal than getting a click while ranked on top.</p>
+
+        <p><strong>Pros:</strong> it learns from our target (good rank) directly.<br>
+        <strong>Cons:</strong> the probability is not calibrated; harder to train.</p>
+
+        <h2>Combining Pointwise and Listwise/Pairwise Loss</h2>
+
+        <p>The probability from the model can be used for both the pointwise loss and the listwise/pairwise loss at once. This way we get better probabilities: well calibrated, and taking the score into account.</p>
+
+        <h2>Offline Metrics for Evaluating Ranking Quality</h2>
+
+        <p>Normalized Discounted Cumulative Gain (NDCG):</p>
+
+        <pre><code>DCG_i = Σ_{j=1}^{k_i} S_i,j / log₂(j+1)</code></pre>
+
+        <p>where <code>S_i,j</code> is the score of the document for query <code>i</code> at position <code>j</code> (given by the model), and the label comes from, e.g., purchase → 4, add to cart → 3, click → 2, dwell → 1.</p>
+
+        <pre><code>iDCG_i = DCG_i if the model ranks perfectly (top → bottom = highest score → lowest score)
+
+NDCG_i = DCG_i / iDCG_i</code></pre>
+
+        <p><code>iDCG_i</code> is the ideal DCG -- the best possible DCG for that query, used to normalize <code>DCG_i</code> so scores are comparable across queries with different numbers of documents.</p>
+    </div>
+</article>
+
+</body>
+</html>
