@@ -169,24 +169,35 @@ Document   --> encoder --> embedding</code></pre>
 
         <h3>Example: Sentence-BERT</h3>
 
-        <p>Sentence-BERT fine-tunes BERT for embedding sentences. To use it for comparing the similarity of two paragraphs:</p>
+        <p>Sentence-BERT fine-tunes BERT for embedding sentences. To use it for comparing the similarity of two paragraphs，
+           sentence-BERT do the following steps:
+        </p>
 
         <pre><code>Sentence A --> BERT --> mean pooling --> vector u
 Sentence B --> BERT (same model, tied weights) --> mean pooling --> vector v
 u, v --> cosine similarity</code></pre>
 
-        <p>How is it fine-tuned? u and v are mean-pooled, order-independent vectors. For the Natural Language Inference (NLI) task, the order of the two sentences is crucial, but cosine similarity of u and v alone loses that order information. So instead, Sentence-BERT builds a longer feature vector containing u, v, and |u-v|, and uses this to classify whether B is:</p>
-
+        <p>How is it fine-tuned? It is noramlly fine-tuned on Natural Language Inference (NLI) task
+           for understanding the meaning of sentences. In NLI, we prepare an input as
+           tokens of A + special sep token + tokens of B + special sep token. Then we 
+           let the model decide if A and B has the following relationships:
         <ol>
             <li><strong>Entailment</strong> of A: A =&gt; B, if A is true, B is true.</li>
             <li><strong>Contradiction</strong> of A: A ≠&gt; B, if A is true, B is false.</li>
             <li><strong>Neutral</strong>: A -/-&gt; B or A -/-&gt; ¬B.</li>
         </ol>
+        We can see that for the NLI task, the order of the two sentences is crucial, 
+        so Sentence-BERT builds a longer feature vector containing u, v, and |u-v|, and uses this to classify the relationships.</p>
 
-        <p>Why is |u-v| in there? If A and B are very similar, BERT produces similar u and v, so the model learns that when |u-v| is small, the pair is likely entailment. In other words, BERT and the final classification network learn to exploit the fact that a small |u-v| signals entailment, and so they learn to push u ≈ v when entailment is true. (The underlying assumption is that the neural net will choose the easy thing to learn.)</p>
+        <p>Why is |u-v| in there? If A and B are very similar, BERT produces similar u and v, so the model learns that when 
+           |u-v| is small, the pair is likely entailment. In other words, BERT and the final classification network learn 
+           to exploit the fact that a small |u-v| signals entailment, and so they learn to push u ≈ v when entailment is true. 
+        </p>
 
-        <p><strong>Pros of bi-encoder:</strong> fast and efficient — all documents are embedded and stored as vectors ahead of time, ready for retrieval.<br>
-        <strong>Cons of bi-encoder:</strong> the embedding quality is relatively low.</p>
+        <p><strong>Pros of bi-encoder:</strong> fast and efficient: all documents are embedded and stored as vectors ahead of time, ready for retrieval.<br>
+        <strong>Cons of bi-encoder:</strong> the embedding quality is relatively low. Embeddings for queries and documents are embedded independently.
+        During embedding, the document does not know what the queries would be and query does not know what document would be. So the embeddings can only 
+        represent general semantic meaning of documents or queries.</p>
 
         <h2>Cross-Encoders</h2>
 
@@ -198,29 +209,38 @@ u, v --> cosine similarity</code></pre>
 
 Score = w<sup>T</sup> · &lt;CLS&gt;</code></pre>
 
-        <p>How is BERT fine-tuned for a cross-encoder? Two common ways:</p>
+        <p>How is BERT fine-tuned for a cross-encoder? There are normally two common ways:</p>
 
         <ol>
-            <li>BERT + a sigmoid adapter at the end, trained as a classification task (1 if the query matches the document, 0 if not).</li>
-            <li>BERT + a sigmoid adapter at the end, trained with a pairwise loss: <code>-log(sigmoid(sig(q,d+) - sig(q,d-)))</code>, where d+ is the matched document and d- is the unmatched document.</li>
+            <li>(Pointwise loss) BERT + a sigmoid adapter at the end, trained as a classification task (1 if the query matches the document, 0 if not).</li>
+            <li>(Pairwise loss) BERT + a sigmoid adapter at the end, trained with a pairwise loss: <code>-log(sigmoid(sig(q,d+) - sig(q,d-)))</code>, where d+ is the matched document and d- is the unmatched document.</li>
         </ol>
 
-        <p>Why is a cross-encoder much more powerful than a bi-encoder? In a bi-encoder, the query and the document are embedded completely independently. At best, a document's embedding only captures what the document is generally about — the best it can do is "be average" over all the queries it might be relevant to, because it never sees the query while being embedded, so it has to work reasonably well for all related queries. A cross-encoder, by contrast, learns the relevance between the document and the specific query.</p>
+        <p>Why is a cross-encoder much more powerful than a bi-encoder? 
+           In a bi-encoder, the query and the document are embedded completely independently. 
+           At best, a document's embedding only captures what the document is generally about,
+            the best it can do is "be average" over all the queries it might be relevant to, 
+            because it never sees the query while being embedded, so it has to work reasonably well 
+            for all related queries. A cross-encoder, by contrast, learns the relevance between the 
+            document and the specific query.</p>
 
-        <p><strong>Cons of cross-encoder:</strong> it is very slow — we need to embed the query together with every document, for every single retrieval.</p>
+        <p><strong>Cons of cross-encoder:</strong> it is very slow, we need to embed the query together with every document, for every single retrieval.</p>
 
         <h2>Late-Interaction (ColBERT)</h2>
 
         <p>ColBERT stands for contextualized late interaction over BERT. In a bi-encoder, we use one single embedding vector for the whole query and the whole document. In ColBERT, the embedding for each token is kept instead.</p>
 
-        <p>So a document i with 500 words becomes an embedding matrix E<sub>i</sub> ∈ ℝ<sup>500×d</sup> (e.g. d = 1024). A query j with 10 words becomes E<sub>qj</sub> ∈ ℝ<sup>10×d</sup>. The relevance score is:</p>
+        <p>So a document i with 500 words becomes an embedding matrix E<sub>i</sub> ∈ R <sup>500×d</sup> (e.g. d = 1024). A query j with 10 words becomes E<sub>qj</sub> ∈ R<sup>10×d</sup>. The relevance score is:</p>
 
         <pre><code>S(q_j, d_i) = Σ_{tokens in query} max_{tokens in document} ( E_qj · E_di<sup>T</sup>, dim=-1 )</code></pre>
 
-        <p>That is: for each token in the query, compute its similarity against every token in the document and take the maximum (the most similar document token); then sum these maximum similarities across all tokens in the query.</p>
+        <p>In other words, the similarity between the query and a document is computed as follows: 
+        for each token in the query, compute its similarity against every token in the document and take the maximum (the most similar document token); then sum these maximum similarities across all tokens in the query.</p>
 
-        <p><strong>Pros:</strong> this is better than a bi-encoder because it captures token-level detail instead of collapsing everything into one sentence-level vector.<br>
-        <strong>Cons:</strong> it takes a huge amount of storage room, since every token of every document needs its own embedding.</p>
+        <p><strong>Pros:</strong> this is better than a bi-encoder because it captures token-level detail instead 
+        of collapsing everything into one sentence-level vector.<br>
+        <strong>Cons:</strong> it takes a huge amount of storage room, 
+        since every token of every document needs its own embedding.</p>
 
         <h2>Summary</h2>
 
@@ -235,8 +255,8 @@ Score = w<sup>T</sup> · &lt;CLS&gt;</code></pre>
         <h2>References</h2>
 
         <ul>
-            <li>Reimers, N. &amp; Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. <em>EMNLP</em>.</li>
-            <li>Khattab, O. &amp; Zaharia, M. (2020). ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT. <em>SIGIR</em>.</li>
+            <li>Reimers, N. and Gurevych, I., 2019, November. Sentence-bert: Sentence embeddings using siamese bert-networks. In Proceedings of the 2019 conference on empirical methods in natural language processing and the 9th international joint conference on natural language processing (EMNLP-IJCNLP) (pp. 3982-3992).</li>
+            <li>Khattab, O. and Zaharia, M., 2020, July. Colbert: Efficient and effective passage search via contextualized late interaction over bert. In Proceedings of the 43rd International ACM SIGIR conference on research and development in Information Retrieval (pp. 39-48).</li>
         </ul>
     </div>
 </article>

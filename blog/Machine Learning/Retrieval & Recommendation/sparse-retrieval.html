@@ -156,19 +156,24 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Retrieval & Recommendation/Sparse Retrieval.pdf">PDF</a>.</p>
 
-        <p>Sparse retrieval represents data using sparse vectors. It has two branches: exact keyword matching (e.g. TF-IDF, BM25), and sparse embedding (e.g. SPLADE).</p>
+        <p>Sparse retrieval represents data using sparse vectors. It has two main branches: 
+           exact keyword matching (e.g. TF-IDF, BM25), and sparse semantic embedding (e.g. SPLADE).</p>
 
         <h2>TF-IDF (Term-Frequency Inverse-Document-Frequency)</h2>
 
-        <p><strong>TF</strong> is the count of a word w<sub>i</sub> in a document D<sub>j</sub>, written f(w<sub>i</sub>, D<sub>j</sub>). The intuition: if a word appears frequently in a document, this document is more likely to be about this word.</p>
+        <p><strong>TF</strong> is the count of a word w<sub>i</sub> in a document D<sub>j</sub>, 
+            written as f(w<sub>i</sub>, D<sub>j</sub>). The intuition is that if a word appears 
+            frequently in a document, this document is more likely to be about this word.</p>
 
         <p><strong>IDF</strong> is defined as:</p>
 
         <pre><code>IDF(w<sub>i</sub>) = log(N / DF)</code></pre>
 
-        <p>where N is the total number of documents, and DF is the number of documents containing this word. Note that IDF is a function of w<sub>i</sub> only. The intuition: if a word appears in all (or most) documents, it is probably not very important, e.g. "the", "a", "an".</p>
+        <p>where N is the total number of documents, and DF is the number of documents containing this word. 
+            Note that IDF is a function of w<sub>i</sub> only. The intuition here is that if a word appears 
+            in all (or most) documents, it is probably not very important, e.g. "the", "a", "an".</p>
 
-        <p>How TF-IDF works:</p>
+        <p>Given a query, how TF-IDF retrievaling relevant documents:</p>
 
         <ol>
             <li>Let w<sub>1</sub>, w<sub>2</sub>, ..., w<sub>q</sub> be the words in the query.</li>
@@ -177,49 +182,83 @@
             <li>For a given document D<sub>j</sub>, the score of TF-IDF for this query is:</li>
         </ol>
 
-        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1</sub><sup>q</sup> f(w<sub>i</sub>, D<sub>j</sub>) · IDF(w<sub>i</sub>)</code></pre>
+        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1,...,q</sub> f(w<sub>i</sub>, D<sub>j</sub>) · IDF(w<sub>i</sub>)</code></pre>
 
-        <p>A couple of things to note. First, in TF-IDF the term frequency in the query itself is not used (it is always set to 1). Second, the score of TF-IDF scales linearly with the word frequency in the document — if word i appears 10 times more, the score for this word is 10 times larger. This biases the retrieval results towards long documents. Also, if a word already appears many times, the importance of this word should somehow be saturated rather than growing infinitely.</p>
+        <p>A few notes about TF-IDF. 
+          First, in TF-IDF the term frequency in the query itself is not used (it is always set to 1). 
+          Second, the score of TF-IDF scales linearly with the word frequency in the document,
+          this means if word i appears 10 times more, the score for this word is 10 times larger. 
+          This biases the retrieval results towards long documents. 
+          Also, if a word already appears many times, the importance of this word should somehow be 
+          saturated rather than growing infinitely.</p>
 
         <h2>BM25 (Best Matching 25)</h2>
 
-        <p>BM25 improves on TF-IDF. For a given document D<sub>j</sub>, the BM25 score for the query (with b normally between 1-2) is:</p>
+        <p>BM25 improves on TF-IDF for addressing bias towards long documents and the linear increase with word frequency. 
+           For a given document D<sub>j</sub>, the BM25 score for the query (with b normally between 1-2) is calculated as:</p>
 
-        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1</sub><sup>q</sup> IDF(w<sub>i</sub>) · [ f(w<sub>i</sub>,D<sub>j</sub>)(k<sub>1</sub>+1) ] / [ f(w<sub>i</sub>,D<sub>j</sub>) + k<sub>1</sub>(1 - b + b · d<sub>j</sub>/avg<sub>k</sub>(d<sub>k</sub>)) ]</code></pre>
+        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1,...,q</sub> IDF(w<sub>i</sub>) · [ f(w<sub>i</sub>,D<sub>j</sub>)(k<sub>1</sub>+1) ] / [ f(w<sub>i</sub>,D<sub>j</sub>) + k<sub>1</sub>(1 - b + b · d<sub>j</sub>/avg<sub>k</sub>(d<sub>k</sub>)) ]</code></pre>
 
-        <p>where d<sub>j</sub> is the document length of D<sub>j</sub>, and avg<sub>k</sub>(d<sub>k</sub>) is the average document length. This can be rewritten as:</p>
+        <p>where d<sub>j</sub> is the document length of D<sub>j</sub>, and avg<sub>k</sub>(d<sub>k</sub>) is the average document length. 
+           This can be rewritten as:</p>
 
-        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1</sub><sup>q</sup> IDF(w<sub>i</sub>) · (k<sub>1</sub>+1) / [ 1 + k<sub>1</sub>(1 - b + b · d<sub>j</sub>/avg<sub>k</sub>(d<sub>k</sub>)) / f(w<sub>i</sub>,D<sub>j</sub>) ]</code></pre>
+        <pre><code>score(D<sub>j</sub>) = Σ<sub>i=1,...,q</sub> IDF(w<sub>i</sub>) · (k<sub>1</sub>+1) / [ 1 + k<sub>1</sub>(1 - b + b · d<sub>j</sub>/avg<sub>k</sub>(d<sub>k</sub>)) / f(w<sub>i</sub>,D<sub>j</sub>) ]</code></pre>
 
-        <p>The (1 - b + b · d<sub>j</sub>/avg) term penalizes D<sub>j</sub> if d<sub>j</sub> is large. This "saturates" f(w<sub>i</sub>,D<sub>j</sub>) — the whole fraction approaches a constant as f grows, instead of scaling linearly like TF-IDF did.</p>
+        <p>The (1 - b + b · d<sub>j</sub>/avg) term penalizes D<sub>j</sub> if d<sub>j</sub> is large. 
+           Also, the effect of f(w<sub>i</sub>,D<sub>j</sub>) saturates fast, the whole fraction approaches a constant as f grows, instead of scaling linearly like TF-IDF did.</p>
 
         <h2>SPLADE (Sparse Lexical AND Expansion)</h2>
 
-        <p>SPLADE is a combination of sparse and dense retrieval. Why? Because the vector it produces is sparse but encodes semantic meaning.</p>
+        <p> TF-IDF and BM25 are both based on exact word matching. They are very effective and can be very strong baseline for any other
+            retrieval methods to beat. However, they both ignores the semantic meaning completely. For example, if the query is: "Can you recommend me a cheap laptop?" 
+            but a document using keyword such as affordable computer, then this document will be ignored by exact word matching methods.</p>
 
-        <p>How SPLADE encodes a query (or document): take an example query, "Can you recommend me a cheap laptop? I will mainly use for video games." This is passed through a fine-tuned BERT (or other encoder) to get a contextual embedding for each word (paying attention to the whole sequence, including itself). This embedding is then used to get logits for all words — e.g. if we mask the word "cheap" we may get logits: cheap 7.3, affordable 5.4, reasonable 2.1, ... (most words are 0.0).</p>
+        <p> SPLADE is a combination of sparse and dense retrieval. It produces embedding for a query or a document
+            the length of all possible words, where only the semantic relevant words for the query or the document will be 
+            assgined positive weights. Hence, the embedding is sparse encodes semantic meaning.</p>
 
-        <p>If L<sub>ij</sub> is the logit for word j at query position i, the final weight w<sub>j</sub> is:</p>
+        <p>To understand how SPLADE encodes a query (or document), let's consider an example query, 
+           "Can you recommend me a cheap laptop?" 
+           This is passed through a fine-tuned BERT (or other encoder) to get a contextual embedding 
+           for each word (paying attention to the whole sequence, including itself). 
+           This embedding is then passed to the final layer of the fine-tuned BERT model
+           to get logits for all words, e.g. if we take the embedding for the word "cheap" we may get logits
+           for each word looks like this: cheap 7.3, affordable 5.4, reasonable 2.1, ... (most words are 0.0).</p>
+
+        <p> Let us denote the embedding for this query as w, where w_j is the weight for word j accross all possible words.
+            If L<sub>ij</sub> is the logit for word j at query position i, the final weight w<sub>j</sub> is:</p>
 
         <pre><code>w<sub>j</sub> = max<sub>i</sub> [ log(1 + ReLU(L<sub>ij</sub>)) ]</code></pre>
 
-        <p>taking the max over positions i in the query. This filters out "extreme" logits (those that are small), so the embedding vector w for the query ends up very sparse. We do the same for each document to get a sparse embedding for each document as well. Retrieval is then just the dot product between the embeddings of the query and the documents — this is quick because the embeddings are sparse.</p>
+        <p>taking the max over all positions i in the query. 
+           This filters out small logits , 
+           so the embedding vector w for the query ends up very sparse. 
+           We do the same for each document to get a sparse embedding for each document as well. 
+           Retrieval is then just the dot product between the embeddings of the query and the documents. \
+           This is quick because the embeddings are sparse.</p>
 
         <h3>How Is BERT Fine-Tuned for SPLADE?</h3>
+        The loss function for fine-tunining BERT is:
 
-        <pre><code>L = L<sub>contrastive</sub> + λ<sub>q</sub> · L<sub>flops</sub>(q) + λ<sub>d</sub> · L<sub>flops</sub>(d)</code></pre>
+        <pre><code>L = L<sub>contrastive</sub> + λ<sub>q</sub> · L<sub>flops</sub>(q) + λ<sub>d</sub> · L<sub>flops</sub>(d),</code></pre>
+        where the embeddings for document or query are calculated as we described above.
 
         <p>The FLOPS term encourages sparsity for the query/document embedding:</p>
 
         <pre><code>L<sub>flops</sub> = Σ<sub>j</sub> (w̄<sub>j</sub>)²,   where w̄<sub>j</sub> = (B/|batch|) Σ |w<sub>j</sub>|</code></pre>
 
-        <p>This is spoken of as "sparsity regularization" for the embedding. Because it is computed across the batch, if a word is non-zero for one sequence in the batch, the penalty on that word's loss ends up penalizing the outcome for many sequences in the batch.</p>
+        <p>This is to encourage sparsity regularization for the embedding. 
+           Because it is computed across the batch, if a word is non-zero for one sequence in the batch, 
+           the penalty on that word's loss ends up penalizing the outcome for many sequences in the batch.</p>
 
         <p>For the contrastive part, with batch size B and pairs q<sub>1</sub>↔d<sub>1</sub>, q<sub>2</sub>↔d<sub>2</sub>, ..., q<sub>B</sub>↔d<sub>B</sub>:</p>
 
         <pre><code>L<sub>contrastive</sub> = -Σ<sub>i</sub> log( e<sup>sim(q<sub>i</sub>,d<sub>i</sub>)</sup> / Σ<sub>j</sub> e<sup>sim(q<sub>i</sub>,d<sub>j</sub>)</sup> )</code></pre>
 
-        <p>where sim(·,·) is the dot product (or cosine similarity) of the embeddings of q<sub>i</sub> and d<sub>j</sub>. Unlike CLIP, this loss is <strong>not symmetric</strong> — the sum in the denominator scales across documents only, because we care only about, given one query, which document matches the most. In CLIP, we care about both directions.</p>
+        <p>where sim(·,·) is the dot product (or cosine similarity) of the embeddings of 
+           q<sub>i</sub> and d<sub>j</sub>. Unlike CLIP, this loss is <strong>not symmetric</strong>，
+           the sum in the denominator scales across documents only, because we only care about given one query, 
+           which document matches the most. In CLIP, we care about both directions.</p>
 
         <h2>Summary</h2>
 
@@ -228,14 +267,15 @@
             <li>TF-IDF scores a document by summing f(w<sub>i</sub>,D<sub>j</sub>) · IDF(w<sub>i</sub>) over query words, but it scales linearly with term frequency and is biased towards long documents.</li>
             <li>BM25 fixes this by adding a saturating term (via k<sub>1</sub>) and document-length normalization (via b).</li>
             <li>SPLADE gets a sparse-but-semantic embedding by turning masked-LM-style contextual logits into a sparse weight vector via max-over-query-positions of log(1+ReLU(logit)), then retrieves via a fast sparse dot product.</li>
-            <li>SPLADE is trained with a FLOPS sparsity regularizer on both query and document embeddings, plus a contrastive loss that — unlike CLIP's — is asymmetric, since retrieval only cares about which document best matches a given query.</li>
+            <li>SPLADE is trained with a FLOPS sparsity regularizer on both query and document embeddings, 
+                plus an asymmetric contrastive loss.</li>
         </ul>
 
         <h2>References</h2>
 
         <ul>
-            <li>Robertson, S. &amp; Zaragoza, H. (2009). The Probabilistic Relevance Framework: BM25 and Beyond. <em>Foundations and Trends in Information Retrieval</em>.</li>
-            <li>Formal, T., Piwowarski, B. &amp; Clinchant, S. (2021). SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking. <em>SIGIR</em>.</li>
+            <li>Robertson, S. and Zaragoza, H., 2009. The probabilistic relevance framework: BM25 and beyond. Foundations and trends® in information retrieval, 4(1-2), pp.1-174.</li>
+            <li>Formal, T., Piwowarski, B. and Clinchant, S., 2021, July. SPLADE: Sparse lexical and expansion model for first stage ranking. In Proceedings of the 44th international ACM SIGIR conference on research and development in information retrieval (pp. 2288-2292).</li>
         </ul>
     </div>
 </article>
