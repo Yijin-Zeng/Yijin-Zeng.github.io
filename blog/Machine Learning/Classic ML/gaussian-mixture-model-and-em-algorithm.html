@@ -160,7 +160,10 @@
 
         <h2>Compare with K-means</h2>
 
-        <p>K-means cannot cluster elliptical clusters well, because it creates circles or balls around its centers. It also cannot deal with clusters with different variance well, because it uses the same distance measure (normally L2) for different clusters. GMM handles both, since each cluster gets its own mean <code>μ_j</code> and its own covariance <code>Σ_j</code>.</p>
+        <p>Naive K-means method cannot cluster elliptical clusters well, 
+           because it creates circles or balls around its centers. It also cannot deal with clusters with different variance well, 
+           because it uses the same distance measure (normally L2) for different clusters. GMM handles both well, since each cluster 
+           gets its own mean <code>μ_j</code> and its own covariance <code>Σ_j</code>.</p>
 
         <h2>Assumptions of Gaussian Mixture Model</h2>
 
@@ -168,35 +171,39 @@
 
         <pre><code>pr(x_1, ..., x_n) = pr(x_1) ⋯ pr(x_n)                           (independence assumption)
 
-                  = ∏_{i=1}^{n} p(x_i ∈ cluster j) p(x_i | x_i ∈ cluster j)
+                  = ∏_{i=1}^{n} Σ_{j=1}^{K} p(x_i ∈ cluster j) p(x_i | x_i ∈ cluster j)
                                                                   (law of total probability)
 
                   = ∏_{i=1}^{n} Σ_{j=1}^{K} λ_j N(x_i ; μ_j, Σ_j)
                                                                   (Gaussian assumption)</code></pre>
 
-        <p><strong>Generation process:</strong> the latent variable <code>z</code> is a discrete variable equal to <code>z_i</code> (where <code>z_i = 1, ..., K</code>) with probability <code>λ_i</code>. Given this latent variable, the likelihood of the data <code>x</code> is normally distributed with mean <code>= μ_i</code>, variance <code>= σ_i²</code>. In other words: <code>z</code> goes to each cluster with probability <code>λ_i</code>, and within each cluster the data is generated from the corresponding Gaussian distribution <code>N(μ_i, σ_i²)</code>, giving the observation <code>x</code>.</p>
+        <p><strong>Generation process:</strong> the latent variable <code>z</code> is a discrete variable equal to <code>z_i</code> (where <code>z_i = 1, ..., K</code>) 
+            with probability <code>λ_i</code>. Given this latent variable, the likelihood of the data <code>x</code> is normally distributed with mean <code>= μ_i</code>, variance <code>= Σ_j²</code>. 
+            In other words: <code>z</code> goes to each cluster with probability <code>λ_i</code>, and within each cluster the data is generated from the corresponding Gaussian distribution <code>N(μ_i, Σ_i²)</code>, giving the observation <code>x</code>.</p>
 
-        <h2>It Is Hard to Maximize the Likelihood Function Directly</h2>
+        <h2>The difficulty to maximize the Likelihood Function Directly</h2>
 
+        The likelihood function for GMM equals to:
         <pre><code>pr(x_1, ..., x_n) = ∏_{i=1}^n Σ_{j=1}^K λ_j N(x_i ; μ_j, Σ_j)</code></pre>
 
-        <p>Minimize negative log-likelihood:</p>
+        <p>If we minimize the negative log-likelihood, we need to solve</p>
 
         <pre><code>min_{λ,μ,Σ}  ( -l(λ, μ, Σ; x_1, ..., x_n) ) = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j N(x_i ; μ_j, Σ_j) )
 
-    = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j (1 / ((2π)^{d/2} |Σ_j|^{1/2})) exp{ -½ (x_i-μ_j)ᵀ Σ_j⁻¹ (x_i-μ_j) } )
+    = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j (1 / ((2π)^{d/2} |Σ_j|^{1/2})) exp{ -1/2 (x_i-μ_j)ᵀ Σ_j⁻¹ (x_i-μ_j) } )
 
 s.t.  Σ_j λ_j = 1,   Σ_j symmetric and positive semi-definite</code></pre>
 
-        <p>Because of this sum, we cannot use log to cancel out exp. There is no analytical form if we take the gradient w.r.t. <code>λ, μ, Σ</code> and set the gradients to 0. We also need to satisfy the constraints, so directly using gradient descent is not ideal.</p>
+        <p>Because of the sum within the log, we cannot use log to cancel out exp. 
+           There is no analytical form for the gradient w.r.t. <code>λ, μ, Σ</code> as well. We also need to satisfy the constraints, so directly using gradient descent is not ideal.</p>
 
-        <p>The problem is also ill-defined. If <code>μ_j → x_i</code>, <code>Σ_j → 0</code>, then <code>pr(x_1, ..., x_n) → ∞</code>.</p>
+        <p>Notice that the problem is also ill-defined. If <code>μ_j → x_i</code>, <code>Σ_j → 0</code>, then <code>pr(x_1, ..., x_n) → infty</code>.</p>
 
         <p>Below we consider how to use the E-M algorithm to solve these issues.</p>
 
         <h2>EM Algorithm</h2>
 
-        <p><strong>Problem:</strong> <code>argmax_θ l(θ; x)</code> — this is hard.</p>
+        <p><strong>Problem:</strong> solving <code>argmax_θ l(θ; x)</code> directly is hard.</p>
 
         <p><strong>Observation:</strong> if we introduce some latent variables <code>z</code>, then <code>argmax_θ l(θ; x, z)</code> — this is easy.</p>
 
@@ -213,8 +220,8 @@ s.t.  Σ_j λ_j = 1,   Σ_j symmetric and positive semi-definite</code></pre>
         <pre><code>=> l(θ; x, z) = l(θ; x) + l(θ; z|x)
 
 => l(θ; x) = l(θ; x, z) - l(θ; z|x)
-              ────────    ───────────────────────
-              target      the one we can maximize easily</code></pre>
+    ────────    ─────────
+    target      the one we can maximize easily</code></pre>
 
         <p>Take expectation on both sides w.r.t. <code>z ~ p(·|x, θ^(t))</code>:</p>
 
@@ -317,8 +324,8 @@ s.t.  0 ≤ λ_j ≤ 1</code></pre>
 
         <h2>References</h2>
         <ul>
-            <li>Dempster, A. P., Laird, N. M., &amp; Rubin, D. B. (1977). Maximum Likelihood from Incomplete Data via the EM Algorithm. <em>Journal of the Royal Statistical Society: Series B</em>, 39(1), 1-22.</li>
-            <li>Bishop, C. M. (2006). <em>Pattern Recognition and Machine Learning</em>. Springer. (Chapter 9: Mixture Models and EM)</li>
+            <li>Dempster, A.P., Laird, N.M. and Rubin, D.B., 1977. Maximum likelihood from incomplete data via the EM algorithm. Journal of the royal statistical society: series B (methodological), 39(1), pp.1-22.</li>
+            <li>Bishop, C.M. and Nasrabadi, N.M., 2006. Pattern recognition and machine learning (Vol. 4, No. 4, p. 738). New York: springer.</li>
         </ul>
     </div>
 </article>
