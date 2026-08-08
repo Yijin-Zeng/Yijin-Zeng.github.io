@@ -151,7 +151,11 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/Linear Self Attention.pdf">PDF</a>.</p>
-        <p>The trick behind linear self-attention is almost embarrassingly simple: <strong>instead of computing (QK^T)V which creates the expensive s x s matrix, compute Q(K^T V) which never does</strong>. This changes complexity from O(s^2) to O(s) — just by changing the order of matrix multiplication. Of course, there is a catch: you need to replace softmax with something that allows this reordering.</p>
+        <p>The idea behind linear self-attention is simple: 
+           computing (QK^T)V requires O(s^2) computational time,
+           while computing Q(K^T V) requires only O(s). 
+           However, in order to switch the computational order,
+           we need to replace softmax with something else that allows this reordering.</p>
 
         <h2>Recap: Standard Self-Attention</h2>
         <p>The standard self-attention mechanism computes:</p>
@@ -224,12 +228,14 @@ where ELU(x) = { x           if x > 0
             <li>The denominator normalizes the output to be a proper weighted average, analogous to softmax normalization</li>
         </ul>
 
-        <p>The honest trade-off: linear attention is much faster for long sequences, but the approximation of softmax by the feature mapping means some expressive power is lost. In practice, linear attention works well for many tasks where sequence length is the bottleneck, but standard attention still wins on tasks requiring sharp, precise attention patterns.</p>
+        <p>Trade-off: linear attention is much faster for long sequences, but the approximation of softmax by the feature mapping 
+            means some expressive power is lost. In practice, linear attention works well for many tasks where sequence length is 
+            the bottleneck, but standard attention is better for harder tasks.</p>
 
         <h2>References</h2>
         <ul>
-            <li>Katharopoulos et al., "Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention" (ICML 2020)</li>
-            <li>Vaswani et al., "Attention Is All You Need" (NeurIPS 2017)</li>
+            <li>Katharopoulos, A., Vyas, A., Pappas, N. and Fleuret, F., 2020, November. Transformers are rnns: Fast autoregressive transformers with linear attention. In International conference on machine learning (pp. 5156-5165). PMLR.</li>
+            <li>Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł. and Polosukhin, I., 2017. Attention is all you need. Advances in neural information processing systems, 30.</li>
         </ul>
     </div>
 </article>
