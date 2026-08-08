@@ -161,65 +161,83 @@
 
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/FFN and MoEs.pdf">PDF</a>.</p>
-        <p>The idea behind Mixture of Experts is simple and powerful: <strong>instead of one large FFN that every token passes through, have many smaller "expert" FFNs and a learned router that picks which ones to use for each token</strong>. This gives you way more parameters (capacity) without proportionally increasing compute.</p>
+        <p>The idea behind Mixture of Experts is simple and powerful: 
+        <strong>instead of one large FFN that every token passes through, have many smaller "expert" FFNs and a learned router that picks which ones to use for each token</strong>. 
+        This gives the model more parameters (capacity) without proportionally increasing compute.</p>
 
         <h2>Background: The FFN in a Transformer Block</h2>
-        <p>A standard Transformer block consists of two sub-layers: an attention layer followed by a feed-forward network (FFN). The FFN is applied independently to each token position and typically consists of two linear transformations with a nonlinear activation in between:</p>
+        <p>A standard Transformer block consists of two sub-layers: 
+            an attention layer followed by a feed-forward network (FFN). 
+            The FFN is applied independently to each token position and typically consists of two linear transformations with a nonlinear activation in between:</p>
 
         <pre><code>FFN(x) = W2 * activation(W1 * x + b1) + b2</code></pre>
 
-        <p>For example, if <code>d_model = 4096</code>, the FFN typically expands the dimension by a factor of 4 in the first layer (to 16384) and projects it back down in the second layer (back to 4096). The activation function is commonly GELU or SiLU in modern architectures.</p>
+        <p>For example, if <code>d_model = 4096</code>, the FFN typically expands the dimension by a factor of 4 in the first layer (to 16384) 
+            and projects it back down in the second layer (back to 4096). The activation function is commonly GELU or SiLU in modern architectures.</p>
 
         <h2>Mixture of Experts (MoE): The Core Idea</h2>
-        <p>In a standard Transformer, every token passes through the same FFN. In a Mixture of Experts model, the single FFN is replaced by multiple FFN "experts" and a learned router that decides which experts each token should be sent to. This allows the model to have many more parameters (and thus more capacity) while only activating a small subset of them for any given token.</p>
+        <p>In a standard Transformer, every token passes through the same FFN. In a Mixture of Experts model, 
+           the single FFN is replaced by multiple FFN "experts" and a learned router that decides which experts each token should be sent to. 
+           This allows the model to have many more parameters (and thus more capacity) while only activating a small subset of them for any given token.</p>
 
         <p><strong>Key point: MoE replaces the FFN layer (not the attention layer) in the Transformer block.</strong> The attention layer remains unchanged.</p>
 
         <h3>Architecture Overview</h3>
-        <p>The overall Transformer still has ~N layers stacked on top of each other, where each layer contains an attention sub-layer and a FFN sub-layer. In the MoE variant, some or all of the FFN sub-layers are replaced by the MoE module:</p>
+        <p>The overall Transformer still has ~N layers stacked on top of each other, where each layer contains an attention sub-layer and a FFN sub-layer. 
+           In the MoE variant, some or all of the FFN sub-layers are replaced by the MoE module:</p>
 
         <div class="diagram">
             <svg width="520" height="420" viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg">
                 <!-- Standard side -->
-                <text x="100" y="20" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">Standard</text>
+<text x="100" y="20" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">Standard</text>
                 <rect x="40" y="30" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="100" y="53" text-anchor="middle" font-size="12" fill="#1a1a1a">FFN</text>
-                <line x1="100" y1="66" x2="100" y2="86" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 to point UP -->
+                <line x1="100" y1="86" x2="100" y2="66" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <rect x="40" y="86" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="100" y="109" text-anchor="middle" font-size="12" fill="#1a1a1a">Attention</text>
-                <line x1="100" y1="122" x2="100" y2="142" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="100" y1="142" x2="100" y2="122" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
 
                 <text x="100" y="158" text-anchor="middle" font-size="18" fill="#666">...</text>
                 <text x="155" y="158" text-anchor="start" font-size="11" fill="#999">x N layers</text>
 
-                <line x1="100" y1="165" x2="100" y2="185" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="100" y1="185" x2="100" y2="165" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <rect x="40" y="185" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="100" y="208" text-anchor="middle" font-size="12" fill="#1a1a1a">FFN</text>
-                <line x1="100" y1="221" x2="100" y2="241" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="100" y1="241" x2="100" y2="221" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <rect x="40" y="241" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="100" y="264" text-anchor="middle" font-size="12" fill="#1a1a1a">Attention</text>
-                <line x1="100" y1="277" x2="100" y2="297" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="100" y1="297" x2="100" y2="277" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <text x="100" y="312" text-anchor="middle" font-size="12" fill="#666">Input</text>
 
                 <!-- MoE side -->
                 <text x="380" y="20" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">MoE Variant</text>
                 <rect x="320" y="30" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="380" y="53" text-anchor="middle" font-size="12" fill="#1a1a1a">FFN</text>
-                <line x1="380" y1="66" x2="380" y2="86" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="380" y1="86" x2="380" y2="66" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <rect x="320" y="86" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="380" y="109" text-anchor="middle" font-size="12" fill="#1a1a1a">Attention</text>
-                <line x1="380" y1="122" x2="380" y2="142" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="380" y1="142" x2="380" y2="122" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
 
                 <text x="380" y="158" text-anchor="middle" font-size="18" fill="#666">...</text>
                 <text x="435" y="158" text-anchor="start" font-size="11" fill="#999">x N layers</text>
 
-                <line x1="380" y1="165" x2="380" y2="185" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="380" y1="185" x2="380" y2="165" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <rect x="310" y="185" width="140" height="36" rx="4" fill="none" stroke="#2563eb" stroke-width="2"/>
                 <text x="380" y="208" text-anchor="middle" font-size="12" font-weight="500" fill="#2563eb">MoE (Experts)</text>
-                <line x1="380" y1="221" x2="380" y2="241" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="380" y1="241" x2="380" y2="221" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <rect x="320" y="241" width="120" height="36" rx="4" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
                 <text x="380" y="264" text-anchor="middle" font-size="12" fill="#1a1a1a">Attention</text>
-                <line x1="380" y1="277" x2="380" y2="297" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
+                <!-- Swapped y1 and y2 -->
+                <line x1="380" y1="297" x2="380" y2="277" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arrow)"/>
                 <text x="380" y="312" text-anchor="middle" font-size="12" fill="#666">Input</text>
 
                 <!-- Annotation -->
@@ -239,7 +257,8 @@
 
         <pre><code>router_logits = Softmax(x * W_R)    where W_R has shape (d_model, num_experts)</code></pre>
 
-        <p>The input <code>x</code> here is the output of the attention layer. For example, with a sequence of 300 tokens and <code>d_model = 4096</code>, the input shape would be <code>(300, 4096)</code>, and the router produces scores of shape <code>(300, num_experts)</code> -- one score per expert for each token.</p>
+        <p>The input <code>x</code> here is the output of the attention layer. For example, with a sequence of 300 tokens and <code>d_model = 4096</code>, 
+           the input shape would be <code>(300, 4096)</code>, and the router produces scores of shape <code>(300, num_experts)</code>, one score per expert for each token.</p>
 
         <h3>Top-K Selection</h3>
         <p>The router assigns a score to each expert, but we do not activate all of them. Instead, we pick the top-K experts (typically K=2) for each token:</p>
@@ -250,7 +269,7 @@
             <li>Renormalize the remaining K scores so they sum to 1 (i.e., S_1 + S_2 = 1)</li>
         </ul>
 
-        <p>Only two experts are activated per token. This is what makes MoE "sparse" &mdash; despite having many experts, only a small subset does computation for any given token.</p>
+        <p>Only two experts are activated per token. This is what makes MoE "sparse". Despite having many experts, only a small subset does computation for any given token.</p>
 
         <h3>Combining Expert Outputs</h3>
         <p>Once the top-K experts have processed the token, their outputs are combined via a weighted sum using the normalized router scores:</p>
@@ -277,7 +296,10 @@ Dimensions (example):
 
         <pre><code>scores = Softmax(x * W_R * M_mask)</code></pre>
 
-        <p>The mask <code>M_mask</code> is not a learned parameter -- it is derived from the top-K selection and applied to allow gradients to flow back through the softmax to the router weights <code>W_R</code>. Since the softmax and the linear projection are both differentiable, the router weights get updated via standard backpropagation. The top-K selection itself is handled by zeroing out non-selected logits before the softmax (or equivalently, setting them to negative infinity), which means the gradient with respect to those positions is zero, while the gradient flows normally through the selected positions.</p>
+        <p>The mask <code>M_mask</code> is derived from the top-K selection and applied to allow gradients to flow back through the softmax to the router weights <code>W_R</code>. 
+            Since the softmax and the linear projection are both differentiable, the router weights get updated via standard backpropagation. 
+            The top-K selection itself is handled by zeroing out non-selected logits before the softmax (or equivalently, setting them to negative infinity), 
+            which means the gradient with respect to those positions is zero, while the gradient flows normally through the selected positions.</p>
 
         <h2>Implementation</h2>
         <p>Below is a PyTorch implementation that illustrates the full MoE mechanism. It includes an individual expert FFN class and the sparse MoE layer with routing logic:</p>
@@ -364,18 +386,10 @@ class ExpertFFN(nn.Module):
         # Reshape back to (batch_size, seq_len, d_model)
         return final_output.view(batch_size, seq_len, d_model)</code></pre>
 
-        <h2>Key Takeaways</h2>
-        <ul>
-            <li>MoE swaps the FFN for multiple expert FFNs + a learned router &mdash; massively more parameters, same per-token compute</li>
-            <li>The router is just a linear projection trained end-to-end; top-K selection (typically K=2) keeps it sparse</li>
-            <li>Expert outputs are combined via weighted sum using normalized routing scores</li>
-            <li>Caveat: load balancing is tricky in practice &mdash; without auxiliary losses, some experts get all the tokens while others starve</li>
-        </ul>
-
         <h2>References</h2>
         <ul>
-            <li>Shazeer, N. et al. (2017). "Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer." <em>ICLR</em>. &mdash; the foundational paper</li>
-            <li>Fedus, W. et al. (2021). "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity." <em>JMLR</em>. &mdash; simplified routing to K=1</li>
+            <li>Shazeer, N., Mirhoseini, A., Maziarz, K., Davis, A., Le, Q., Hinton, G. and Dean, J., 2017. Outrageously large neural networks: The sparsely-gated mixture-of-experts layer. arXiv preprint arXiv:1701.06538.</li>
+            <li>Fedus, W., Zoph, B. and Shazeer, N., 2022. Switch transformers: Scaling to trillion parameter models with simple and efficient sparsity. Journal of Machine Learning Research, 23(120), pp.1-39.</li>
         </ul>
     </div>
 </article>
