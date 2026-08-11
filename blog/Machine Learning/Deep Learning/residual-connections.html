@@ -156,23 +156,27 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/Residual Connections.pdf">PDF</a>.</p>
 
-        <p>Residual connections are one of the main reasons deep neural networks can be trained at all. A standard deep network is just a composition of functions:</p>
-
-        <pre><code>y = fₙ( ... f₃( f₂( f₁(x; φ₁); φ₂ ); φ₃ ) ... ; φₙ)</code></pre>
-
-        <p>The observation from AlexNet-style architectures: as n grows, i.e. the network gets deeper, <strong>both training and validation loss go up</strong>. That's a strange result on its own -- a deeper network can always represent a shallower one, by setting the extra layers to the identity, so depth should never hurt training loss even in the worst case.</p>
+        <p>With a large amount of data, deeper neural networks often achieve better training loss and generalization. 
+           However, before residual connections, training networks with over 100 layers was difficult.</p> 
+        <p>Historically, researchers observed that simply adding more layers caused 
+          <strong>both training and validation loss to go up</strong>. Because the training loss itself got worse, 
+          it implies that the issue was a failure in the training process, not overfitting (where only the validation loss would increase).</p>
 
         <h2>The Problem: Deeper Networks Fail to Train</h2>
 
-        <p>This detail matters more than it looks. If only validation loss went up while training loss went down, we'd call it overfitting -- a generalization problem. But training loss going up too means <strong>the problem is not generalization, it's the training itself</strong>. The optimizer can't find a good solution, even though we know one exists (the identity extension of the shallower network).</p>
+        <p>This detail matters more than it looks. If only validation loss went up while training loss went down, then it is a generalization problem. 
+           But since training loss going up too, this means <strong>the problem is not generalization, it's the training itself</strong>. 
+           The optimizer can't find a good solution, even though we know one exists (the identity extension of the shallower network).</p>
 
         <h2>A Possible Explanation: Shattered Gradients</h2>
 
-        <p>Why would training fail? One compelling explanation is <strong>shattered gradients</strong>. In standard training, the gradient with respect to an early layer is a long chain rule product:</p>
+        <p>Why would training fail? One possible explanation is known as 
+           <strong>shattered gradients</strong>. In standard training, the gradient with respect to an early layer is a long chain rule product:</p>
 
-        <pre><code>∂y/∂f₁ = (∂y/∂fₙ) · (∂fₙ/∂fₙ₋₁) · ... · (∂f₂/∂f₁)</code></pre>
+        <pre><code>∂y/∂f1 = (∂y/∂fn) · (∂fn/∂fn-1) · ... · (∂f2/∂f1)</code></pre>
 
-        <p>As the model goes deeper and deeper, a small change in x leads to very different gradients. The loss surface effectively keeps changing with every batch -- the optimizer is chasing a moving target.</p>
+        <p>As the model goes deeper and deeper, a small change in x leads to very different gradients. 
+           The loss surface effectively keeps changing with every batch, so the optimizer is chasing a moving target.</p>
 
         <p>To picture it, consider a univariate input x mapped to a univariate output y, and plot the gradient ∂y/∂x as a function of x:</p>
 
@@ -185,38 +189,39 @@
   └──────────────── x                   └──────────────── x
   smooth, structured                    looks like white noise</code></pre>
 
-        <p>For the shallow network the gradient is a smooth, well-behaved function of the input. For the deep network it looks like noise -- nearby inputs give wildly different gradients. Good luck doing gradient descent on that.</p>
+        <p>For the shallow network the gradient is a smooth, well-behaved function of the input. For the deep network it looks like noise,
+           nearby inputs give wildly different gradients, so the optimizer struggles to find a consistent descent direction. </p>
 
-        <h2>The Fix: Add the Input Back</h2>
+        <h2>Residual Connection</h2>
 
-        <p>The residual connection is almost embarrassingly simple. Instead of each layer replacing its input, each layer <strong>adds to it</strong>. For n = 3:</p>
+        <p>The idea of residual connection is simple. Instead of each layer replacing its input, each layer <strong>adds to it</strong>. For n = 3, this means</p>
 
-        <pre><code>h₁ = x  + f₁(x; φ₁)
-h₂ = h₁ + f₂(h₁; φ₂)
-y  = h₂ + f₃(h₂; φ₃)</code></pre>
+        <pre><code>h1 = x  + f1(x; φ1)
+h2 = h1 + f2(h1; φ2)
+y  = h2 + f3(h2; φ3)</code></pre>
 
         <p>As a diagram, the input takes a shortcut around each block:</p>
 
-        <pre><code>     ┌───────┐   ┌───────┐   ┌───────┐
-     │       ▼   │       ▼   │       ▼
+        <pre><code>     ┌────────┐   ┌────────┐   ┌────────┐
+     │       ▼   │        ▼   │       ▼
 x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ──→ ⊕ ──→ y</code></pre>
 
-        <p>So what does this actually buy us? Unroll the recursion:</p>
+        <p>Unroll the recursion, we have</p>
 
         <pre><code>y = x
-  + f₁(x; φ₁)
-  + f₂( x + f₁(x; φ₁); φ₂ )
-  + f₃( x + f₁(x; φ₁) + f₂(x + f₁(x; φ₁); φ₂); φ₃ )</code></pre>
+  + f1(x; φ1)
+  + f2(x + f1(x; φ1); φ2 )
+  + f3(x + f1(x; φ1) + f2(x + f1(x; φ1); φ2); φ3)</code></pre>
 
-        <p>Three things fall out of this formula:</p>
-
+        <p>We have three observations from the formula above:</p>
         <ul>
-            <li><strong>The lower-level information is kept.</strong> The raw x is literally a summand of the output -- it can never be destroyed by a bad layer in the middle.</li>
-            <li><strong>A residual network is an ensemble.</strong> The output is a sum of terms of different "depths": a depth-0 term (x itself), a depth-1 term, up to a depth-3 term. We can think of residual connections as an <strong>ensemble of neural networks</strong> of varying depth, trained jointly.</li>
-            <li><strong>There are many different paths from input to output.</strong> Information doesn't have to survive every layer; it just needs one good path.</li>
+            <li><strong>The lower-level information is kept.</strong> Lower level layers outputs has direct impact on the outputs.</li> 
+            <li><strong>A residual network is essentially an ensemble model.</strong> The output is a sum of terms of different depths: 
+               a depth-0 term (x itself), a depth-1 term, up to a depth-3 term. We can think of residual connections as an <strong>ensemble of neural networks</strong> of varying depth, trained jointly.</li>
+            <li><strong>There are many different paths from input to output.</strong> Information doesn't have to survive every layer; it just needs one good path from input to output.</li>
         </ul>
 
-        <h2>Implementation Details That Actually Matter</h2>
+        <h2>Implementation Details</h2>
 
         <p>Two things to be careful about when implementing residual networks: the <strong>order of operations</strong> inside a block, and <strong>exploding activations</strong>. Both bit people in practice.</p>
 
@@ -225,70 +230,71 @@ x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ─�
         <p>The most natural block is Linear → ReLU, then add:</p>
 
         <pre><code>x ──→ [Linear] ──→ [ReLU] ──→ ⊕ ──→
-└─────────────────────────────┘</code></pre>
+└───────────────────────────────┘</code></pre>
 
-        <p>Problem: the branch ends in a ReLU, so it <strong>can only add positive values</strong> to the residual stream. The block can push activations up but never pull them down -- half the correction space is gone.</p>
+        <p>The problem of this block is that since the branch ends in a ReLU, it <strong>can only add positive values</strong> 
+            to the residual stream. So the values just get bigger and bigger.</p>
 
         <p>Swapping to ReLU → Linear fixes the output side, but now the ReLU sits directly on the input, and if the incoming values are all negative the block is dead. The practical answer is to <strong>put linear layers at both ends</strong>, e.g. a first Linear before the block (preventing all-negative inputs into ReLU) and end the branch with Linear so it can add values of either sign:</p>
 
-        <pre><code>x ──→ [ReLU] → [Linear] → [ReLU] → [Linear] ──→ ⊕ ──→
-└───────────────────────────────────────────────┘</code></pre>
+        <pre><code>x → [Linear] ──→ [ReLU] → [Linear] → [ReLU] → [Linear] ──→ ⊕ ──→
+              └────────────────────────────────────────────────┘</code></pre>
 
-        <p>In practice a residual block can contain multiple layers like this -- the rule of thumb is just that the thing you add back should be able to take any sign.</p>
+        <p>In practice a residual block can contain multiple layers like this. The rule of thumb is just that the thing you add back 
+          should be able to take any sign.</p>
 
         <h3>Exploding Variance</h3>
 
-        <p>Here's a subtler one. Suppose x has variance 1, and each fᵢ contributes an independent unit-variance output. Since we keep <strong>adding</strong>, variances add up:</p>
+        <p>Suppose x has variance 1, and each fi contributes an independent unit-variance output. Since we keep <strong>adding</strong>, variances add up:</p>
 
-        <pre><code>x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ──→ ⊕ ──→ y
-var: 1        2           4            8
+        <pre><code>x ──→ f1 ──→ ⊕ ──→ f2 ──→ ⊕ ──→ f3 ──→ ⊕ ──→ y
+var: 1             2            4            8
                 variance grows exponentially
                 (and the backward pass behaves the same way)</code></pre>
 
         <p><strong>Solution 1: rescale by 1/√2 after each addition.</strong> This keeps the variance pinned near 1... but it's not good. Unrolling the sum again, the output becomes</p>
 
-        <pre><code>y = (1/√2)³ (x + f₁(x))
-  + (1/√2)² f₂(·)
-  + (1/√2)  f₃(·)</code></pre>
+        <pre><code>y = (1/√2)³ (x + f1(x))
+  + (1/√2)² f2(·)
+  + (1/√2)  f3(·)</code></pre>
 
-        <p>The variance is stable, but <strong>the contributions of the lower layers are scaled down</strong> exponentially -- the identity path from x gets crushed. That was the whole point of the residual connection, so the shattered gradient problem persists.</p>
+        <p>The variance is stable, but <strong>the contributions of the lower layers are scaled down</strong> exponentially.
+           That was the whole point of the residual connection, so the shattered gradient problem persists.</p>
 
         <p><strong>Solution 2: batch norm inside the branch, before fᵢ.</strong></p>
 
-        <pre><code>x ──→ [BN] → f₁ ──→ ⊕ ──→ [BN] → f₂ ──→ ⊕ ──→ [BN] → f₃ ──→ ⊕ ──→
-var: 1               2                  3                   4</code></pre>
+        <pre><code>x ──→ [BN] → f1 ──→ ⊕ ──→ [BN] → f2 ──→ ⊕ ──→ [BN] → f3 ──→ ⊕ ──→
+var:         1                    2                  3                   </code></pre>
 
-        <p>Each branch now contributes a fixed variance-1 amount, so the total variance grows <strong>linearly instead of exponentially</strong> -- and crucially, the skip path is never scaled down.</p>
+        <p>Each branch now contributes a fixed variance-1 amount, so the total variance grows <strong>linearly instead of exponentially</strong>, and importantly, the skip path is not scaled down.</p>
 
-        <p>There's a side effect worth noting: at variance k on the stream, each new layer's variance-1 contribution is relatively small next to it. So <strong>at the beginning of training, the network is effectively shallower</strong> -- later layers barely move the output, and depth gets "switched on" gradually as training progresses.</p>
+        <p>Side effect of residual connections: 
+           at the begining of the training, the shallower layers have bigger impact than deeper layers,
+           so <strong>at the beginning of training, the network is effectively shallower</strong>. 
+           Later layers barely move the output, and depth gets switched on gradually as training progresses.</p>
 
-        <h2>So Why Does It Work?</h2>
+        <h2>Why Does Residual Connections Work So Well?</h2>
 
-        <p>There isn't one clean answer -- there are several explanations, and honestly they're all probably partially right:</p>
+        <p>There isn't one definite clean answer, but there are several plausible explanations:</p>
 
         <ol>
-            <li><strong>The work for each layer is easier.</strong> Without the skip, a layer must learn the full transformation f(x) -- it has to consider how to transform its input all the way toward the output. With the skip, it only needs to learn the residual f(x) − x, i.e. each layer just <strong>"adds" information to the current solution</strong> rather than rebuilding it. Refining is easier than reconstructing.</li>
-            <li><strong>Shattered gradients are much less prominent, and the loss landscape is much smoother.</strong> Lower-layer inputs contribute to the output directly through the skip paths, so it's much easier to take their gradients. Even if the gradient is blocked inside some layer (a dead ReLU, say), the layers below can still update through the shortcut.</li>
-            <li><strong>It's an ensemble of many small models</strong> -- the unrolled-sum view from earlier, made literal.</li>
-            <li><strong>With many different paths, there may be one with a good prior</strong> -- this connects to the lottery ticket hypothesis: among exponentially many subnetworks/paths, some are well-initialized winners, and the residual structure lets them carry the load.</li>
+            <li><strong>The work for each layer is easier.</strong> Without the skip, a layer must learn the full transformation f(x), i.e. 
+            it has to consider how to transform its input toward the output. With the skip, it only needs to learn the residual f(x) − x, 
+            i.e. each layer just <strong>"adds" information to the current solution</strong>.</li>
+            <li><strong>The loss landscape is much smoother.</strong> Lower-layer inputs contribute to the output directly through the skip paths, 
+                so it's much easier to take their gradients. Even if the gradient is blocked inside some layer (a dead ReLU, say), 
+                the layers below can still update through the shortcut.</li>
+            <li><strong>It's an ensemble of many small models</strong>.</li>
+            <li><strong>With many different paths, there may be one with a good prior</strong>. 
+            This connects to the lottery ticket hypothesis: among exponentially many subnetworks/paths, 
+            some are well-initialized winners, and the residual structure allows them dominate.</li>
         </ol>
-
-        <h2>Summary</h2>
-
-        <ul>
-            <li>Deeper AlexNet-style networks got worse on <strong>training</strong> loss too, not just validation loss -- the problem is the training itself, not generalization.</li>
-            <li>One explanation is shattered gradients: as depth grows, the chain-rule product ∂y/∂f₁ becomes wildly sensitive to small changes in x, so the loss surface looks like noise instead of a smooth function.</li>
-            <li>A residual connection replaces "each layer replaces its input" with "each layer adds to it." Unrolling the recursion shows the output is a sum of terms at every depth -- the raw input, plus depth-1 terms, plus depth-2 terms, and so on.</li>
-            <li>That sum view gives three things directly: lower-level information is never destroyed, the network behaves like an ensemble of networks of different depths, and there are many paths from input to output.</li>
-            <li>Implementation matters: a block that ends in ReLU can only add positive values, so linear layers belong at both ends of the block. Left unchecked, variance also grows exponentially through the additions; rescaling by 1/√2 stabilizes variance but crushes the identity path, so batch norm inside each branch is the better fix.</li>
-            <li>Several explanations for why it works are probably all partially true: each layer only has to learn a residual instead of a full transformation, gradients flow more directly to lower layers, the network acts as an ensemble, and among many paths some may already have a good prior.</li>
-        </ul>
 
         <h2>References</h2>
 
         <ul>
-            <li>He, K. et al. (2016). Deep Residual Learning for Image Recognition. <em>CVPR</em>.</li>
-            <li>Balduzzi, D. et al. (2017). The Shattered Gradients Problem: If resnets are the answer, then what is the question? <em>ICML</em>.</li>
+            <li>He, K., Zhang, X., Ren, S. and Sun, J., 2016. Deep residual learning for image recognition. In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 770-778).</li>
+            <li>Balduzzi, D., Frean, M., Leary, L., Lewis, J.P., Ma, K.W.D. and McWilliams, B., 2017, July. The shattered gradients problem: If resnets are the answer, then what is the question?. In International conference on machine learning (pp. 342-350). PMLR.</li>
         </ul>
     </div>
 </article>
