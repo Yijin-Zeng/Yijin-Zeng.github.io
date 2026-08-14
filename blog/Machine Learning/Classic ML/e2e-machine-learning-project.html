@@ -203,13 +203,23 @@
            book info (year, genre, publisher, ...), and maybe publisher info too.</p>
 
         <ul>
-            <li>Because data are usually stored in different places, it is usually non-trivial to get all the data and join them into the form we want.</li>
+            <li>Because data are usually stored in different places, it is usually non-trivial to get all the data and join them into the form we want.
+                (many errors could happen at the join step for various reasons, so need to be extra carefully)
+            </li>
             <li>Sometimes we also only use a specific scope of data, e.g. one model for customers in the US, one for Europe 
-                (there may be laws that prevent using certain features for customers in a given region).</li>
-            <li>To make things worse, each table may have different versions. In the worst case, always check that the column names match across tables.</li>
+                (there may be laws that prevent using certain features for customers in a given region), so we need to apply 
+                correct filter. It is possible, however, a complex business logic needs to be applied to get the correct scope.
+            </li>
+            <li>More often than not, table have different versions and dependencies. We need to understand which version we need to use for each table. For example, 
+                if we decide to use version 3 for table A, then we might need to use version 4 for table B.
+            </li>
+            <li>There could be different data sources for the data we want to use, e.g. one from analytics team one from 
+                engineering team. 99% of their data are the same, but it is not always easy to understand
+                why that 1% of data are different, or what impact it might have to models.
+            </li>
         </ul>
 
-        <h2>Step 3: Get the Insights From the Data</h2>
+        <h2>Step 3: Get Insights From the Data</h2>
 
         <p>It's better to spend more time on the data than the model. It saves a lot of headaches later. 
            If a model doesn't work as expected, the answer is very likely in the data.</p>
@@ -238,12 +248,13 @@
             The reason turned out to be a big configuration change for one very big partner in 2026.</blockquote>
 
         <blockquote>Second real example: during a project to include service fee into the training and inference pipeline, some partners see much bigger change because of service fee than the others. 
-            The reason turned out to be that the service fee is in local currency (e.g. Yen or British Pounds), but the profit is in USD.</blockquote>
+            The reason turned out to be that the service fee is in local currency (e.g. Yen or British Pounds), but the profit is always in USD.</blockquote>
 
         <h2>Step 4: Pre-process the Data for Training</h2>
 
         <ul>
-            <li>This step is in general more standard after we have a good insight into the data: impute missing data, remove outliers, scale the data, feature selection and feature engineering.</li>
+            <li>This step is in general more standard after we have a good insight into the data: impute missing data, remove outliers, scale the data, 
+                feature selection and feature engineering.</li>
             <li>If the input is sequential (e.g. RNN or Transformer), use a sliding window.</li>
             <li>One thing worth to consider in this step is how sensitive is the model to preprocessing choices? 
                 E.g. mean imputation vs. hot-deck imputation, or an RNN being sensitive to the window size.</li>
@@ -272,30 +283,107 @@
 
         <h2>Step 6: Model Evaluation</h2>
 
-        <p>Depending on what the project is about and how many resources we have, model evaluation can be very different.</p>
+        <p>Model evaluation is a crucial step that allows us to understand a model's behavior, 
+           estimate its real-world performance, and assess its potential business impact before it is launched.</p>
 
-        <ul>
-            <li><strong>Can be easy:</strong> just look at the loss function for all models and pick the best one. </li>
-            <li><strong>Can also be comprehensive:</strong>  For classification, check which class performs the best; for regression, 
-                                                    consider analyzing why some data points have much worse predictions.
-                                                    How does performance change over time, by different type of users, or by location? 
-                                                    Among all hyperparameters, which one has the biggest impact on model performance
-                                                    (e.g. run a random forest using hyperparameters as inputs and losses as targets), 
-                                                    so we can spend more time and compute fine-tuning that parameter.</li>
-            <li>Because evaluation is often done offline, also think about how we can connect the offline result to online performance.</li>
-        </ul>
+        <p>While training and validation metrics (e.g., MSE, cross-entropy loss) provide a high-level overview of how a model is learning, 
+           a single score rarely captures the full context we care about in a machine learning project. Relying solely on one overarching 
+           metric can sometimes also be misleading (e.g., due to Simpson's paradox). Comprehensive model evaluation depends heavily on the 
+           specific goals of the project and requires insights from human domain experts.</p>
+
+<p>Some aspects to consider during model evaluation include:</p>
+
+<ul>
+    <li>
+        <strong>Performance across data slices:</strong> How does the model perform across different subgroups? 
+        It is often very important to break down metrics  
+        by time periods, user demographics, geographic locations, or customer segments to ensure consistent performance across the board.
+    </li>
+    <li>
+        <strong>Baseline and heuristic comparisons:</strong> Is the model actually adding value? 
+        We must compare the model's performance against simple baselines (e.g., always predicting the historical average), 
+        existing rule-based heuristics, or the legacy model currently running in production.
+    </li>
+    <li>
+        <strong>Alignment with business metrics:</strong> Statistical metrics like AUC or F1-score do not directly translate to business value. 
+        We need to estimate how the model's predictions will impact core business objectives, such as conversion rates, user retention, or revenue generation. 
+    </li>
+    <li>
+        <strong>Robustness and stability:</strong> How does the model react to unexpected inputs or changing environments? 
+        Evaluation should test how the model handles noisy data, missing features, or long-term shifts in data distribution (data drift).
+    </li>
+    <li>
+        <strong>Failure modes and edge cases:</strong> Under what specific conditions does the model completely break down.
+        Understanding exactly when and why a model fails, such as encountering outliers or unusual scenarios can help establish safety guardrails to prevent catastrophic results.
+        This is especially critical in certain domains like autonomous driving or healthcare.
+    </li>
+    <li>
+        <strong>Fairness and bias:</strong> Does the model systematically disadvantage certain groups? 
+        This is especially important when concerning some attributes like race, gender, or age, to ensure ethical and equitable outcomes.
+    </li>
+    <li>
+        <strong>System performance and latency:</strong> A highly accurate model is useless if it is too slow or expensive to run. 
+        Evaluation must include operational metrics like inference latency (response time), memory footprint, and computational cost at scale.
+    </li>
+    <li>
+        <strong>Interpretability:</strong> Can we explain why the model made a specific prediction? Using techniques like SHAP or LIME to extract feature importance helps build trust with stakeholders and allows experts to verify that the model is learning logical relationships.
+    </li>
+    <li>
+        <strong>Identify potential improvement paths:</strong> Evaluation also helps us to identify the potential rooms for improving the model. For example, 
+        if a classfication model often confuse between class A and B, then it might be helpful to feed more examples of the two classes.
+        By identifying which hyperparameters have the most significant impact on performance (e.g., using sensitivity analysis to map hyperparameters to validation loss), 
+        we can efficiently allocate our time and compute budget for tuning them.
+    </li>
+</ul>
 
         <p>Steps 3, 4, 5, and 6 are <strong>iterative</strong>. In the end, we get better at understanding the data, the model, and the task together.</p>
 
         <h2>Step 7: Model Deploy, Monitor, and Maintain</h2>
 
+        <p>
+           Getting a model ready for deployment is a big part of the project, but often not the whole part. 
+           We also need to think how to deploy the model in production enviroment and how to maintain it.
+        </p>
+
         <ul>
-            <li><strong>Deploy:</strong> check the environment for deployment,
-                                         and for different parts of the pipeline,
-                                         choose reasonable compute resources. Consider how much traffic we'll need to get if A/B testing is needed.</li>
-            <li><strong>Monitor:</strong> data quality checks, automatic model performance monitoring, and when to scale the traffic up or down.</li>
-            <li><strong>Maintain:</strong> prepare to update parts of the pipeline, and be ready to update the whole pipeline. 
-                                        If something unexpected happens, consider <strong>how to fall back safely</strong>.</li>
+        <li>
+            <strong>Deployment:</strong> Deploying a model can range from a simple script to a highly complex system, 
+            depending largely on the project itself and existing infrastructure and workflow. 
+            Normally, transitioning a model from an experimental notebook to a production 
+            environment requires consider the following components:
+            <ul>
+                <li>
+                    <strong>Orchestration:</strong> If model development happened mainly in a single notebook, 
+                    then we need to consider how to factor the monolithic code into a modular pipeline. 
+                    Orchestration tools (like airflow and flyte) manage the complex sequence of independent steps, such as data extraction, preprocessing, 
+                    inference, and writing results back to a database. We need to ensure data flows correctly from one step to the next and handling potential fails.
+                </li>
+                <li>
+                    <strong>Scheduling:</strong> In a notebook, we manually executes the code cells.
+                    In production, the model needs an automated trigger. A scheduler dictates <em>when</em> the pipeline runs. 
+                    This could be on a fixed time interval (e.g., a nightly batch job), triggered by an event (e.g., new data arriving in a data lake).
+                </li>
+                <li>
+                    <strong>Environment Reproducibility:</strong> Notebooks often rely on hidden local configurations or manually installed packages that aren't documented. 
+                    To deploy safely, we must specify the exact software environment—including Python versions and specific library dependencies. 
+                    Consider using tools like Docker containers to run the model runs identically in the production server as it did on cloud or local machine.
+                </li>
+                <li>
+                    <strong>Infrastructure & Compute:</strong> A model running on a laptop or a cloud notebook cannot support production traffic or massive datasets. 
+                    We must determine the physical or cloud infrastructure required to serve the model (such as Kubernetes clusters, serverless functions, or dedicated GPU instances), 
+                    ensuring the system has the memory and CPU power to scale with user demand.
+                </li>
+            </ul>
+        </li>
+
+            <li><strong>Monitor and maintain:</strong> In real world production environments, data is almost never I.I.D. (Independent and Identically Distributed). 
+            In practice, the data distributions during training and evaluation frequently differ from what the model processes in production. 
+            This distribution shift can sometimes be abrupt, such as a sudden market shock in finance or a rapid viral trend on TikTok. 
+            However, in most cases, the shift is gradual (often referred to as data drift), causing the model's predictive quality to degrade slowly over time. 
+            Therefore, it is critical to continuously monitor model performance in production and establish automated triggers to retrain the model whenever 
+            performance drops below an acceptable threshold.
+            </li>
+
         </ul>
 
     </div>
