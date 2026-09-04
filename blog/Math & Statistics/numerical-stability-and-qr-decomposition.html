@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numerical Stability and QR Decomposition - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Numerical Stability and QR Decomposition</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Numerical Stability and QR Decomposition.pdf">PDF</a>.</p>
+
+        <p>Suppose we are solving the system <code>Ax = b</code>. In practice, <code>b</code> is rarely exact. It often contains small measurement errors (for example, if we save <code>0.1</code> in float32, we probably end up saving something like <code>0.10000000012</code>). We denote the error of <code>b</code> as <code>Δb</code>. Similarly, we have an error <code>ΔA</code> for <code>A</code>.</p>
+
+        <h2>Error Propagation and the Condition Number</h2>
+
+        <p>So we have <code>(A+ΔA)(x+Δx) = b+Δb</code>, where <code>x+Δx</code> is the exact solution for this perturbed system, and the additional terms are there because of the numerical approximation. Expanding the left side:</p>
+
+        <pre><code>Ax + AΔx + ΔAx + ΔAΔx = b + Δb</code></pre>
+
+        <p>Since <code>Ax = b</code>, this gives <code>AΔx + ΔAx + ΔAΔx = Δb</code>. We drop the second order term <code>ΔAΔx</code>, because it will be much smaller than the rest:</p>
+
+        <pre><code>AΔx + ΔAx ≈ Δb
+=> Δx ≈ A^-1 (Δb - ΔAx)</code></pre>
+
+        <p>Taking norms:</p>
+
+        <pre><code>||Δx|| = ||A^-1 (Δb - ΔAx)||
+       ≤ ||A^-1|| · ||Δb - ΔAx||
+       ≤ ||A^-1|| ( ||Δb|| + ||ΔA|| · ||x|| )</code></pre>
+
+        <p>This uses the matrix norm <code>||M|| = max_{x≠0} ||Mx|| / ||x||</code>, which gives <code>||Mx|| ≤ ||M|| · ||x||</code>. If the norm for vectors here is the <code>L2</code> norm, then <code>||M|| = σ_max(M)</code>, the largest singular value.</p>
+
+        <p>Dividing by <code>||x||</code>:</p>
+
+        <pre><code>||Δx|| / ||x|| ≤ ||A^-1|| ( ||Δb|| / ||x|| + ||ΔA|| )</code></pre>
+
+        <p>Since <code>Ax = b</code>, we have <code>||Ax|| = ||b||</code>, so <code>||b|| ≤ ||A|| · ||x||</code>, which means <code>1 / ||x|| ≤ ||A|| / ||b||</code>. Substituting this in:</p>
+
+        <pre><code>||Δx|| / ||x|| ≤ ||A^-1|| ( ||A|| · ||Δb|| / ||b|| + ||ΔA|| )
+              = ||A^-1|| · ||A|| · ( ||Δb|| / ||b|| + ||ΔA|| / ||A|| )
+              = K(A) · ( ||Δb|| / ||b|| + ||ΔA|| / ||A|| )</code></pre>
+
+        <p>where <code>K(A) = ||A|| · ||A^-1|| = σ_max / σ_min</code> is known as the <strong>condition number</strong>.</p>
+
+        <p>What this means: if the condition number of <code>A</code> is small, the error <code>Δx</code> is small relative to <code>x</code>. If <code>K(A)</code> is large, the error could be large.</p>
+
+        <h2>Why QR Decomposition Instead of the Normal Equations</h2>
+
+        <p>Intuition of the condition number via SVD: <code>A = UΣV^T</code>, where <code>U</code> and <code>V^T</code> are rotations and <code>Σ</code> is the stretch. If the condition number is large, <code>A</code> stretches a lot along some direction and compresses a lot in other directions.</p>
+
+        <p>Note that:</p>
+
+        <pre><code>A^T A = V Σ U^T U Σ V^T = V Σ² V^T</code></pre>
+
+        <p>so <code>σ_max(A^T A) = σ_max(A)²</code> and <code>σ_min(A^T A) = σ_min(A)²</code>, hence <code>K(A^T A) = K(A)²</code>. Squaring <code>A</code> squares the condition number, so working directly on <code>A^T A</code> is not good if <code>A</code> already has a bad condition number.</p>
+
+        <p>Example: in linear regression, we solve <code>X^T X β = X^T y</code>. If we do <code>β̂ = (X^T X)^-1 X^T y</code> directly, we lose a lot of precision if <code>X</code> has a serious multicollinearity problem, since <code>X^T X</code> squares the condition number of <code>X</code>.</p>
+
+        <p>A computationally safer approach for solving <code>β</code> is QR decomposition:</p>
+
+        <pre><code>X^T X β = X^T y
+R^T Q^T Q R β = R^T Q^T y
+R^T R β = R^T Q^T y
+R β = Q^T y</code></pre>
+
+        <p>solved by backward substitution, so we never actually form <code>X^T X</code>.</p>
+
+        <h2>QR Decomposition and the Gram-Schmidt Process</h2>
+
+        <h3>Review: Projection</h3>
+
+        <p>To understand QR decomposition, we first review the concept of projection.</p>
+
+        <p>Project a vector <code>a</code> onto another vector <code>b</code>:</p>
+
+        <pre><code>(a - λb)^T b = 0
+=> a^T b = λ b^T b
+=> λ = a^T b / b^T b
+=> λb = (b b^T / b^T b) a</code></pre>
+
+        <p>where <code>b b^T / b^T b</code> is the projection matrix of <code>b</code>.</p>
+
+        <p>Project a vector <code>a</code> onto a space <code>B</code> with basis <code>{b_1, ..., b_n}</code>:</p>
+
+        <pre><code>(a - Bλ)^T b_i = 0   for all i
+=> B^T (a - Bλ) = 0
+=> B^T a - B^T B λ = 0
+=> λ = (B^T B)^-1 B^T a
+=> Bλ = B (B^T B)^-1 B^T a</code></pre>
+
+        <p>where <code>B (B^T B)^-1 B^T</code> is the projection matrix into <code>Col(B)</code>.</p>
+
+        <p>Note that the projection matrix <code>P = A(A^T A)^-1 A^T</code> has the same column space as <code>A</code>: since <code>P = A(A^T A)^-1 A^T</code>, <code>Col(P) ⊆ Col(A)</code>. And <code>PA = A</code>, so <code>Col(A) ⊆ Col(P)</code>. Hence <code>Col(A) = Col(P)</code>.</p>
+
+        <h3>The Gram-Schmidt Process</h3>
+
+        <p>The idea of the Gram-Schmidt process: subtract from every new vector its projections in the directions already set.</p>
+
+        <p>Worked example: perform Gram-Schmidt on <code>(a, b, c)</code>.</p>
+
+        <pre><code>A = a
+A' = A / ||A||
+
+B = b - (A^T b / A^T A) A = b - (A'^T b) A'
+B' = B / ||B||
+
+C = c - (A^T c / A^T A) A - (B^T c / B^T B) B = c - (A'^T c) A' - (B'^T c) B'
+C' = C / ||C||</code></pre>
+
+        <p>This gives an orthonormal set <code>{A', B', C'}</code> from <code>{a, b, c}</code>, which is the <code>Q</code> in QR decomposition.</p>
+    </div>
+</article>
+
+</body>
+</html>

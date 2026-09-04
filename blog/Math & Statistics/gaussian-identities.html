@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Identities - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Gaussian Identities</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Gaussian Identities .pdf">PDF</a>.</p>
+
+        <p>Gaussian distribution is arguably the most important single distribution (due to CLT), and it has a lot of interesting properties.</p>
+
+        <h2>Univariate Gaussian Distribution</h2>
+
+        <p>The density is</p>
+
+        <pre><code>f(x; μ, σ) = 1/√(2πσ²) · exp(-(x-μ)²/(2σ²))</code></pre>
+
+        <h3>Showing It Is a Proper Distribution</h3>
+
+        <p>Instead of solving <code>∫f(x;μ,σ)dx</code> directly, we use a multiplication trick: pair the integral with a second copy of itself (over a dummy variable <code>y</code>) and switch to polar coordinates.</p>
+
+        <pre><code>∫_R f(x;μ,σ)dx · ∫_R f(y;μ,σ)dy
+= 1/(2πσ²) ∫_R∫_R exp( -((x-μ)²+(y-μ)²)/(2σ²) ) dx dy
+
+Let (x-μ) = r cosθ, (y-μ) = r sinθ.
+
+J = ∂(x,y)/∂(r,θ) = ( cosθ  -r sinθ )
+                    ( sinθ   r cosθ )
+
+|J| = r cos²θ + r sin²θ = r
+
+Hence
+
+∫_R f(x;μ,σ)dx · ∫_R f(y;μ,σ)dy
+= 1/(2πσ²) ∫_0^{2π} ∫_0^∞ exp(-r²/(2σ²)) r dr dθ
+= 1/(2πσ²) ∫_0^{2π} [ -σ² exp(-r²/(2σ²)) ]_0^∞ dθ
+= 1/(2πσ²) ∫_0^{2π} σ² dθ
+= 1/(2πσ²) · 2πσ² = 1</code></pre>
+
+        <p>Both factors in the product are the same integral (just with the variable renamed), and both are positive, so if their product is 1, each one individually must equal 1.</p>
+
+        <h3>Deriving Its Moment Generating Function</h3>
+
+        <p>So what does its moment generating function look like?</p>
+
+        <pre><code>E(e^{tX}) = ∫ e^{tx} · 1/√(2πσ²) exp(-(x-μ)²/(2σ²)) dx
+
+= 1/√(2πσ²) ∫ exp( tx - (x² + μ² - 2μx)/(2σ²) ) dx
+
+= 1/√(2πσ²) ∫ exp( -1/(2σ²) ( x² - 2μx - 2σ²tx + μ² ) ) dx
+
+= 1/√(2πσ²) ∫ exp( -1/(2σ²) ( (x - (μ+σ²t))² - σ⁴t² - 2μσ²t ) ) dx
+
+= exp( σ²t²/2 + μt ) · 1/√(2πσ²) ∫ exp( -1/(2σ²)(x-(μ+σ²t))² ) dx
+
+= exp( σ²t²/2 + μt )</code></pre>
+
+        <p>If μ = 0, σ = 1, we have <code>E(e^{tX}) = e^{t²/2}</code>. Differentiating this MGF successively at <code>t = 0</code> gives the raw moments of the standard normal:</p>
+
+        <pre><code>E(X)  = ( t e^{t²/2} )|_{t=0} = 0
+E(X²) = ( e^{t²/2} + t² e^{t²/2} )|_{t=0} = 1
+E(X³) = ( t e^{t²/2} + 2t e^{t²/2} + t³ e^{t²/2} )|_{t=0} = 0
+E(X⁴) = ( e^{t²/2} + t² e^{t²/2} + 2t² e^{t²/2} + 2t² e^{t²/2} + 3t² e^{t²/2} + t⁴ e^{t²/2} )|_{t=0} = 3</code></pre>
+
+        <h2>Multivariate Gaussian Distribution</h2>
+
+        <pre><code>f(x; μ, Σ) = (2π)^{-n/2} det(Σ)^{-1/2} exp( -1/2 (x-μ)^T Σ^{-1} (x-μ) )</code></pre>
+
+        <h3>Showing It Is a Proper Distribution</h3>
+
+        <pre><code>I = ∫_{R^n} exp( -1/2 (x-μ)^T Σ^{-1} (x-μ) ) dx
+  = ∫_{R^n} exp( -1/2 y^T Σ^{-1} y ) dy     (y = x - μ)</code></pre>
+
+        <p>Since Σ is a valid covariance matrix, we must have <code>Σ = SΛS^T</code>, where S is orthonormal and Λ is diagonal with <code>λ_i > 0</code>. So <code>Σ^{-1} = SΛ^{-1}S^T</code>, and</p>
+
+        <pre><code>y^T Σ^{-1} y = y^T S Λ^{-1} S^T y = z^T Λ^{-1} z,   where z = S^T y</code></pre>
+
+        <p>Because S is an orthogonal matrix, <code>∂z/∂y = S</code>, so <code>|det(S)| = 1</code> (since <code>SS^T = I ⇒ |S||S^T| = 1 ⇒ det(S) = ±1</code>). So we have</p>
+
+        <pre><code>I = ∫_{R^n} exp( -1/2 z^T Λ^{-1} z ) dz
+  = ∫_{R^n} exp( Σ_i -z_i²/(2λ_i) ) dz_1...dz_n
+  = Π_i √(2πλ_i)
+  = (2π)^{n/2} |Σ|^{1/2}         since |Σ| = |S||Λ||S^T| = |Λ| = Π_i λ_i</code></pre>
+
+        <p>This makes <code>f</code> integrate to <code>(2π)^{-n/2}|Σ|^{-1/2} · (2π)^{n/2}|Σ|^{1/2} = 1</code>. Along the way, this also gives the two directions we use constantly: if <code>Z ~ N(0,I)</code> then <code>Σ^{1/2}Z + μ ~ N(μ,Σ)</code>; and if <code>X ~ N(μ,Σ)</code> then <code>Σ^{-1/2}(X-μ) ~ N(0,I)</code>.</p>
+
+        <h2>Mean and Variance of the Multivariate Gaussian</h2>
+
+        <pre><code>E(X) = ∫_{R^n} (2π)^{-n/2} det(Σ)^{-1/2} x exp( -1/2 (x-μ)^T Σ^{-1} (x-μ) ) dx
+
+     = ∫_{R^n} (2π)^{-n/2} det(Σ)^{-1/2} (y+μ) exp( -1/2 y^T Σ^{-1} y ) dy   (y = x-μ)
+
+     = μ + ∫_{R^n} (2π)^{-n/2} det(Σ)^{-1/2} y exp( -1/2 y^T Σ^{-1} y ) dy
+                                                └──────────── = 0 due to symmetry ────────────┘
+
+     = μ</code></pre>
+
+        <p>For the covariance, <code>Cov(X) = E((X-μ)(X-μ)^T)</code>:</p>
+
+        <pre><code>Cov(X) = ∫_{R^n} (x-μ)(x-μ)^T (2π)^{-n/2} det(Σ)^{-1/2} exp( -1/2 (x-μ)^T Σ^{-1} (x-μ) ) dx
+
+       = ∫_{R^n} y y^T (2π)^{-n/2} det(Σ)^{-1/2} exp( -1/2 y^T Σ^{-1} y ) dy   (y = x-μ)
+
+Let z = Σ^{-1/2} y,  so y = Σ^{1/2} z:
+
+       = ∫_{R^n} Σ^{1/2} z z^T Σ^{1/2} (2π)^{-n/2} det(Σ)^{-1/2} exp( -1/2 z^T z ) |det(Σ^{1/2})| dz
+
+       = Σ^{1/2} ( ∫_{R^n} z z^T (2π)^{-n/2} exp(-1/2 z^Tz) dz ) Σ^{1/2}
+                    └──────────────── all independent now, this integral = I ────────────────┘
+
+       = Σ^{1/2} I Σ^{1/2}
+
+       = Σ</code></pre>
+
+        <h2>Conditional Distribution</h2>
+
+        <p>If <code>(X,Y) ~ N( (μ_x; μ_y), (Σ_xx Σ_xy; Σ_yx Σ_yy) )</code>, then what is <code>Y|X</code>?</p>
+
+        <pre><code>f_{X,Y}(x,y; μ,Σ) = (2π)^{-n/2} det(Σ)^{-1/2} exp( -1/2 (x-μ_x; y-μ_y)^T Σ^{-1} (x-μ_x; y-μ_y) )</code></pre>
+
+        <p>Let <code>Λ = Σ^{-1}</code> be the <strong>precision matrix</strong>. (Note the note briefly reuses the same letter Λ here as the diagonal eigenvalue matrix from the earlier eigendecomposition <code>Σ = SΛS^T</code> — <code>Λ = Σ^{-1} = (SΛS^T)^{-1} = SΛ^{-1}S^T</code> — but the resulting object, block-partitioned below, is the precision matrix, not the eigenvalue matrix.) It is positive-definite as well:</p>
+
+        <pre><code>Λ = ( Λ_xx  Λ_xy )
+    ( Λ_yx  Λ_yy )
+
+where Λ_xx and Λ_yy are symmetric, and Λ_xy = Λ_yx^T</code></pre>
+
+        <p>Expanding the joint density's quadratic form in block form:</p>
+
+        <pre><code>-1/2 (x-μ_x; y-μ_y)^T Λ (x-μ_x; y-μ_y)
+
+= -1/2 ( (x-μ_x)^T Λ_xx (x-μ_x) + (y-μ_y)^T Λ_yx (x-μ_x)
+         + (x-μ_x)^T Λ_xy (y-μ_y) + (y-μ_y)^T Λ_yy (y-μ_y) )</code></pre>
+
+        <p>Now note that <code>f_{Y|X}(y|x;μ,Σ) = f_{X,Y}(x,y;μ,Σ) / f_X(x;μ,Σ)</code> is a function of <code>y</code> only, given <code>x</code>. Keeping only the terms that depend on <code>y</code> and folding everything else into a constant:</p>
+
+        <pre><code>-1/2 (x-μ_x; y-μ_y)^T Λ (x-μ_x; y-μ_y)
+
+= -1/2 ( y^T Λ_yy y + 2y^T ( Λ_yx(x-μ_x) - Λ_yy μ_y ) ) + const
+
+= -1/2 ( y^T Λ_yy y + 2y^T Λ_yy ( Λ_yy^{-1} Λ_yx(x-μ_x) - μ_y ) ) + const</code></pre>
+
+        <p>Note that any multivariate Gaussian distribution has the exponent</p>
+
+        <pre><code>-1/2 (x-μ)^T Σ^{-1} (x-μ) = -1/2 ( x^T Σ^{-1} x - x^T Σ^{-1} μ - μ^T Σ^{-1} x ) + const
+                            = -1/2 ( x^T Σ^{-1} x - 2x^T Σ^{-1} μ ) + const
+                                     └─ quadratic term ─┘   └─ linear term ─┘</code></pre>
+
+        <p>Matching the quadratic term in <code>y</code> gives <code>Cov(Y|X) = Λ_yy^{-1}</code> (and symmetrically <code>Cov(X|Y) = Λ_xx^{-1}</code>), and matching the linear term gives</p>
+
+        <pre><code>E(Y|X) = μ_y - Λ_yy^{-1} Λ_yx (x-μ_x)      (symmetrically:  E(X|Y) = μ_x - Λ_xx^{-1} Λ_xy (y-μ_y) )</code></pre>
+
+        <p>Now, the problem is to express the precision matrix <code>Λ = Σ^{-1} = (Λ_xx Λ_xy; Λ_yx Λ_yy)</code> using <code>Σ = (Σ_xx Σ_xy; Σ_yx Σ_yy)</code>. To do this, we apply the Schur complement based on Gaussian elimination. For a generic block matrix <code>(A B; C D)</code>:</p>
+
+        <pre><code>( A  B ) ( I        0 )   ( A-BD^{-1}C   B )
+( C  D ) (-D^{-1}C  I ) = (      0       D )
+
+( I  -BD^{-1} ) ( A-BD^{-1}C   B )   ( A-BD^{-1}C   0 )
+( 0    I      ) (      0       D ) = (      0       D )</code></pre>
+
+        <p>So we have</p>
+
+        <pre><code>( I  -BD^{-1} ) ( A  B ) ( I        0 )   ( A-BD^{-1}C   0 )
+( 0    I      ) ( C  D ) (-D^{-1}C  I ) = (      0       D )
+
+=> ( A  B )   ( I  BD^{-1} ) ( A-BD^{-1}C   0 ) ( I       0 )
+   ( C  D ) = ( 0    I     ) (      0       D ) ( D^{-1}C I )
+
+=> ( A  B )^{-1}   ( I        0 ) ( (A-BD^{-1}C)^{-1}   0     ) ( I  -BD^{-1} )
+   ( C  D )      = (-D^{-1}C  I ) (        0          D^{-1} ) ( 0     I     )
+
+           ( I        0 ) ( M   0     ) ( I  -BD^{-1} )
+         = (-D^{-1}C  I ) ( 0  D^{-1} ) ( 0     I     )
+
+           ( M            0     ) ( I  -BD^{-1} )
+         = (-D^{-1}CM    D^{-1} ) ( 0     I     )
+
+           (       M              -MBD^{-1}      )
+         = ( -D^{-1}CM     D^{-1}CMBD^{-1}+D^{-1} )
+
+where M = (A - BD^{-1}C)^{-1}</code></pre>
+    </div>
+</article>
+
+</body>
+</html>

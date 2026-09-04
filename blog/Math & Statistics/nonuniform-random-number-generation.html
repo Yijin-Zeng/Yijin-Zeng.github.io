@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nonuniform Random Number Generation - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Nonuniform Random Number Generation</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Nonuniform Random Number Generation.pdf">PDF</a>.</p>
+
+        <p>Most random number generators only give us samples from <code>Uniform(0,1)</code>. The question we look at here is how to turn those uniform samples into samples from some other distribution <code>F(x)</code>.</p>
+
+        <h2>Inversion Method</h2>
+
+        <p>Let <code>U ~ Uniform(0,1)</code>, and let <code>X ~ F(x)</code> where <code>F^{-1}(&middot;)</code> exists. Then</p>
+
+        <pre><code>F^{-1}(U) ~ F(x)</code></pre>
+
+        <p><strong>Proof:</strong></p>
+
+        <pre><code>P(F^{-1}(U) &le; x) = P(U &le; F(x)) = F(x)</code></pre>
+
+        <p>So if we can compute the inverse CDF, we can plug a uniform sample straight into it and get a sample from the target distribution.</p>
+
+        <p><strong>Example: generate the exponential distribution.</strong> We have <code>f_X(x) = &lambda;e^{-&lambda;x}</code>. Integrating gives the CDF:</p>
+
+        <pre><code>F(x) = &lambda; &int;_0^x e^{-&lambda;z} dz
+     = &lambda; ( -1/&lambda; e^{-&lambda;z} |_{z=0}^{x} )
+     = &lambda; ( 1/&lambda; - 1/&lambda; e^{-&lambda;x} )
+     = 1 - e^{-&lambda;x}</code></pre>
+
+        <p>Let <code>y = 1 - exp(-&lambda;x)</code>. Solving for <code>x</code>:</p>
+
+        <pre><code>exp(-&lambda;x) = 1 - y
+=> -&lambda;x = log(1-y)
+=> x = log(1-y) / (-&lambda;)</code></pre>
+
+        <p>so <code>F^{-1}(x) = log(1-x) / (-&lambda;)</code>. Combined with the inversion result above,</p>
+
+        <pre><code>log(1-U) / (-&lambda;) ~ Exp(&lambda;)</code></pre>
+
+        <p>The problem with this method is that not all distributions have <code>F^{-1}(&middot;)</code> in closed form. For example, the Gaussian distribution has no explicit form for <code>F^{-1}(&middot;)</code>.</p>
+
+        <h2>Acceptance-Rejection Method</h2>
+
+        <p>Suppose we have a density function <code>f</code> we cannot directly sample from, but we can sample from another density function <code>g</code>, such that there exists a constant <code>C &lt; &infin;</code> with</p>
+
+        <pre><code>f(x) &le; Cg(x), &forall;x</code></pre>
+
+        <p>Then the acceptance-rejection method does:</p>
+
+        <pre><code>While True:
+    X ~ g(x)
+    U ~ Uniform(0,1)
+    if U &le; f(X) / (Cg(X)):
+        accept X</code></pre>
+
+        <p><strong>Proof</strong> that the accepted samples follow <code>f</code>:</p>
+
+        <pre><code>P(X &le; z | U &le; f(X)/(Cg(X)))
+= P(X &le; z, U &le; f(X)/(Cg(X))) / P(U &le; f(X)/(Cg(X)))
+= [ &int;_{-&infin;}^{z} &int;_0^{f(x)/(Cg(x))} g(x) du dx ] / [ &int;_{-&infin;}^{&infin;} &int;_0^{f(x)/(Cg(x))} g(x) du dx ]
+= [ &int;_{-&infin;}^{z} f(x)/C dx ] / [ &int;_{-&infin;}^{&infin;} f(x)/C dx ]
+= &int;_{-&infin;}^{z} f(x) dx
+= F_X(z)</code></pre>
+
+        <p>The inner integral over <code>U</code> just picks up the height <code>f(x)/(Cg(x))</code>, which cancels one factor of <code>g(x)</code> and leaves <code>f(x)/C</code>. The <code>C</code> in the denominator then cancels against the <code>C</code> in the numerator, leaving exactly the CDF of <code>f</code>.</p>
+
+        <h2>Box-Muller Method</h2>
+
+        <p>Let <code>&theta; ~ Uniform(0, 2&pi;)</code> and <code>R&sup2; ~ Exp(1/2)</code>. If <code>R&sup2; ~ Exp(1/2)</code>, then</p>
+
+        <pre><code>P(R &lt; r) = P(R&sup2; &lt; r&sup2;)
+         = &int;_0^{r&sup2;} 1/2 e^{-z/2} dz
+         = 1 - e^{-r&sup2;/2}</code></pre>
+
+        <p>Differentiating gives the density of <code>R</code>:</p>
+
+        <pre><code>f_R(r) = (-e^{-r&sup2;/2})&prime; = r e^{-r&sup2;/2}</code></pre>
+
+        <p>Now let <code>X = R cos&theta;</code>, <code>Y = R sin&theta;</code>. The claim is that <code>X, Y ~ N(0,1)</code>, independently.</p>
+
+        <p><strong>Proof:</strong> Denote the map <code>f((R,&theta;)) = (X,Y)</code>. Since <code>X = Rcos&theta;</code>, <code>Y = Rsin&theta;</code>, we have</p>
+
+        <pre><code>X&sup2; + Y&sup2; = R&sup2;  =>  R = &radic;(X&sup2;+Y&sup2;) = (X&sup2;+Y&sup2;)^{1/2}</code></pre>
+
+        <p>Also, <code>Y/X = tan&theta;</code>, so <code>&theta; = tan^{-1}(Y/X)</code>. So <code>f^{-1}</code> exists, and the Jacobian of <code>(R,&theta;)</code> with respect to <code>(x,y)</code> is</p>
+
+        <pre><code>J = [ x(x&sup2;+y&sup2;)^{-1/2}          y(x&sup2;+y&sup2;)^{-1/2}       ]
+    [ -1/(1+(y/x)&sup2;) &middot; y/x&sup2;     1/(1+(y/x)&sup2;) &middot; 1/x   ]</code></pre>
+
+        <p>Taking the determinant:</p>
+
+        <pre><code>|J| = x(x&sup2;+y&sup2;)^{-1/2} &middot; 1/(1+(y/x)&sup2;) &middot; 1/x
+      + y(x&sup2;+y&sup2;)^{-1/2} &middot; 1/(1+(y/x)&sup2;) &middot; y/x&sup2;
+    = (x&sup2;+y&sup2;)^{-1/2} &middot; 1/(1+(y/x)&sup2;) &middot; (1 + y&sup2;/x&sup2;)
+    = (x&sup2;+y&sup2;)^{-1/2}
+    = 1/&radic;(x&sup2;+y&sup2;)</code></pre>
+
+        <p>So the joint density of <code>X, Y</code> is</p>
+
+        <pre><code>f_{X,Y}(x,y) = f_R(r) &middot; f_&theta;(&theta;) &middot; |J|
+             = &radic;(x&sup2;+y&sup2;) &middot; exp(-1/2(x&sup2;+y&sup2;)) &middot; 1/(2&pi;) &middot; 1/&radic;(x&sup2;+y&sup2;)
+             = 1/(2&pi;) exp(-1/2(x&sup2;+y&sup2;))
+             = 1/&radic;(2&pi;) exp(-x&sup2;/2) &middot; 1/&radic;(2&pi;) exp(-y&sup2;/2)</code></pre>
+
+        <p>which factors into the product of two independent standard normal densities. So drawing <code>&theta; ~ Uniform(0,2&pi;)</code> and <code>R&sup2; ~ Exp(1/2)</code> and setting <code>X = Rcos&theta;</code>, <code>Y = Rsin&theta;</code> gives two independent samples from <code>N(0,1)</code>, without ever needing the Gaussian inverse CDF.</p>
+
+        <p>(Box &amp; Muller, 1958.)</p>
+    </div>
+</article>
+
+</body>
+</html>

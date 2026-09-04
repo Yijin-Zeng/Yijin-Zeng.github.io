@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Regression - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">Linear Regression</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/Linear Regression.pdf">PDF</a>.</p>
+
+        <p>Linear models are one of the simplest and most well-understood classes of models. A linear model is defined as <strong>Y = Xβ + e</strong>, where Y is the vector of observations, X is the design matrix, β is the parameter vector, and e is an error vector such that E(e) = 0.</p>
+
+        <p>If e ~ N(0, σ²I), the model is called a <strong>normal linear model</strong>, and we have Y|X ~ N(Xβ, σ²I). This relies on two properties of e: (1) the errors are uncorrelated, and (2) they have the same variance.</p>
+
+        <h2>Estimation of β</h2>
+
+        <p>We can consider estimating β from different perspectives, and they all lead to the same result.</p>
+
+        <h3>1. Minimize MSE</h3>
+
+        <p>Let e = Y - Ŷ = Y - Xβ. Then e<sup>T</sup>e = (Y - Xβ)<sup>T</sup>(Y - Xβ). Taking the derivative with respect to β:</p>
+
+        <pre><code>∂(eᵀe)/∂β = 2(Y - Xβ)ᵀ(-X) = -2(YᵀX - βᵀXᵀX)</code></pre>
+
+        <p>Setting this to zero and using Y<sup>T</sup>X = β<sup>T</sup>X<sup>T</sup>X, we get β<sup>T</sup> = Y<sup>T</sup>X(X<sup>T</sup>X)<sup>-1</sup> (if X has full column rank), so</p>
+
+        <pre><code>β̂ = (XᵀX)⁻¹XᵀY</code></pre>
+
+        <h3>2. Maximize the likelihood function</h3>
+
+        <p>The likelihood function is</p>
+
+        <pre><code>L(β, σ²; Y) = (2πσ²)^(-n/2) exp{ -1/(2σ²) (Y-Xβ)ᵀ(Y-Xβ) }</code></pre>
+
+        <p>so the log-likelihood is</p>
+
+        <pre><code>l(β, σ²; Y) = -n/2 log(2πσ²) - 1/(2σ²) (Y-Xβ)ᵀ(Y-Xβ)</code></pre>
+
+        <p>Maximizing the likelihood function is therefore equivalent to minimizing the MSE.</p>
+
+        <h3>3. Projection</h3>
+
+        <p>Consider solving Y = Xβ directly. We cannot find a solution for β, because normally n ≫ m, so Y ∉ Col(X). Therefore, we choose a β̂ such that Xβ̂ is the closest vector to Y. This vector is the <strong>projection</strong> of Y onto Col(X):</p>
+
+        <pre><code>X(XᵀX)⁻¹XᵀY = Xβ̂  =>  β̂ = (XᵀX)⁻¹XᵀY</code></pre>
+
+        <p>which gives the same result as the first two approaches.</p>
+
+        <p>If (X<sup>T</sup>X)<sup>-1</sup> does not exist — in other words, X does not have full column rank, e.g. if m &gt; n — we have two options.</p>
+
+        <p><strong>1. Ridge regression</strong></p>
+
+        <pre><code>β̂ = (XᵀX + λI)⁻¹Xᵀy</code></pre>
+
+        <p>Writing X<sup>T</sup>X = UΛU<sup>T</sup> by eigendecomposition, X<sup>T</sup>X + λI = U(Λ + λI)U<sup>T</sup>, i.e. ridge regression shifts all eigenvalues up by λ, which makes the matrix invertible.</p>
+
+        <p><strong>2. Pseudoinverse of X</strong></p>
+
+        <p>Any matrix A has an SVD A = UΣV<sup>T</sup>. The pseudoinverse is defined as A<sup>+</sup> = VΣ<sup>+</sup>U<sup>T</sup>, where Σ<sup>+</sup> takes the transpose of Σ and inverts each singular value.</p>
+
+        <ol>
+            <li>If A<sup>-1</sup> exists, then A<sup>+</sup> = A<sup>-1</sup>.</li>
+            <li>If (A<sup>T</sup>A)<sup>-1</sup> exists, then A<sup>+</sup> = (A<sup>T</sup>A)<sup>-1</sup>A<sup>T</sup>, which reduces to the same compact SVD form VΣ<sup>+</sup>U<sup>T</sup>.</li>
+        </ol>
+
+        <p>If (A<sup>T</sup>A)<sup>-1</sup> does not exist, then A<sup>T</sup>Aβ = A<sup>T</sup>y has infinitely many solutions, because Col(A<sup>T</sup>A) = Col(A<sup>T</sup>). Among these solutions, β = A<sup>+</sup>y is the one with the minimum L2 norm.</p>
+
+        <p>Consider another solution β*. Since A<sup>T</sup>A(β̂ - β*) = 0, we have β* = β̂ + n where n ∈ Null(A<sup>T</sup>A) = Null(A). Since β̂ ⊥ n,</p>
+
+        <pre><code>||β*||² = ||β̂||² + ||n||² ≥ ||β̂||²</code></pre>
+
+        <p>For this reason, when solving Ax = β, we often just use x = A<sup>+</sup>β directly.</p>
+
+        <h2>Properties of β̂</h2>
+
+        <p>We know β̂ = (X<sup>T</sup>X)<sup>-1</sup>X<sup>T</sup>Y, given that X has full column rank. Since Y|X ~ N(Xβ, σ²I) and β̂ is a linear combination of Y, β̂ must follow a normal distribution as well.</p>
+
+        <pre><code>E(β̂) = E((XᵀX)⁻¹XᵀY) = (XᵀX)⁻¹XᵀE(Y) = (XᵀX)⁻¹XᵀXβ = β</code></pre>
+
+        <p>so β̂ is an <strong>unbiased</strong> estimator of β.</p>
+
+        <pre><code>Cov(β̂) = Cov((XᵀX)⁻¹XᵀY) = (XᵀX)⁻¹XᵀCov(Y)X(XᵀX)⁻¹ = σ²(XᵀX)⁻¹</code></pre>
+
+        <h2>Gauss-Markov Theorem</h2>
+
+        <p>Assume a linear model with unknown parameter β, a design matrix with full rank, and Cov(e) = σ²I. For any fixed c ∈ R<sup>m</sup>, let β̂ be the least squares estimator of the linear model. Then c<sup>T</sup>β̂ has the smallest variance among all linear unbiased estimators for c<sup>T</sup>β.</p>
+
+        <p>Suppose there is another linear, unbiased estimator β̃. Since it is linear, we must have β̃ = WY. Let's define W = (X<sup>T</sup>X)<sup>-1</sup>X<sup>T</sup> + D.</p>
+
+        <p>Since β̃ is unbiased,</p>
+
+        <pre><code>E(β̃) = E(WY) = E(W(Xβ+e)) = WXβ  =>  WX = I  =>  DX = 0</code></pre>
+
+        <p>Then</p>
+
+        <pre><code>Var(β̃) = Var(WY) = W Var(Y) Wᵀ = σ²WWᵀ
+        = σ²((XᵀX)⁻¹ + DDᵀ)
+        = Var(β̂) + σ²DDᵀ</code></pre>
+
+        <p>so Var(c<sup>T</sup>β̃) = c<sup>T</sup>Var(β̂)c + σ²c<sup>T</sup>DD<sup>T</sup>c ≥ Var(c<sup>T</sup>β̂).</p>
+
+        <h2>Estimation of σ²</h2>
+
+        <p>Let e = Y - Ŷ, RSS = e<sup>T</sup>e. Then σ̂² = RSS/(n-r) is an unbiased estimator of σ².</p>
+
+        <p>Write P = X(X<sup>T</sup>X)<sup>-1</sup>X<sup>T</sup>. Then</p>
+
+        <pre><code>E(RSS) = E((Y-Ŷ)ᵀ(Y-Ŷ)) = E((Y-PY)ᵀ(Y-PY)) = E(Yᵀ(I-P)ᵀ(I-P)Y)</code></pre>
+
+        <p>P is a projection matrix, so I-P is also a projection matrix, meaning (I-P)<sup>T</sup> = I-P and (I-P)² = I-P. So E(RSS) = E(Y<sup>T</sup>(I-P)Y).</p>
+
+        <p>Since (I-P)<sup>T</sup> = I-P, we can write I-P = SΛS<sup>T</sup>. Then (I-P)² = SΛ²S<sup>T</sup>, so the eigenvalues of I-P are 0 or 1. Since the sum of eigenvalues equals</p>
+
+        <pre><code>trace(I-P) = n - trace(X(XᵀX)⁻¹Xᵀ) = n - trace((XᵀX)⁻¹XᵀX) = n - m</code></pre>
+
+        <p>Λ has n-m ones on its diagonal.</p>
+
+        <p>So E(RSS) = E(Y<sup>T</sup>SΛS<sup>T</sup>Y). Let Z = S<sup>T</sup>Y. We have Cov(Z) = S<sup>T</sup>Cov(Y)S = σ²I, so Z consists of independent normal random variables with variance σ². This gives</p>
+
+        <pre><code>ZᵀΛZ / σ² ~ χ²_(n-m)   =>   E(ZᵀΛZ / σ²) = n-m   =>   E(RSS / (n-m)) = σ²</code></pre>
+
+        <h2>Inference</h2>
+
+        <p>We now consider the confidence interval for an estimation c<sup>T</sup>β.</p>
+
+        <p>We know β̂ ~ N(β, σ²(X<sup>T</sup>X)<sup>-1</sup>), so c<sup>T</sup>β̂ ~ N(c<sup>T</sup>β, σ²c<sup>T</sup>(X<sup>T</sup>X)<sup>-1</sup>c), and</p>
+
+        <pre><code>(cᵀβ̂ - cᵀβ) / √(σ²cᵀ(XᵀX)⁻¹c) ~ N(0,1)</code></pre>
+
+        <p>Plugging in σ̂² = RSS/(n-p):</p>
+
+        <pre><code>(cᵀβ̂ - cᵀβ) / √(σ̂²cᵀ(XᵀX)⁻¹c) ~ t_(n-p)</code></pre>
+
+        <p>which gives the confidence interval</p>
+
+        <pre><code>cᵀβ ∈ [ cᵀβ̂ - t_(n-p)(α/2)√(σ̂²cᵀ(XᵀX)⁻¹c) ,
+        cᵀβ̂ + t_(n-p)(1-α/2)√(σ̂²cᵀ(XᵀX)⁻¹c) ]</code></pre>
+
+        <p>Two notes:</p>
+
+        <ol>
+            <li>For the confidence interval of a single β<sub>i</sub>, let c<sup>T</sup> = (0, 0, ..., 1, 0, ..., 0), with the 1 at component i.</li>
+            <li>c<sup>T</sup> can also be an input vector, in which case the confidence interval above is for c<sup>T</sup>β, i.e. the average output given that input. For a confidence interval of a single prediction, we need to take that into account separately.</li>
+        </ol>
+    </div>
+</article>
+
+</body>
+</html>

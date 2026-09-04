@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARIMA - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">ARIMA</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/ARIMA.pdf">PDF</a>.</p>
+
+        <h2>White Noise Process</h2>
+
+        <p><code>{X_t}</code> is a <strong>white noise process</strong> if it is a sequence of uncorrelated random variables such that <code>E(X_t) = μ</code>, <code>V(X_t) = σ²</code>, for all <code>t</code>. The autocovariance is</p>
+
+        <pre><code>S_τ = Cov(X_t, X_{t+τ}) = σ²   if τ = 0
+                          = 0    otherwise</code></pre>
+
+        <p>Note: white noise does not imply iid. Consider <code>{X_i}</code> an independent sequence with</p>
+
+        <pre><code>X_i = N(0,1)                if i is even
+X_i = Uniform(-√3, √3)       if i is odd</code></pre>
+
+        <p>When <code>i</code> is odd, we check <code>E(X) = 0</code> and compute <code>V(X)</code> directly from the uniform density on <code>(-√3, √3)</code>:</p>
+
+        <pre><code>E(X²) = ∫_a^b (1/(b-a)) x² dx
+      = (1/(b-a)) [x³/3]_a^b
+      = (1/(b-a)) (b³-a³)/3
+      = (1/(2√3)) (2√3 + 2√3)/3     (with a=-√3, b=√3)
+      = 1</code></pre>
+
+        <p>So <code>V(X) = 1</code> in this case as well. So the process is white noise, however not iid.</p>
+
+        <h2>Moving Average Process MA(q)</h2>
+
+        <p>A <strong>moving average process</strong> is defined as</p>
+
+        <pre><code>X_t = μ - Σ_{i=0}^ℓ θ_i e_{t-i}</code></pre>
+
+        <p>where <code>{e_t}</code> is a white noise process with mean <code>μ = 0</code>.</p>
+
+        <p><code>X_t</code> is a stationary process. Computing <code>Cov(X_t, X_{t+τ})</code>:</p>
+
+        <pre><code>Cov(X_t, X_{t+τ}) = E(X_t X_{t+τ}) - E(X_t)E(X_{t+τ})
+
+= E[ (μ - Σ_{i=0}^ℓ θ_i e_{t-i})(μ - Σ_{i=0}^ℓ θ_i e_{t+τ-i}) ] - μ²
+
+= E[ (Σ_{i=0}^ℓ θ_i e_{t-i})(Σ_{i=0}^ℓ θ_i e_{t+τ-i}) ]
+
+= σ² Σ_{i=0}^ℓ θ_i θ_{i+τ}     if τ ≤ q
+= 0                            if τ > q</code></pre>
+
+        <p>This depends on <code>τ</code> only, which is why the process is stationary.</p>
+
+        <h3>Estimating the Parameters</h3>
+
+        <p>Assuming <code>θ_{-i} = 0</code>, we estimate <code>ê_t</code> with the recursive scheme</p>
+
+        <pre><code>θ_0 ê_1 = (X_1 - μ)
+θ_0 ê_2 = (X_2 - μ) - θ_1 ê_1
+   ⋮
+θ_0 ê_t = (X_t - μ) - Σ_{j=1}^{t-1} θ_j ê_{t-j}</code></pre>
+
+        <p>and then solve</p>
+
+        <pre><code>argmin_{μ, θ} Σ_{t=1}^n ê_t²</code></pre>
+
+        <h3>Making Predictions</h3>
+
+        <p>To predict <code>X_{t+ℓ}</code> given <code>X_1, ..., X_t</code>:</p>
+
+        <pre><code>E(X_{t+ℓ} | X_1,...,X_t) = E(μ - Σ_{i=0}^ℓ θ_i e_{t+ℓ-i} | X_1,...,X_t)
+
+= μ - Σ_{i=1}^ℓ θ_i E(e_{t+ℓ-i} | X_1,...,X_t) - θ_0 E(e_{t+ℓ})</code></pre>
+
+        <p>So we need to estimate <code>e_{t+ℓ-i}</code> given all the observations.</p>
+
+        <h3>Forward Recursion</h3>
+
+        <p>Given the observed data sequence <code>X_{1:t}</code>, we predict</p>
+
+        <pre><code>ê_t = (X_t - X̂_t) / θ̂_0</code></pre>
+
+        <p>where <code>X_t</code> is the real value and <code>X̂_t</code> is the predicted value. Substituting the model for <code>X_t</code> and the predicted <code>X̂_t</code>, and letting <code>θ̂_i → θ_i</code>, <code>μ̂ → μ</code>, the estimation error <code>e_t</code> (the difference between <code>ê_t</code> and the true <code>e_t</code>) satisfies</p>
+
+        <pre><code>θ_0 e_t = Σ_{i=1}^p θ_i e_{t-i}</code></pre>
+
+        <p>For <code>p = 1</code>, this reduces to</p>
+
+        <pre><code>θ_0 e_t = θ_1 e_{t-1}
+=> e_t = (θ_1/θ_0) e_{t-1}
+=> e_t = (θ_1/θ_0)^t e_0</code></pre>
+
+        <p>When <code>θ_1/θ_0 &lt; 1</code>, this converges to 0, so the estimation gets better and better as <code>t</code> increases. When <code>θ_1/θ_0 &gt; 1</code>, the estimate error accumulates to infinity.</p>
+
+        <h2>Autoregressive Process AR(p)</h2>
+
+        <p>An <strong>autoregressive process</strong> is defined as</p>
+
+        <pre><code>X_t = φ_1 X_{t-1} + ... + φ_p X_{t-p} + e_t</code></pre>
+
+        <p>Note: not all AR processes are stationary.</p>
+
+        <p>Consider <code>AR(1)</code>, where <code>X_t = φ X_{t-1} + e_t</code>. Unrolling the recursion (assuming <code>X_0 = 0</code>):</p>
+
+        <pre><code>X_t = φ(φ X_{t-2} + e_{t-1}) + e_t
+    = φ² X_{t-2} + φ e_{t-1} + e_t
+    = e_t + φ e_{t-1} + φ² e_{t-2} + ...
+    = Σ_{k=0}^{t-1} φ^k e_{t-k} + φ^t X_0
+    = Σ_{k=0}^{t-1} φ^k e_{t-k}</code></pre>
+
+        <p>So</p>
+
+        <pre><code>E(X_t) = 0
+
+V(X_t) = E(X_t²) = E[ (Σ_{k=0}^{t-1} φ^k e_{t-k})² ]
+       = Σ_{k=0}^{t-1} φ^{2k} σ²
+       = σ² (1-φ^{2t}) / (1-φ²)</code></pre>
+
+        <p>So for <code>V(X_t) &lt; ∞</code>, we must have <code>|φ| &lt; 1</code>, giving</p>
+
+        <pre><code>V(X_t) ≈ σ² / (1-φ²)   when t is large enough</code></pre>
+
+        <p>There are three cases:</p>
+
+        <ul>
+            <li>If <code>|φ| &lt; 1</code> (stationary), the influence of past <code>e</code> decays exponentially.</li>
+            <li>If <code>|φ| = 1</code> (non-stationary), this is a random walk, and the effect of <code>e</code> stays.</li>
+            <li>If <code>|φ| &gt; 1</code> (non-stationary), the effect of past <code>e</code> increases exponentially.</li>
+        </ul>
+
+        <h2>ARMA and ARIMA</h2>
+
+        <p>An <strong>ARMA(q,p)</strong> process combines the AR(p) and MA(q) parts:</p>
+
+        <pre><code>X_t = Σ_{k=1}^p φ_k X_{t-k} + e_t - Σ_{k=1}^q θ_k e_{t-k}
+      └──────────────────┘         └──────────────────┘
+             AR(p)                        MA(q)</code></pre>
+
+        <p>Define the difference operator <code>Δ = (1-B)</code>, where <code>B X_t = X_{t-1}</code> is the <strong>backward shift operator</strong>.</p>
+
+        <p>We can rewrite ARMA(q,p) as</p>
+
+        <pre><code>X_t - Σ_{k=1}^p φ_k B^k X_t = e_t - Σ_{k=1}^q θ_k B^k e_t
+
+(1 - Σ_{k=1}^p φ_k B^k) X_t = (1 - Σ_{k=1}^q θ_k B^k) e_t
+        Φ(B)                          Θ(B)
+
+ARMA:  Φ(B) X_t = Θ(B) e_t</code></pre>
+
+        <p>and <strong>ARIMA(q,d,p)</strong> as</p>
+
+        <pre><code>Φ(B) (1-B)^d X_t = Θ(B) e_t
+
+or equivalently
+
+Φ(B) Δ^d X_t = Θ(B) e_t</code></pre>
+
+        <h2>References</h2>
+        <ul>
+            <li>Box, G.E.P. and Jenkins, G.M., 1970. Time series analysis: forecasting and control. Holden-Day.</li>
+        </ul>
+    </div>
+</article>
+
+</body>
+</html>

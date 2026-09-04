@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLU Decomposition and Implementation - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .post-content strong {
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">PLU Decomposition and Implementation</h1>
+        <div class="post-meta">
+            <span class="tag">Mathematics</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/PLU Decomposition and Implementation.pdf">PDF</a>.</p>
+
+        <h2>How to Solve a Linear System?</h2>
+
+        <p>We want to solve <code>Ax = b</code>. As an example, take</p>
+
+        <pre><code>A = [ 2  4 -2 ]     b = [ 2 ]
+    [ 4  9 -3 ]         [ 8 ]
+    [-2 -3  7 ]         [10]</code></pre>
+
+        <p>The idea is to do <strong>Gaussian elimination</strong> first, so the equation becomes</p>
+
+        <pre><code>[ 2  4 -2 ]         [2]
+[ 0  1  1 ] x =     [4]
+[ 0  0  4 ]         [8]</code></pre>
+
+        <p>Then we can do <strong>backward substitution</strong> to solve <code>x_1, x_2, x_3</code> easily:</p>
+
+        <pre><code>4x_3 = 8              => x_3 = 2
+x_2 + x_3 = 4          => x_2 = 2
+2x_1 + 4x_2 - 2x_3 = 2 => x_1 = -1</code></pre>
+
+        <h2>Gaussian Elimination</h2>
+
+        <p>Going back to the same example, write <code>A</code> and <code>b</code> together as an augmented matrix and eliminate row by row.</p>
+
+        <pre><code>[ 2  4 -2 |  2]
+[ 4  9 -3 |  8]
+[-2 -3  7 | 10]</code></pre>
+
+        <p><strong>Second row &minus; 2&times;first row:</strong></p>
+
+        <pre><code>[ 2  4 -2 |  2]
+[ 0  1  1 |  4]
+[-2 -3  7 | 10]</code></pre>
+
+        <p><strong>Third row + first row:</strong></p>
+
+        <pre><code>[ 2  4 -2 |  2]
+[ 0  1  1 |  4]
+[ 0  1  5 | 12]</code></pre>
+
+        <p><strong>Third row &minus; second row:</strong></p>
+
+        <pre><code>[ 2  4 -2 | 2]
+[ 0  1  1 | 4]
+[ 0  0  4 | 8]</code></pre>
+
+        <p>That's the upper triangular system we used above.</p>
+
+        <h2>Each Elimination Step Has a Simple Matrix Representation</h2>
+
+        <p>Each of the row operations above can be written as left-multiplication by a matrix. For instance, "second row &minus; 2&times;first row" is</p>
+
+        <pre><code>E_21 = [ 1  0  0]
+       [-2  1  0]
+       [ 0  0  1]</code></pre>
+
+        <h2>LU Decomposition</h2>
+
+        <p>To generalize, we have</p>
+
+        <pre><code>E_{n,n-1} ... E_{m1} ... E_{21} A = U</code></pre>
+
+        <p>where the product of elimination matrices on the left are the elimination steps, and <code>U</code> is the resulting upper triangular matrix. Inverting both sides,</p>
+
+        <pre><code>A = E_21^{-1} E_{m1}^{-1} ... E_{n,n-1}^{-1} U</code></pre>
+
+        <p><strong>Result 1:</strong> if <code>E_ij</code> is the identity matrix with <code>L_ij</code> at entry <code>(i,j)</code>, then <code>E_ij^{-1}</code> is the identity matrix with <code>-L_ij</code> at entry <code>(i,j)</code>.</p>
+
+        <p><strong>Result 2:</strong> the product <code>E_21^{-1} E_31^{-1} ... E_{n,n-1}^{-1}</code> is a single lower triangular matrix with all the <code>-L_ij</code> entries stacked in their respective positions, e.g.</p>
+
+        <pre><code>[    1      0    0]
+[ -L_21     1    0]
+[ -L_31  -L_32   1]</code></pre>
+
+        <p>We can prove this by induction: multiplying <code>E_ij^{-1}</code> (which has <code>-L_ij</code> at entry <code>(i,j)</code> and zeros elsewhere off the diagonal) into the product so far only fills in entry <code>(i,j)</code> with <code>-L_ij</code>, since the entry at <code>(i,j)</code> in the partial product is still zero at that point and any other entries below the diagonal are left untouched.</p>
+
+        <p>The effect of this matrix: a Gaussian elimination step takes the <code>i</code>-th row, times <code>L_ij</code>, and adds it to the <code>j</code>-th row, where <code>j &gt; i</code>. So this operation only affects entry <code>(i,j)</code>.</p>
+
+        <p>So we have <code>A = LU</code>. This is the known <strong>LU decomposition</strong>.</p>
+
+        <h2>LU Decomposition Isn't Always Possible</h2>
+
+        <p>For example, if</p>
+
+        <pre><code>A = [0 2 3]
+    [1 3 5]
+    [4 0 2]</code></pre>
+
+        <p>then the first row cannot eliminate the second or third row, because the <code>(1,1)</code> entry is <code>0</code>.</p>
+
+        <p>Define the <strong>row exchange matrix</strong> <code>P_ij</code> as the identity matrix with rows <code>i</code> and <code>j</code> swapped. The effect of this matrix: <code>P_ij A</code> swaps rows <code>A_i</code> and <code>A_j</code> of <code>A</code>.</p>
+
+        <p>An important property of <code>P_ij</code>: <code>P_ij = P_ij^{-1}</code>. This is obvious because <code>P_ij^2 = I</code> &mdash; swap rows <code>i</code> and <code>j</code>, then swap them again, and we're back where we started.</p>
+
+        <h2>PLU Decomposition</h2>
+
+        <p>So in many cases we have a chain that mixes elimination steps and row exchanges, something like <code>(E ... P E ... P E ... E) A = U</code>, and we want to collect all the <code>P</code>'s together. Since <code>PE = E'P</code> where <code>E' = PEP</code>, each time we push a permutation matrix <code>P</code> through an elimination matrix <code>E</code>, <code>E</code> turns into a new elimination matrix <code>E'</code> acting on the permuted row indices.</p>
+
+        <p>Concretely, for a chain like <code>E_32 P_23 E_31 E_21</code>:</p>
+
+        <pre><code>E_32 P_23 E_31 E_21
+= E_32 E'_31 P_23 E_21
+= E_32 E'_31 E'_21 P_23</code></pre>
+
+        <p>where</p>
+
+        <pre><code>E'_31 = P_23 E_31 P_23
+      = P_23 (I + L_31 e_3 e_1^T) P_23
+      = I + L_31 P_23 e_3 e_1^T P_23
+      = I + L_31 e_2 e_1^T   (goes to row 2)</code></pre>
+
+        <p>and similarly</p>
+
+        <pre><code>E'_21 = I + L_21 e_3 e_1^T   (goes to row 3)</code></pre>
+
+        <p>Putting it back together, <code>E_32 P_23 E_31 E_21 A = U</code> becomes <code>E_32 E'_31 E'_21 (P_23 A) = U</code>, so</p>
+
+        <pre><code>P_23 A = (E_32 E'_31 E'_21)^{-1} U = LU</code></pre>
+
+        <p>This is the <strong>PLU decomposition</strong>: <code>PA = LU</code>.</p>
+    </div>
+</article>
+
+</body>
+</html>
