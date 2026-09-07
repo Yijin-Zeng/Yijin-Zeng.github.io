@@ -156,65 +156,81 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Deep Learning/RNNs and Attention.pdf">PDF</a>.</p>
 
-        <p>Before Transformers, the attention mechanism arrives to solve the short-term memory issues with RNNs.</p>
+        <p>Attention mechanism becomes extremely popular because of Transformers. However, it did not come from nowhere.
+        Initially, it was designed to solve the short-term memory issues with RNNs. We therefore discuss RNNs and consider
+        how attention could help here.
+    </p>
 
         <h2>Simple RNN</h2>
 
         <p>Consider a single neuron with output y and input x, feeding its own previous output back in at every step. Unrolled through time, this looks like:</p>
 
         <svg viewBox="0 0 600 210" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
-            <text x="90" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽¹⁾</text>
-            <text x="230" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽²⁾</text>
-            <text x="500" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽ᵗ⁾</text>
-            <line x1="90" y1="42" x2="90" y2="72" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
-            <line x1="230" y1="42" x2="230" y2="72" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
-            <line x1="500" y1="42" x2="500" y2="72" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
-            <circle cx="90" cy="100" r="26" fill="none" stroke="#1a1a1a" stroke-width="2"/>
-            <circle cx="230" cy="100" r="26" fill="none" stroke="#1a1a1a" stroke-width="2"/>
-            <circle cx="500" cy="100" r="26" fill="none" stroke="#1a1a1a" stroke-width="2"/>
-            <text x="90" y="105" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#1a1a1a">n</text>
-            <text x="230" y="105" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#1a1a1a">n</text>
-            <text x="500" y="105" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#1a1a1a">n</text>
-            <line x1="116" y1="100" x2="204" y2="100" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-rnn-blue)"/>
-            <line x1="256" y1="100" x2="330" y2="100" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-rnn-blue)"/>
-            <text x="360" y="105" text-anchor="middle" font-size="14" font-family="Inter, sans-serif" fill="#999">···</text>
-            <line x1="390" y1="100" x2="474" y2="100" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-rnn-blue)"/>
-            <line x1="90" y1="126" x2="90" y2="156" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
-            <line x1="230" y1="126" x2="230" y2="156" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
-            <line x1="500" y1="126" x2="500" y2="156" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
-            <text x="90" y="172" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x⁽¹⁾</text>
-            <text x="230" y="172" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x⁽²⁾</text>
-            <text x="500" y="172" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x⁽ᵗ⁾</text>
-            <line x1="20" y1="196" x2="580" y2="196" stroke="#999" stroke-width="1" marker-end="url(#arrow-rnn)"/>
-            <text x="300" y="192" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#999">time</text>
-            <defs>
-                <marker id="arrow-rnn" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                    <polygon points="0 0, 8 3, 0 6" fill="#999"/>
-                </marker>
-                <marker id="arrow-rnn-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                    <polygon points="0 0, 8 3, 0 6" fill="#2563eb"/>
-                </marker>
-            </defs>
-        </svg>
+    <text x="90" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽¹⁾</text>
+    <text x="230" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽²⁾</text>
+    <text x="500" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽ᵗ⁾</text>
+    
+    <!-- Top arrows pointing up to ŷ -->
+    <line x1="90" y1="72" x2="90" y2="42" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
+    <line x1="230" y1="72" x2="230" y2="42" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
+    <line x1="500" y1="72" x2="500" y2="42" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
+    
+    <circle cx="90" cy="100" r="26" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+    <circle cx="230" cy="100" r="26" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+    <circle cx="500" cy="100" r="26" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+    
+    <text x="90" y="105" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#1a1a1a">n</text>
+    <text x="230" y="105" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#1a1a1a">n</text>
+    <text x="500" y="105" text-anchor="middle" font-size="12" font-family="JetBrains Mono, monospace" fill="#1a1a1a">n</text>
+    
+    <line x1="116" y1="100" x2="204" y2="100" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-rnn-blue)"/>
+    <line x1="256" y1="100" x2="330" y2="100" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-rnn-blue)"/>
+    <text x="360" y="105" text-anchor="middle" font-size="14" font-family="Inter, sans-serif" fill="#999">···</text>
+    <line x1="390" y1="100" x2="474" y2="100" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-rnn-blue)"/>
+    
+    <!-- Bottom arrows pointing up to n -->
+    <line x1="90" y1="156" x2="90" y2="126" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
+    <line x1="230" y1="156" x2="230" y2="126" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
+    <line x1="500" y1="156" x2="500" y2="126" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-rnn)"/>
+    
+    <text x="90" y="172" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x⁽¹⁾</text>
+    <text x="230" y="172" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x⁽²⁾</text>
+    <text x="500" y="172" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x⁽ᵗ⁾</text>
+    
+    <line x1="20" y1="196" x2="580" y2="196" stroke="#999" stroke-width="1" marker-end="url(#arrow-rnn)"/>
+    <text x="300" y="192" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#999">time</text>
+    
+    <defs>
+        <marker id="arrow-rnn" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#999"/>
+        </marker>
+        <marker id="arrow-rnn-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#2563eb"/>
+        </marker>
+    </defs>
+</svg>
         <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">The blue arrows are the recurrence: each step's output feeds into the next step's computation.</p>
 
         <p>The formulation is</p>
 
-        <pre><code>ŷ⁽ᵗ⁾ = σ( wy · ŷ⁽ᵗ⁻¹⁾ + wxᵗ x⁽ᵗ⁾ + b )</code></pre>
+        <pre><code>ŷ⁽ᵗ⁾ = σ( w_y · ŷ⁽ᵗ⁻¹⁾ + w_x x⁽ᵗ⁾ + b )</code></pre>
 
-        <p>where σ is the <strong>activation function</strong>, wy is a scalar, wx is a vector of length d (the dimension of inputs), and b is a scalar.</p>
+        <p>where σ is the <strong>activation function</strong>, w_y is a scalar, w_x is a vector of length d (the dimension of inputs), and b is a scalar.</p>
 
         <p>With multiple neurons, the output y and input x are vectors, and the same unrolling applies (same diagram, just vector-valued at every arrow), except the ŷ⁽ᵗ⁻¹⁾ terms at each time step are also known as <strong>hidden states</strong>:</p>
 
-        <pre><code>ŷ⁽ᵗ⁾ = σ( Wyᵗ ŷ⁽ᵗ⁻¹⁾ + Wxᵗ x⁽ᵗ⁾ + b )</code></pre>
+        <pre><code>ŷ⁽ᵗ⁾ = σ( W_y ŷ⁽ᵗ⁻¹⁾ + W_x x⁽ᵗ⁾ + b )</code></pre>
 
         <p>Apparently, we can stack many layers of RNN to make our model more representative.</p>
 
-        <p><strong>Problem with Simple RNN: short-term memory.</strong> ŷ⁽ᵗ⁾ contains less and less information about x⁽¹⁾ as t increases.</p>
+        <p><strong>Problem with Simple RNN: short-term memory.</strong> ŷ⁽ᵗ⁾ contains less and less information about x⁽¹⁾ as t increases. Therefore,
+        Simple RNN cannot deal with long sequences well.
+        </p>
 
         <h2>LSTM</h2>
 
-        <p><strong>LSTM (long short-term memory)</strong> cells solve the short-term memory problem partly by introducing <strong>gates</strong> to divide memory into short-term memory <code>h⁽ᵗ⁾</code> and long-term memory <code>C⁽ᵗ⁾</code>.</p>
+        <p><strong>LSTM (long short-term memory)</strong> cells solve the short-term memory problem partly by introducing 
+           <strong>gates</strong> to divide memory into short-term memory <code>h⁽ᵗ⁾</code> and long-term memory <code>C⁽ᵗ⁾</code>.</p>
 
         <svg viewBox="0 0 620 330" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:560px; display:block; margin:0 auto 24px;">
             <text x="30" y="55" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">C⁽ᵗ⁻¹⁾</text>
@@ -277,13 +293,17 @@
         </svg>
         <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">All four boxes take both h⁽ᵗ⁻¹⁾ and x⁽ᵗ⁾ as input. The forget and input gates decide how much of C⁽ᵗ⁻¹⁾ to keep versus overwrite with a new candidate, giving C⁽ᵗ⁾; the output gate then decides how much of tanh(C⁽ᵗ⁾) becomes h⁽ᵗ⁾ and y⁽ᵗ⁾.</p>
 
-        <p><strong>Pros of LSTM:</strong> it decides what information to forget and keep, so in theory important information can be kept.</p>
+        <p><strong>Pros of LSTM:</strong> in theory, it can decide what information to forget and keep, so important information can be kept
+        for longer sequences, and less important information can be discarded.</p>
 
-        <p><strong>Cons of LSTM:</strong> it is very expensive to compute.</p>
+        <p><strong>Cons of LSTM:</strong> it is very expensive to compute, and although it can deal with longer sequences
+        than simple RNN, it doesnt solve the long term memory problem completely.</p>
 
         <h2>GRU</h2>
 
-        <p>A simplified version of LSTM is <strong>GRU (gated recurrent units)</strong>, which only has a forget gate and an input gate, and merges the short-term and long-term memory into a single hidden state <code>h⁽ᵗ⁾</code>.</p>
+        <p>A simplified version of LSTM is <strong>GRU (gated recurrent units)</strong>, 
+           which uses a single signal to control both forget gate and input gate, and 
+           merges the short-term and long-term memory into a single hidden state.</p>
 
         <svg viewBox="0 0 620 300" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:520px; display:block; margin:0 auto 24px;">
             <text x="30" y="55" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">h⁽ᵗ⁻¹⁾</text>
@@ -332,70 +352,81 @@
         <p>An encoder-decoder network for machine translation works as follows. The encoder is an RNN that produces y⁽⁰⁾, y⁽¹⁾, ..., y⁽ᵗ⁾, and the last of these is used to initialize the hidden state of the first layer of the decoder. The decoder has an embedding layer and generates tokens autoregressively, e.g. translating "milk, drink, I" (the encoder input is reversed, because "I" is normally the first word to translate) into a sequence of Chinese tokens ending in <code>&lt;eos&gt;</code>.</p>
 
         <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:700px; display:block; margin:0 auto 24px;">
-            <rect x="30" y="80" width="130" height="55" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
-            <text x="95" y="112" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">Encoder</text>
-            <line x1="95" y1="135" x2="95" y2="153" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <rect x="30" y="155" width="130" height="26" fill="none" stroke="#666" stroke-width="1.5" rx="3"/>
-            <text x="95" y="172" text-anchor="middle" font-size="10" font-family="Inter, sans-serif" fill="#666">embedding layer</text>
-            <text x="95" y="215" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#1a1a1a">milk &nbsp; drink &nbsp; I</text>
-            <line x1="95" y1="210" x2="95" y2="183" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <text x="95" y="235" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#999">(reversed input)</text>
+    <rect x="30" y="80" width="130" height="55" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
+    <text x="95" y="112" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">Encoder</text>
+    <line x1="95" y1="135" x2="95" y2="153" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <rect x="30" y="155" width="130" height="26" fill="none" stroke="#666" stroke-width="1.5" rx="3"/>
+    <text x="95" y="172" text-anchor="middle" font-size="10" font-family="Inter, sans-serif" fill="#666">embedding layer</text>
+    <text x="95" y="215" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#1a1a1a">milk &nbsp; drink &nbsp; I</text>
+    <line x1="95" y1="210" x2="95" y2="183" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <text x="95" y="235" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#999">(reversed input)</text>
 
-            <path d="M 160 100 C 195 100, 195 105, 228 105" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-enc-blue)"/>
-            <text x="195" y="88" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#2563eb">initializes h⁽⁰⁾</text>
+    <path d="M 160 100 C 195 100, 195 105, 228 105" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-enc-blue)"/>
+    <text x="195" y="88" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#2563eb">initializes h⁽⁰⁾</text>
 
-            <rect x="230" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
-            <rect x="320" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
-            <rect x="410" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
-            <rect x="500" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
-            <rect x="590" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
-            <line x1="290" y1="105" x2="316" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="380" y1="105" x2="406" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="470" y1="105" x2="496" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="560" y1="105" x2="586" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <rect x="230" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
+    <rect x="320" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
+    <rect x="410" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
+    <rect x="500" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
+    <rect x="590" y="80" width="60" height="50" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
+    
+    <line x1="290" y1="105" x2="316" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="380" y1="105" x2="406" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="470" y1="105" x2="496" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="560" y1="105" x2="586" y2="105" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
 
-            <text x="260" y="63" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽⁰⁾ = 我</text>
-            <text x="350" y="63" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽¹⁾ = 喝</text>
-            <text x="440" y="63" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽²⁾ = 牛</text>
-            <text x="530" y="63" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽³⁾ = 奶</text>
-            <text x="620" y="63" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">&lt;eos&gt;</text>
-            <line x1="260" y1="80" x2="260" y2="68" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="350" y1="80" x2="350" y2="68" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="440" y1="80" x2="440" y2="68" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="530" y1="80" x2="530" y2="68" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="620" y1="80" x2="620" y2="68" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <text x="260" y="30" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽⁰⁾ = 我</text>
+    <text x="350" y="30" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽¹⁾ = 喝</text>
+    <text x="440" y="30" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽²⁾ = 牛</text>
+    <text x="530" y="30" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽³⁾ = 奶</text>
+    <text x="620" y="30" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">&lt;eos&gt;</text>
+    
+    <line x1="260" y1="80" x2="260" y2="36" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="350" y1="80" x2="350" y2="36" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="440" y1="80" x2="440" y2="36" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="530" y1="80" x2="530" y2="36" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="620" y1="80" x2="620" y2="36" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
 
-            <text x="260" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">&lt;sos&gt;</text>
-            <text x="350" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">我</text>
-            <text x="440" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">喝</text>
-            <text x="530" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">牛</text>
-            <text x="620" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">奶</text>
-            <text x="440" y="215" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#999">(embedding layer input)</text>
-            <line x1="260" y1="193" x2="260" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="350" y1="193" x2="350" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="440" y1="193" x2="440" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="530" y1="193" x2="530" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
-            <line x1="620" y1="193" x2="620" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <text x="260" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">&lt;sos&gt;</text>
+    <text x="350" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">我</text>
+    <text x="440" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">喝</text>
+    <text x="530" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">牛</text>
+    <text x="620" y="200" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">奶</text>
+    <text x="440" y="215" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#999">(embedding layer input)</text>
+    
+    <line x1="260" y1="193" x2="260" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="350" y1="193" x2="350" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="440" y1="193" x2="440" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="530" y1="193" x2="530" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
+    <line x1="620" y1="193" x2="620" y2="130" stroke="#999" stroke-width="1.5" marker-end="url(#arrow-enc)"/>
 
-            <path d="M 278 68 C 310 145, 315 170, 340 197" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-enc-blue)"/>
-            <text x="340" y="140" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#2563eb">predicted token becomes</text>
-            <text x="340" y="151" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#2563eb">next step's input</text>
+    <!-- Dashed curves from predicted output to next input -->
+    <path d="M 278 36 C 310 120, 315 170, 340 197" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-enc-blue)"/>
+    <path d="M 368 36 C 400 120, 405 170, 430 197" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-enc-blue)"/>
+    <path d="M 458 36 C 490 120, 495 170, 520 197" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-enc-blue)"/>
+    <path d="M 548 36 C 580 120, 585 170, 610 197" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-enc-blue)"/>
+    
+    <text x="340" y="140" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#2563eb">predicted token becomes</text>
+    <text x="340" y="151" text-anchor="middle" font-size="9" font-family="Inter, sans-serif" fill="#2563eb">next step's input</text>
 
-            <defs>
-                <marker id="arrow-enc" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
-                    <polygon points="0 0, 7 3, 0 6" fill="#999"/>
-                </marker>
-                <marker id="arrow-enc-blue" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
-                    <polygon points="0 0, 7 3, 0 6" fill="#2563eb"/>
-                </marker>
-            </defs>
-        </svg>
+    <defs>
+        <marker id="arrow-enc" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 7 3, 0 6" fill="#999"/>
+        </marker>
+        <marker id="arrow-enc-blue" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 7 3, 0 6" fill="#2563eb"/>
+        </marker>
+    </defs>
+</svg>
+
+
 
         <p><strong>Decoder during inference: autoregressive.</strong> At time t, layer i's hidden state hᵢ⁽ᵗ⁻¹⁾ feeds layer i+1's hᵢ₊₁⁽ᵗ⁻¹⁾. Each layer deals with one time step and moves immediately to the next layer.</p>
 
-        <p><strong>Decoder during training: teacher forcing.</strong> The decoder behaves exactly like the encoder by applying teacher forcing — each layer processes all time steps before moving to the next layer. For predicting y⁽ᵗ⁾, we assume the model predicted y⁽¹⁾, ..., y⁽ᵗ⁻¹⁾ correctly.</p>
+        <p><strong>Decoder during training: teacher forcing.</strong> The decoder behaves exactly like the encoder by applying teacher forcing, where each layer processes all time steps before moving to the next layer. For predicting y⁽ᵗ⁾, we assume the model predicted y⁽¹⁾, ..., y⁽ᵗ⁻¹⁾ correctly.</p>
 
-        <p><strong>Problem with standard encoder-decoder: information bottleneck.</strong> We need to encode the whole sentence into a fixed-length vector. As the sequence becomes longer, earlier information gets diluted.</p>
+        <p><strong>Problem with standard encoder-decoder: information bottleneck.</strong> We need to encode the whole input sentence into a fixed-length vector regardless of the input length. 
+        As the sequence becomes longer, important information gets diluted.</p>
 
         <h2>Bahdanau Attention</h2>
 
@@ -446,7 +477,7 @@
             </defs>
         </svg>
 
-        <p>The formulas are</p>
+        <p>The formulas for Bahdanau attention:</p>
 
         <pre><code>e(t,i) = vᵗ tanh( W [ h_{t-1} ; y⁽ⁱ⁾ ] )
 
@@ -458,8 +489,9 @@ weighted average = Σᵢ y⁽ⁱ⁾ s(t,i)</code></pre>
 
         <p>How to use it: (1) concatenate it with the current input before feeding into the RNN, or (2) use it for the output only — get y_(t) as usual, then do softmax(Wc [ y_(t) ; c_(t) ]).</p>
 
-        <p><strong>Why is attention mechanism revolutionary?</strong> It breaks the information bottleneck. Without attention, the whole sentence — 3 words long or 100 words long — is compressed into one fixed-length vector. With attention, information is represented as number of words &times; vector length, so it scales dynamically with sequence length.</p>
-
+        <p><strong>Why is attention mechanism revolutionary?</strong> It breaks the information bottleneck. Without attention, the whole sentence, e.g. 3 words long or 1000 words long,
+        is compressed into one fixed-length vector. With attention, information is represented as number of words vector length, so it scales dynamically with sequence length.</p>
+        
         <h2>References</h2>
 
         <ul>
