@@ -156,17 +156,26 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/Linear Regression.pdf">PDF</a>.</p>
 
-        <p>Linear models are one of the simplest and most well-understood classes of models. A linear model is defined as <strong>Y = Xβ + e</strong>, where Y is the vector of observations, X is the design matrix, β is the parameter vector, and e is an error vector such that E(e) = 0.</p>
-
-        <p>If e ~ N(0, σ²I), the model is called a <strong>normal linear model</strong>, and we have Y|X ~ N(Xβ, σ²I). This relies on two properties of e: (1) the errors are uncorrelated, and (2) they have the same variance.</p>
+        <p>Linear models are one of the simplest and most well-understood 
+           classes of machine learning models. A linear model is defined as 
+           <strong>Y = Xβ + e</strong>, where Y is the vector of observations, 
+           X is the design matrix, β is the parameter vector, and e is an error vector 
+           such that E(e) = 0. Further, if e ~ N(0, σ²I), the model is then known as a normal linear model, 
+           and we have Y|X ~ N(Xβ, σ²I). This relies on two properties of the noise e: 
+           (1) the errors are uncorrelated, and (2) they have the same variance.</p>
 
         <h2>Estimation of β</h2>
 
-        <p>We can consider estimating β from different perspectives, and they all lead to the same result.</p>
+        <p>β is the parameter vector we want to learn from the data.
+           We can consider estimating β from a few different perspectives.
+           As we will show, they all lead to the same result.</p>
 
         <h3>1. Minimize MSE</h3>
 
-        <p>Let e = Y - Ŷ = Y - Xβ. Then e<sup>T</sup>e = (Y - Xβ)<sup>T</sup>(Y - Xβ). Taking the derivative with respect to β:</p>
+        <p>Let us denote the estimation deviation as
+           e = Y - Ŷ = Y - Xβ. Then e<sup>T</sup>e = (Y - Xβ)<sup>T</sup>(Y - Xβ)
+           is  
+           Taking the derivative with respect to β:</p>
 
         <pre><code>∂(eᵀe)/∂β = 2(Y - Xβ)ᵀ(-X) = -2(YᵀX - βᵀXᵀX)</code></pre>
 
