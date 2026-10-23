@@ -252,6 +252,12 @@
             <li><strong>Negative pair (Y=0):</strong> push the distance to be at least m apart (only penalize if D &lt; m). But if the distance is already larger than m, leave it as it is (the same idea as in support vector machine (SVM)).</li>
         </ul>
 
+        <p>The idea of pairwise contrastive loss is simple: if the pair matches, push the distance to 0; otherwise, push the distance large. However, once the distance is larger than m, the loss is 0. Why is this?</p>
+        <ol>
+            <li>If there is no such margin, the model could push one mismatched pair to infinity, destroying the loss function.</li>
+            <li>This forces the model to update its weights from positive pairs and "hard negative" pairs. Since "easy negative" pairs easily have distance &gt; m, they do not provide any gradients.</li>
+        </ol>
+
         <h3>Triplet Loss</h3>
         <p>Triplet loss considers three data points at a time:</p>
         <ol>
@@ -264,13 +270,15 @@
 
         <blockquote>The distance between anchor and positive should be smaller than the distance between anchor and negative by at least a margin m.</blockquote>
 
+        <p>We have a margin here for similar reasons as in pairwise contrastive loss. Note that, unlike pairwise loss, it only cares about <strong>relative distances</strong>.</p>
+
         <p>The loss is zero when the constraint is satisfied (i.e., the negative is sufficiently farther away than the positive). Otherwise, it pushes the model to reorganize the embedding space accordingly.</p>
 
         <h2>Comparing the Approaches</h2>
         <ul>
-            <li><strong>Pairwise loss</strong> is simple but only sees two samples at a time, which can be slow to converge.</li>
-            <li><strong>Triplet loss</strong> provides richer signal by explicitly comparing relative distances, but requires careful mining of hard negatives.</li>
-            <li><strong>CLIP-style (InfoNCE) loss</strong> scales to entire batches, using all other samples as negatives simultaneously, making it highly efficient for large-scale training.</li>
+            <li><strong>Pairwise contrastive loss</strong> forces all matched pairs to have distance 0, while negative pairs must have distance &gt; m. This is too rigid and ignores the variances of each cluster (e.g. cars might have larger variance than dogs). Also, if we want to consider all pairs, it is not very efficient (most pairs do not provide much information).</li>
+            <li><strong>Triplet loss</strong> is more flexible than pairwise contrastive loss since it considers only relative distances. However, it is again not very computationally efficient: to make training work in practice, we need to find "hard negative" pairs during training.</li>
+            <li><strong>Symmetric cross-entropy loss</strong> is very flexible since it cares about relative distances as well. Also, since we can use a large batch (e.g. 32768), it is statistically guaranteed to have "hard negatives" for each positive pair. It is therefore computationally much more efficient.</li>
         </ul>
     </div>
 </article>
