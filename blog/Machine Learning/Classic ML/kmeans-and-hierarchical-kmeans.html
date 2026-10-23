@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-means and Hierarchical K-means - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">K-means and Hierarchical K-means</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/KMeans and Hierarchical KMeans.pdf">PDF</a>.</p>
+        <p>K-means is a simple and efficient clustering method. </p>
+
+        <h2>Formulation</h2>
+        <p>Suppose we have data points <code>x_1, ..., x_n</code>, where each <code>x_i</code> is in R^d. For each data point, we introduce <code>p_i</code> in {1, ..., k} to indicate which cluster point i should be assigned to. The target is:</p>
+
+        <pre><code>argmin_{p_1, ..., p_n}  sum_{j=1}^k sum_{i=1}^n I(p_i = j) * ||x_i - mu_j||^2
+
+where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
+
+        <p>In another words, <code>mu_j</code> is the centroid (the mean) of cluster j, and we want the assignments that make every point as close as possible to the centroid of its own cluster.</p>
+
+
+        <h2>Algorithm</h2>
+        <ol>
+            <li><strong>Initialize:</strong> randomly initialize the centroids <code>mu_1, ..., mu_k</code>.</li>
+            <li><strong>E-step:</strong> compute the distance from each point to each centroid, and assign the point to the closest one: <code>p_i = argmin_j ||x_i - mu_j||^2</code>.</li>
+            <li><strong>M-step:</strong> recompute each centroid as the mean of the points assigned to it: <code>mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j)</code>.</li>
+        </ol>
+        <p>Repeat the E-step and M-step until the assignments stop changing.</p>
+
+        <p>Two notes about the algorithm:</p>
+        <ul>
+            <li>The algorithm is <strong>guaranteed to converge</strong>, since both the E-step and the M-step are guaranteed to lead to a lower loss (it is a greedy algorithm).</li>
+            <li>The final result <strong>relies on the initialization</strong>. Therefore, the algorithm might not converge to the true result, only to a local one.</li>
+        </ul>
+
+        <h2>Initialization: K-means++</h2>
+        <p> The results of K-means could be affected by the initialization of the centroids.
+            In practice, we could initialize the centroids multiple times (e.g. 1000 times), run the algorithm for each, and pick the one with the smallest loss. 
+            However, this is not very computationally efficient. A better approach is to carefully initialize the centroids, which is what K-means++ does:</p>
+        <ol>
+            <li>Choose the first centroid <code>mu_1</code> randomly from <code>x_1, ..., x_n</code>.</li>
+            <li>Choose the next centroid from <code>x_1, ..., x_n</code> with probability <code>D(x_i)^2 / sum_i D(x_i)^2</code>, where <code>D(x_i)</code> is the distance between <code>x_i</code> and the closest centroid that has been chosen.</li>
+            <li>Repeat step 2 until all k centroids are chosen.</li>
+        </ol>
+        <p>The idea is that points far from the existing centroids are more likely to be picked, so the initial centroids tend to be spread out.</p>
+
+        <h2>Evaluating K-means and Choosing k</h2>
+        <p>For evaluating the results of K-means, we obviously could use the loss function directly (called <strong>inertia</strong>). 
+           However, it is not good for choosing k. In fact, if we increase k, the inertia always goes down, since the solution for k is only a special case of the solution for k+1.</p>
+
+        <p>A common trick is the <strong>elbow method</strong>. Plot the inertia against k: it drops quickly at first and then drops slowly. The point where the drop slows down (the elbow) can be picked as the best k. However, the elbow is not always so obvious.</p>
+
+        <svg viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
+<line x1="90" y1="190" x2="520" y2="190" stroke="#1a1a1a" stroke-width="1.5"/><line x1="90" y1="20" x2="90" y2="190" stroke="#1a1a1a" stroke-width="1.5"/><polyline points="90.0,20.0 150.0,108.4 210.0,149.2 270.0,161.1 330.0,165.3 390.0,167.9 450.0,169.6 510.0,171.0" fill="none" stroke="#2563eb" stroke-width="2"/><circle cx="90.0" cy="20.0" r="3.5" fill="#2563eb"/><circle cx="150.0" cy="108.4" r="3.5" fill="#2563eb"/><circle cx="210.0" cy="149.2" r="3.5" fill="#2563eb"/><circle cx="270.0" cy="161.1" r="3.5" fill="#2563eb"/><circle cx="330.0" cy="165.3" r="3.5" fill="#2563eb"/><circle cx="390.0" cy="167.9" r="3.5" fill="#2563eb"/><circle cx="450.0" cy="169.6" r="3.5" fill="#2563eb"/><circle cx="510.0" cy="171.0" r="3.5" fill="#2563eb"/><text x="90.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >1</text><text x="150.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >2</text><text x="210.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >3</text><text x="270.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >4</text><text x="330.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >5</text><text x="390.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >6</text><text x="450.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >7</text><text x="510.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >8</text><text x="300.0" y="226" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666" >k</text><text x="30" y="105.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666" transform="rotate(-90 30 105.0)">inertia</text><circle cx="210.0" cy="149.2" r="10" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="228.0" y="131.2" text-anchor="start" font-size="12" font-family="Inter, sans-serif" fill="#dc2626" >elbow</text><text x="104.0" y="54.0" text-anchor="start" font-size="11" font-family="Inter, sans-serif" fill="#16a34a" >drops quickly</text><text x="390.0" y="122.0" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#16a34a" >drops slowly</text>
+        </svg>
+
+        <p>A better metric is the <strong>silhouette coefficient</strong>. For a single data point, the silhouette score is computed as:</p>
+
+        <pre><code>s = (b - a) / max(a, b)</code></pre>
+
+        <p>Where:</p>
+        <ul>
+            <li><code>a</code> is the average distance to the points in its own cluster</li>
+            <li><code>b</code> is the average distance to the points in the nearest other cluster</li>
+        </ul>
+
+        <p>The larger the better. Then we only need to choose the k with the largest average silhouette score.</p>
+
+        <h2>Pros and Cons of K-means</h2>
+        <p><strong>Pros:</strong></p>
+        <ul>
+            <li>Simple and efficient</li>
+            <li>Guaranteed convergence</li>
+        </ul>
+
+        <p><strong>Cons:</strong></p>
+        <ul>
+            <li>Requires manually choosing k</li>
+            <li>Sensitive to initialization</li>
+            <li>(Implicitly) Assumes spherical clusters with the same variance</li>
+            <li>Sensitive to outliers</li>
+        </ul>
+
+        <p>The third one deserves a bit more explanation, because it is really two problems:</p>
+        <ul>
+            <li>K-means cannot handle <strong>elliptical clusters</strong> well, because it creates circles (balls) around its centers.</li>
+            <li>K-means cannot handle <strong>clusters with different variances</strong> well, because it uses the same distance measure (normally L2) for every cluster. A big, spread-out cluster next to a small, tight one can get cut in the wrong place, since the boundary is just halfway between the two centers.</li>
+        </ul>
+
+        <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
+<ellipse cx="300" cy="88" rx="128" ry="22" fill="none" stroke="#999" stroke-dasharray="4,3"/><ellipse cx="300" cy="132" rx="128" ry="22" fill="none" stroke="#999" stroke-dasharray="4,3"/><circle cx="397.5" cy="92.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="302.5" cy="87.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="404.8" cy="91.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="207.8" cy="92.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="323.6" cy="84.5" r="3" fill="#2563eb" opacity="0.85"/><circle cx="272.8" cy="85.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="366.4" cy="84.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="228.4" cy="85.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="381.8" cy="86.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="309.7" cy="87.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="388.5" cy="98.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="295.0" cy="85.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="284.7" cy="86.6" r="3" fill="#dc2626" opacity="0.85"/><circle cx="363.6" cy="90.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="406.5" cy="83.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="271.3" cy="86.2" r="3" fill="#dc2626" opacity="0.85"/><circle cx="403.2" cy="88.1" r="3" fill="#2563eb" opacity="0.85"/><circle cx="394.4" cy="91.9" r="3" fill="#2563eb" opacity="0.85"/><circle cx="229.1" cy="81.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="323.9" cy="94.9" r="3" fill="#2563eb" opacity="0.85"/><circle cx="345.1" cy="86.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="397.4" cy="88.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="336.4" cy="92.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="219.3" cy="91.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="299.5" cy="93.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="298.6" cy="88.9" r="3" fill="#dc2626" opacity="0.85"/><circle cx="300.0" cy="87.9" r="3" fill="#dc2626" opacity="0.85"/><circle cx="400.9" cy="89.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="267.0" cy="83.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="239.2" cy="94.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="304.9" cy="84.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="331.1" cy="81.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="396.6" cy="98.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="318.0" cy="87.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="248.9" cy="82.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="394.6" cy="97.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="298.2" cy="86.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="338.7" cy="93.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="294.7" cy="83.9" r="3" fill="#dc2626" opacity="0.85"/><circle cx="237.7" cy="86.8" r="3" fill="#dc2626" opacity="0.85"/><circle cx="271.5" cy="127.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="299.8" cy="134.2" r="3" fill="#dc2626" opacity="0.85"/><circle cx="263.8" cy="123.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="329.5" cy="140.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="315.0" cy="131.1" r="3" fill="#2563eb" opacity="0.85"/><circle cx="325.8" cy="132.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="203.9" cy="143.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="239.5" cy="142.8" r="3" fill="#dc2626" opacity="0.85"/><circle cx="205.8" cy="132.6" r="3" fill="#dc2626" opacity="0.85"/><circle cx="274.3" cy="135.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="295.8" cy="137.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="214.7" cy="140.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="336.9" cy="131.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="297.2" cy="132.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="300.1" cy="138.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="321.4" cy="133.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="395.7" cy="135.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="319.6" cy="135.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="210.6" cy="126.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="222.2" cy="127.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="342.7" cy="118.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="261.0" cy="130.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="356.2" cy="138.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="302.3" cy="126.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="273.5" cy="138.2" r="3" fill="#dc2626" opacity="0.85"/><circle cx="352.7" cy="137.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="230.3" cy="131.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="252.7" cy="132.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="254.2" cy="132.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="281.4" cy="127.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="389.6" cy="130.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="368.8" cy="131.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="370.8" cy="135.1" r="3" fill="#2563eb" opacity="0.85"/><circle cx="328.9" cy="136.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="191.8" cy="128.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="252.9" cy="136.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="300.4" cy="128.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="387.7" cy="131.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="270.0" cy="133.8" r="3" fill="#dc2626" opacity="0.85"/><circle cx="311.1" cy="131.9" r="3" fill="#dc2626" opacity="0.85"/><path d="M355.5 102.6L367.5 114.6M355.5 114.6L367.5 102.6" stroke="#1a1a1a" stroke-width="3"/><path d="M258.2 106.4L270.2 118.4M258.2 118.4L270.2 106.4" stroke="#1a1a1a" stroke-width="3"/><line x1="310.1" y1="40.5" x2="315.6" y2="180.4" stroke="#1a1a1a" stroke-width="1.5" stroke-dasharray="5,3"/><text x="300" y="205" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666" >Dashed ellipses are the true clusters; colors are the K-means result (k = 2)</text>
+        </svg>
+
+        <svg viewBox="0 0 600 228" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
+<circle cx="245" cy="110" r="70" fill="none" stroke="#999" stroke-dasharray="4,3"/><circle cx="318" cy="110" r="18" fill="none" stroke="#999" stroke-dasharray="4,3"/><circle cx="245.0" cy="120.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="235.7" cy="79.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="229.5" cy="76.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="247.0" cy="155.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="228.3" cy="88.9" r="3" fill="#2563eb" opacity="0.85"/><circle cx="261.7" cy="122.1" r="3" fill="#2563eb" opacity="0.85"/><circle cx="248.6" cy="78.4" r="3" fill="#2563eb" opacity="0.85"/><circle cx="244.0" cy="133.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="199.3" cy="94.4" r="3" fill="#2563eb" opacity="0.85"/><circle cx="180.4" cy="66.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="182.4" cy="102.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="201.9" cy="119.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="250.3" cy="103.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="159.4" cy="91.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="243.4" cy="113.9" r="3" fill="#2563eb" opacity="0.85"/><circle cx="193.0" cy="93.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="211.7" cy="82.5" r="3" fill="#2563eb" opacity="0.85"/><circle cx="281.1" cy="82.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="243.9" cy="140.1" r="3" fill="#2563eb" opacity="0.85"/><circle cx="225.2" cy="106.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="248.8" cy="112.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="203.3" cy="112.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="291.2" cy="57.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="274.2" cy="114.1" r="3" fill="#dc2626" opacity="0.85"/><circle cx="223.2" cy="178.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="270.9" cy="69.2" r="3" fill="#dc2626" opacity="0.85"/><circle cx="247.5" cy="129.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="238.6" cy="133.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="242.7" cy="132.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="293.9" cy="87.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="251.9" cy="94.2" r="3" fill="#2563eb" opacity="0.85"/><circle cx="249.3" cy="69.6" r="3" fill="#2563eb" opacity="0.85"/><circle cx="225.3" cy="103.3" r="3" fill="#2563eb" opacity="0.85"/><circle cx="275.6" cy="148.9" r="3" fill="#dc2626" opacity="0.85"/><circle cx="200.0" cy="83.0" r="3" fill="#2563eb" opacity="0.85"/><circle cx="267.0" cy="42.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="229.3" cy="106.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="287.7" cy="133.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="233.9" cy="97.5" r="3" fill="#2563eb" opacity="0.85"/><circle cx="236.5" cy="161.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="230.4" cy="99.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="257.0" cy="105.9" r="3" fill="#2563eb" opacity="0.85"/><circle cx="238.3" cy="72.1" r="3" fill="#2563eb" opacity="0.85"/><circle cx="244.6" cy="94.9" r="3" fill="#2563eb" opacity="0.85"/><circle cx="284.6" cy="132.2" r="3" fill="#dc2626" opacity="0.85"/><circle cx="244.2" cy="132.7" r="3" fill="#2563eb" opacity="0.85"/><circle cx="233.4" cy="145.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="244.8" cy="129.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="201.1" cy="121.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="187.6" cy="40.8" r="3" fill="#2563eb" opacity="0.85"/><circle cx="315.9" cy="103.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="319.1" cy="125.7" r="3" fill="#dc2626" opacity="0.85"/><circle cx="312.2" cy="105.6" r="3" fill="#dc2626" opacity="0.85"/><circle cx="319.4" cy="113.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="316.8" cy="108.6" r="3" fill="#dc2626" opacity="0.85"/><circle cx="322.9" cy="113.6" r="3" fill="#dc2626" opacity="0.85"/><circle cx="310.8" cy="109.4" r="3" fill="#dc2626" opacity="0.85"/><circle cx="318.2" cy="102.6" r="3" fill="#dc2626" opacity="0.85"/><circle cx="319.8" cy="104.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="324.8" cy="111.3" r="3" fill="#dc2626" opacity="0.85"/><circle cx="318.6" cy="105.9" r="3" fill="#dc2626" opacity="0.85"/><circle cx="317.2" cy="96.0" r="3" fill="#dc2626" opacity="0.85"/><circle cx="310.1" cy="112.5" r="3" fill="#dc2626" opacity="0.85"/><circle cx="303.1" cy="115.9" r="3" fill="#dc2626" opacity="0.85"/><path d="M296.4 98.2L308.4 110.2M296.4 110.2L308.4 98.2" stroke="#1a1a1a" stroke-width="3"/><path d="M221.9 102.0L233.9 114.0M221.9 114.0L233.9 102.0" stroke="#1a1a1a" stroke-width="3"/><line x1="260.3" y1="11.2" x2="270.0" y2="200.9" stroke="#1a1a1a" stroke-width="1.5" stroke-dasharray="5,3"/><text x="300" y="212" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666" >Dashed circles are the true clusters; colors are the K-means result (k = 2)</text>
+        </svg>
+
+        <h2>Hierarchical K-means</h2>
+        <p>Hierarchical K-means fixes some of the above problems by splitting the data step by step, using K-means with only k = 2 each time:</p>
+        <ol>
+            <li>Start with all the data points as one cluster, and perform K-means with k = 2. This gives two sub-datasets.</li>
+            <li>Choose one leaf to split, e.g. the one with the largest variance, and perform K-means with k = 2 on it.</li>
+            <li>Repeat until we reach a given k, or a maximum tree depth, a minimum cluster size, a variance threshold, etc.</li>
+        </ol>
+
+        <svg viewBox="0 0 600 275" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
+<rect x="235" y="10" width="130" height="40" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/><text x="300.0" y="34.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a" >all data points</text><line x1="270" y1="50" x2="150" y2="100" stroke="#999" stroke-width="1.5" marker-end="url(#ah)"/><line x1="330" y1="50" x2="450" y2="100" stroke="#999" stroke-width="1.5" marker-end="url(#ah)"/><rect x="80" y="102" width="140" height="40" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/><text x="150.0" y="126.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a" >sub-data</text><rect x="380" y="102" width="140" height="40" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/><text x="450.0" y="126.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a" >sub-data</text><text x="300" y="82" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#2563eb" >K-means with k = 2</text><line x1="430" y1="142" x2="360" y2="192" stroke="#999" stroke-width="1.5" marker-end="url(#ah)"/><line x1="470" y1="142" x2="540" y2="192" stroke="#999" stroke-width="1.5" marker-end="url(#ah)"/><rect x="300" y="194" width="120" height="40" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/><text x="360.0" y="218.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a" >sub-data</text><rect x="480" y="194" width="120" height="40" fill="none" stroke="#1a1a1a" stroke-width="2" rx="4"/><text x="540.0" y="218.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a" >sub-data</text><text x="150" y="170" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#2563eb" >choose one leaf to split,</text><text x="150" y="185" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#2563eb" >e.g. the one with the largest variance</text><text x="300" y="262" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >...  repeat until we reach the given k, maximum tree depth, minimum cluster size, variance threshold, etc.</text><defs><marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#999"/></marker></defs>
+        </svg>
+
+        <p>Compared with standard K-means, hierarchical K-means has the following advantages:</p>
+        <ol>
+            <li><strong>Less sensitive to the initialization of centroids.</strong> At every step it only needs to solve k = 2, which is simpler.</li>
+            <li><strong>It works better with unequal variance clusters.</strong> Take three clusters where one has a much bigger variance than the other two. Standard K-means with k = 3 can end up splitting the big cluster, because that lowers the loss. Hierarchical K-means makes the first split between the big cluster and the rest, and by the second split the impact of the bigger variance cluster has been removed, so the two small clusters are separated properly.</li>
+        </ol>
+
+        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
+<text x="150" y="22" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a" >Standard K-means (k = 3)</text><circle cx="150.8" cy="129.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="176.9" cy="88.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="143.4" cy="88.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="162.5" cy="98.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="166.4" cy="59.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="184.5" cy="97.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="165.0" cy="97.0" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="141.7" cy="110.2" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="168.1" cy="95.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="146.6" cy="115.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="130.9" cy="66.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="158.7" cy="85.2" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="107.8" cy="82.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="139.7" cy="73.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="117.2" cy="100.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="169.7" cy="94.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="133.6" cy="108.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="165.8" cy="93.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="162.0" cy="122.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="145.4" cy="82.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="157.6" cy="105.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="174.2" cy="71.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="135.4" cy="81.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="111.9" cy="102.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="161.6" cy="83.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="180.5" cy="118.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="163.8" cy="108.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="171.0" cy="70.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="163.5" cy="113.3" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="111.1" cy="107.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="229.0" cy="158.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="228.2" cy="154.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="231.4" cy="151.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="232.4" cy="154.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="232.0" cy="152.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="234.3" cy="157.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="229.3" cy="157.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="270.0" cy="202.2" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="258.7" cy="198.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="266.9" cy="194.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="261.0" cy="200.0" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="260.0" cy="197.3" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="270.2" cy="188.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="263.8" cy="189.8" r="2.8" fill="#2563eb" opacity="0.85"/><line x1="181" y1="163" x2="119" y2="37" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5,3"/><path d="M159.1 86.7L171.1 98.7M159.1 98.7L171.1 86.7" stroke="#dc2626" stroke-width="3"/><path d="M124.0 93.4L136.0 105.4M124.0 105.4L136.0 93.4" stroke="#dc2626" stroke-width="3"/><path d="M241.7 169.6L253.7 181.6M241.7 181.6L253.7 169.6" stroke="#dc2626" stroke-width="3"/><text x="450" y="22" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a" >Hierarchical K-means (k = 3)</text><circle cx="450.8" cy="129.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="476.9" cy="88.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="443.4" cy="88.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="462.5" cy="98.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="466.4" cy="59.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="484.5" cy="97.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="465.0" cy="97.0" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="441.7" cy="110.2" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="468.1" cy="95.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="446.6" cy="115.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="430.9" cy="66.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="458.7" cy="85.2" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="407.8" cy="82.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="439.7" cy="73.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="417.2" cy="100.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="469.7" cy="94.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="433.6" cy="108.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="465.8" cy="93.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="462.0" cy="122.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="445.4" cy="82.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="457.6" cy="105.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="474.2" cy="71.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="435.4" cy="81.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="411.9" cy="102.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="461.6" cy="83.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="480.5" cy="118.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="463.8" cy="108.8" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="471.0" cy="70.7" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="463.5" cy="113.3" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="411.1" cy="107.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="529.0" cy="158.1" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="528.2" cy="154.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="531.4" cy="151.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="532.4" cy="154.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="532.0" cy="152.9" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="534.3" cy="157.4" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="529.3" cy="157.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="570.0" cy="202.2" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="558.7" cy="198.5" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="566.9" cy="194.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="561.0" cy="200.0" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="560.0" cy="197.3" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="570.2" cy="188.6" r="2.8" fill="#2563eb" opacity="0.85"/><circle cx="563.8" cy="189.8" r="2.8" fill="#2563eb" opacity="0.85"/><line x1="457" y1="199" x2="547" y2="79" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5,3"/><text x="457" y="215" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#dc2626" >first split</text><line x1="517" y1="201" x2="579" y2="150" stroke="#16a34a" stroke-width="1.8" stroke-dasharray="5,3"/><text x="517" y="217" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#16a34a" >second split</text><path d="M446.2 89.2L458.2 101.2M446.2 101.2L458.2 89.2" stroke="#dc2626" stroke-width="3"/><path d="M524.9 149.3L536.9 161.3M524.9 161.3L536.9 149.3" stroke="#16a34a" stroke-width="3"/><path d="M558.4 189.9L570.4 201.9M558.4 201.9L570.4 189.9" stroke="#16a34a" stroke-width="3"/><text x="300" y="285" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#999" >A sketch of the idea, not real data</text>
+        </svg>
+    </div>
+</article>
+
+</body>
+</html>
