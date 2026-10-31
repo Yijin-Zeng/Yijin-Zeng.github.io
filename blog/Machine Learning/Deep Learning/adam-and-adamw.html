@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -164,54 +170,60 @@
 
         <p>Suppose we add an L2 penalty to the loss:</p>
 
-        <pre><code>L*(θ) = L(θ) + (λ/2)‖θ‖²</code></pre>
+        $$L^*(\theta) = L(\theta) + \frac{\lambda}{2}\|\theta\|^2$$
 
-        <p>where L(θ) is the original loss and the second term is the L2 regularization. Taking the gradient:</p>
+        <p>where $L(\theta)$ is the original loss and the second term is the L2 regularization. Taking the gradient:</p>
 
-        <pre><code>∇L*(θ) = ∇L(θ) + λθ</code></pre>
+        $$\nabla L^*(\theta) = \nabla L(\theta) + \lambda\theta$$
 
         <p>Plugging this into the SGD update:</p>
 
-        <pre><code>θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η∇L*(θ⁽ᵗ⁾)
-       = θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾) - ηλθ⁽ᵗ⁾
-       = (1 - ηλ)θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾)</code></pre>
+        $$\begin{aligned}
+\theta^{(t+1)} &\leftarrow \theta^{(t)} - \eta\nabla L^*(\theta^{(t)}) \\
+&= \theta^{(t)} - \eta\nabla L(\theta^{(t)}) - \eta\lambda\theta^{(t)} \\
+&= (1 - \eta\lambda)\theta^{(t)} - \eta\nabla L(\theta^{(t)})
+\end{aligned}$$
 
-        <p>The L2 penalty has turned into the factor <strong>(1 - ηλ)</strong> multiplying θ⁽ᵗ⁾ -- every step, the weights get shrunk slightly towards zero before the gradient update is applied. This is <strong>weight decay</strong>. In SGD, adding L2 loss and decaying the weights each step are the same operation.</p>
+        <p>The L2 penalty has turned into the factor <strong>$(1 - \eta\lambda)$</strong> multiplying $\theta^{(t)}$ -- every step, the weights get shrunk slightly towards zero before the gradient update is applied. This is <strong>weight decay</strong>. In SGD, adding L2 loss and decaying the weights each step are the same operation.</p>
 
         <h2>Observation 2: L2 loss in Adam does not result in a weight decay effect</h2>
 
-        <p>Now feed the regularized gradient ∇L*(θ) into the Adam algorithm directly:</p>
+        <p>Now feed the regularized gradient $\nabla L^*(\theta)$ into the Adam algorithm directly:</p>
 
-        <pre><code>Adam + L2 loss
-1. m⁽ᵗ⁺¹⁾ ← β₁m⁽ᵗ⁾ + (1-β₁) ∇L*(θ⁽ᵗ⁾)
-2. s⁽ᵗ⁺¹⁾ ← β₂s⁽ᵗ⁾ + (1-β₂) ∇L*(θ⁽ᵗ⁾) ⊙ ∇L*(θ⁽ᵗ⁾)
-3. m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 - β₁ᵗ)
-4. ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 - β₂ᵗ)
-5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε)</code></pre>
+        $$\begin{aligned}
+&\textbf{Adam + L2 loss} \\
+&\text{1.}\quad m^{(t+1)} \leftarrow \beta_1 m^{(t)} + (1-\beta_1)\, \nabla L^*(\theta^{(t)}) \\
+&\text{2.}\quad s^{(t+1)} \leftarrow \beta_2 s^{(t)} + (1-\beta_2)\, \nabla L^*(\theta^{(t)}) \odot \nabla L^*(\theta^{(t)}) \\
+&\text{3.}\quad \hat{m}^{(t+1)} \leftarrow m^{(t+1)} / (1 - \beta_1^t) \\
+&\text{4.}\quad \hat{s}^{(t+1)} \leftarrow s^{(t+1)} / (1 - \beta_2^t) \\
+&\text{5.}\quad \theta^{(t+1)} \leftarrow \theta^{(t)} - \eta\, \hat{m}^{(t+1)} \oslash (\sqrt{\hat{s}^{(t+1)}} + \epsilon)
+\end{aligned}$$
 
-        <p>The λθ term now sits inside both m and s, and step 5 divides by √ŝ -- this is the part of Adam that scales the gradient of each parameter down.</p>
+        <p>The $\lambda\theta$ term now sits inside both $m$ and $s$, and step 5 divides by $\sqrt{\hat{s}}$ -- this is the part of Adam that scales the gradient of each parameter down.</p>
 
-        <p>Here is the effect: when we apply L2 regularization, we expect the gradient of a parameter with a large value to be large, pulling it back towards zero. But that large gradient also inflates ŝ for that same parameter, and dividing by √ŝ scales the update back down. <strong>Adam scales down exactly the gradients that the regularizer made large.</strong> So the weight decay effect that L2 regularization is supposed to produce does not actually show up.</p>
+        <p>Here is the effect: when we apply L2 regularization, we expect the gradient of a parameter with a large value to be large, pulling it back towards zero. But that large gradient also inflates $\hat{s}$ for that same parameter, and dividing by $\sqrt{\hat{s}}$ scales the update back down. <strong>Adam scales down exactly the gradients that the regularizer made large.</strong> So the weight decay effect that L2 regularization is supposed to produce does not actually show up.</p>
 
         <h2>The fix: AdamW separates Adam from the L2 loss</h2>
 
-        <p>The idea is simple: instead of using ∇L*(θ) in steps 1 and 2, keep using the plain gradient ∇L(θ) there, so the L2 term has no effect on the moment estimates. Then subtract λθ directly in step 5, applying the L2 regularization directly to the parameter update instead.</p>
+        <p>The idea is simple: instead of using $\nabla L^*(\theta)$ in steps 1 and 2, keep using the plain gradient $\nabla L(\theta)$ there, so the L2 term has no effect on the moment estimates. Then subtract $\lambda\theta$ directly in step 5, applying the L2 regularization directly to the parameter update instead.</p>
 
-        <pre><code>AdamW
-1. m⁽ᵗ⁺¹⁾ ← β₁m⁽ᵗ⁾ + (1-β₁) ∇L(θ⁽ᵗ⁾)
-2. s⁽ᵗ⁺¹⁾ ← β₂s⁽ᵗ⁾ + (1-β₂) ∇L(θ⁽ᵗ⁾) ⊙ ∇L(θ⁽ᵗ⁾)
-3. m̂⁽ᵗ⁺¹⁾ ← m⁽ᵗ⁺¹⁾ / (1 - β₁ᵗ)
-4. ŝ⁽ᵗ⁺¹⁾ ← s⁽ᵗ⁺¹⁾ / (1 - β₂ᵗ)
-5. θ⁽ᵗ⁺¹⁾ ← θ⁽ᵗ⁾ - η m̂⁽ᵗ⁺¹⁾ ⊘ (√ŝ⁽ᵗ⁺¹⁾ + ε) - λθ⁽ᵗ⁾</code></pre>
+        $$\begin{aligned}
+&\textbf{AdamW} \\
+&\text{1.}\quad m^{(t+1)} \leftarrow \beta_1 m^{(t)} + (1-\beta_1)\, \nabla L(\theta^{(t)}) \\
+&\text{2.}\quad s^{(t+1)} \leftarrow \beta_2 s^{(t)} + (1-\beta_2)\, \nabla L(\theta^{(t)}) \odot \nabla L(\theta^{(t)}) \\
+&\text{3.}\quad \hat{m}^{(t+1)} \leftarrow m^{(t+1)} / (1 - \beta_1^t) \\
+&\text{4.}\quad \hat{s}^{(t+1)} \leftarrow s^{(t+1)} / (1 - \beta_2^t) \\
+&\text{5.}\quad \theta^{(t+1)} \leftarrow \theta^{(t)} - \eta\, \hat{m}^{(t+1)} \oslash (\sqrt{\hat{s}^{(t+1)}} + \epsilon) - \lambda\theta^{(t)}
+\end{aligned}$$
 
-        <p>Steps 1-4 are just Adam on the unregularized loss L; only step 5 changed. It is then trivial to show that AdamW has the weight decay effect: the -λθ⁽ᵗ⁾ term shrinks every parameter directly, with no √ŝ in the way to cancel it out, exactly as in the SGD case above.</p>
+        <p>Steps 1-4 are just Adam on the unregularized loss $L$; only step 5 changed. It is then trivial to show that AdamW has the weight decay effect: the $-\lambda\theta^{(t)}$ term shrinks every parameter directly, with no $\sqrt{\hat{s}}$ in the way to cancel it out, exactly as in the SGD case above.</p>
 
         <h2>Summary</h2>
 
         <ul>
-            <li>In <strong>SGD</strong>, adding L2 loss gives θ⁽ᵗ⁺¹⁾ ← (1-ηλ)θ⁽ᵗ⁾ - η∇L(θ⁽ᵗ⁾) -- L2 regularization and weight decay are equivalent.</li>
-            <li>In <strong>Adam</strong>, the λθ term passes through the second-moment scaling in step 5, which scales down exactly the gradients that L2 regularization made large -- so the weight decay effect does not appear.</li>
-            <li><strong>AdamW</strong> fixes this by keeping the moment estimates (steps 1-2) on the plain gradient ∇L(θ), and subtracting λθ directly in the parameter update (step 5) instead.</li>
+            <li>In <strong>SGD</strong>, adding L2 loss gives $\theta^{(t+1)} \leftarrow (1-\eta\lambda)\theta^{(t)} - \eta\nabla L(\theta^{(t)})$ -- L2 regularization and weight decay are equivalent.</li>
+            <li>In <strong>Adam</strong>, the $\lambda\theta$ term passes through the second-moment scaling in step 5, which scales down exactly the gradients that L2 regularization made large -- so the weight decay effect does not appear.</li>
+            <li><strong>AdamW</strong> fixes this by keeping the moment estimates (steps 1-2) on the plain gradient $\nabla L(\theta)$, and subtracting $\lambda\theta$ directly in the parameter update (step 5) instead.</li>
         </ul>
 
         <h2>References</h2>

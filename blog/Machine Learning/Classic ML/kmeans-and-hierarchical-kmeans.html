@@ -135,7 +135,14 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -154,20 +161,20 @@
         <p>K-means is a simple and efficient clustering method. </p>
 
         <h2>Formulation</h2>
-        <p>Suppose we have data points <code>x_1, ..., x_n</code>, where each <code>x_i</code> is in R^d. For each data point, we introduce <code>p_i</code> in {1, ..., k} to indicate which cluster point i should be assigned to. The target is:</p>
+        <p>Suppose we have data points $x_1, ..., x_n$, where each $x_i$ is in $\mathbb{R}^d$. For each data point, we introduce $p_i$ in $\{1, ..., k\}$ to indicate which cluster point $i$ should be assigned to. The target is:</p>
 
-        <pre><code>argmin_{p_1, ..., p_n}  sum_{j=1}^k sum_{i=1}^n I(p_i = j) * ||x_i - mu_j||^2
+        $$\underset{p_1, \ldots, p_n}{\arg\min} \; \sum_{j=1}^{k} \sum_{i=1}^{n} \mathbf{1}(p_i = j) \, \|x_i - \mu_j\|^2$$
 
-where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
+        $$\text{where} \quad \mu_j = \frac{\sum_i \mathbf{1}(p_i = j)\, x_i}{\sum_i \mathbf{1}(p_i = j)}.$$
 
-        <p>In another words, <code>mu_j</code> is the centroid (the mean) of cluster j, and we want the assignments that make every point as close as possible to the centroid of its own cluster.</p>
+        <p>In another words, $\mu_j$ is the centroid (the mean) of cluster $j$, and we want the assignments that make every point as close as possible to the centroid of its own cluster.</p>
 
 
         <h2>Algorithm</h2>
         <ol>
-            <li><strong>Initialize:</strong> randomly initialize the centroids <code>mu_1, ..., mu_k</code>.</li>
-            <li><strong>E-step:</strong> compute the distance from each point to each centroid, and assign the point to the closest one: <code>p_i = argmin_j ||x_i - mu_j||^2</code>.</li>
-            <li><strong>M-step:</strong> recompute each centroid as the mean of the points assigned to it: <code>mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j)</code>.</li>
+            <li><strong>Initialize:</strong> randomly initialize the centroids $\mu_1, ..., \mu_k$.</li>
+            <li><strong>E-step:</strong> compute the distance from each point to each centroid, and assign the point to the closest one: $p_i = \arg\min_j \|x_i - \mu_j\|^2$.</li>
+            <li><strong>M-step:</strong> recompute each centroid as the mean of the points assigned to it: $\mu_j = \dfrac{\sum_i \mathbf{1}(p_i = j)\, x_i}{\sum_i \mathbf{1}(p_i = j)}$.</li>
         </ol>
         <p>Repeat the E-step and M-step until the assignments stop changing.</p>
 
@@ -182,17 +189,17 @@ where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
             In practice, we could initialize the centroids multiple times (e.g. 1000 times), run the algorithm for each, and pick the one with the smallest loss. 
             However, this is not very computationally efficient. A better approach is to carefully initialize the centroids, which is what K-means++ does:</p>
         <ol>
-            <li>Choose the first centroid <code>mu_1</code> randomly from <code>x_1, ..., x_n</code>.</li>
-            <li>Choose the next centroid from <code>x_1, ..., x_n</code> with probability <code>D(x_i)^2 / sum_i D(x_i)^2</code>, where <code>D(x_i)</code> is the distance between <code>x_i</code> and the closest centroid that has been chosen.</li>
-            <li>Repeat step 2 until all k centroids are chosen.</li>
+            <li>Choose the first centroid $\mu_1$ randomly from $x_1, ..., x_n$.</li>
+            <li>Choose the next centroid from $x_1, ..., x_n$ with probability $\dfrac{D(x_i)^2}{\sum_i D(x_i)^2}$, where $D(x_i)$ is the distance between $x_i$ and the closest centroid that has been chosen.</li>
+            <li>Repeat step 2 until all $k$ centroids are chosen.</li>
         </ol>
         <p>The idea is that points far from the existing centroids are more likely to be picked, so the initial centroids tend to be spread out.</p>
 
-        <h2>Evaluating K-means and Choosing k</h2>
+        <h2>Evaluating K-means and Choosing $k$</h2>
         <p>For evaluating the results of K-means, we obviously could use the loss function directly (called <strong>inertia</strong>). 
-           However, it is not good for choosing k. In fact, if we increase k, the inertia always goes down, since the solution for k is only a special case of the solution for k+1.</p>
+           However, it is not good for choosing $k$. In fact, if we increase $k$, the inertia always goes down, since the solution for $k$ is only a special case of the solution for $k+1$.</p>
 
-        <p>A common trick is the <strong>elbow method</strong>. Plot the inertia against k: it drops quickly at first and then drops slowly. The point where the drop slows down (the elbow) can be picked as the best k. However, the elbow is not always so obvious.</p>
+        <p>A common trick is the <strong>elbow method</strong>. Plot the inertia against $k$: it drops quickly at first and then drops slowly. The point where the drop slows down (the elbow) can be picked as the best $k$. However, the elbow is not always so obvious.</p>
 
         <svg viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
 <line x1="90" y1="190" x2="520" y2="190" stroke="#1a1a1a" stroke-width="1.5"/><line x1="90" y1="20" x2="90" y2="190" stroke="#1a1a1a" stroke-width="1.5"/><polyline points="90.0,20.0 150.0,108.4 210.0,149.2 270.0,161.1 330.0,165.3 390.0,167.9 450.0,169.6 510.0,171.0" fill="none" stroke="#2563eb" stroke-width="2"/><circle cx="90.0" cy="20.0" r="3.5" fill="#2563eb"/><circle cx="150.0" cy="108.4" r="3.5" fill="#2563eb"/><circle cx="210.0" cy="149.2" r="3.5" fill="#2563eb"/><circle cx="270.0" cy="161.1" r="3.5" fill="#2563eb"/><circle cx="330.0" cy="165.3" r="3.5" fill="#2563eb"/><circle cx="390.0" cy="167.9" r="3.5" fill="#2563eb"/><circle cx="450.0" cy="169.6" r="3.5" fill="#2563eb"/><circle cx="510.0" cy="171.0" r="3.5" fill="#2563eb"/><text x="90.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >1</text><text x="150.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >2</text><text x="210.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >3</text><text x="270.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >4</text><text x="330.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >5</text><text x="390.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >6</text><text x="450.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >7</text><text x="510.0" y="206" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#666" >8</text><text x="300.0" y="226" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666" >k</text><text x="30" y="105.0" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#666" transform="rotate(-90 30 105.0)">inertia</text><circle cx="210.0" cy="149.2" r="10" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="228.0" y="131.2" text-anchor="start" font-size="12" font-family="Inter, sans-serif" fill="#dc2626" >elbow</text><text x="104.0" y="54.0" text-anchor="start" font-size="11" font-family="Inter, sans-serif" fill="#16a34a" >drops quickly</text><text x="390.0" y="122.0" text-anchor="middle" font-size="11" font-family="Inter, sans-serif" fill="#16a34a" >drops slowly</text>
@@ -200,15 +207,15 @@ where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
 
         <p>A better metric is the <strong>silhouette coefficient</strong>. For a single data point, the silhouette score is computed as:</p>
 
-        <pre><code>s = (b - a) / max(a, b)</code></pre>
+        $$s = \frac{b - a}{\max(a, b)}$$
 
         <p>Where:</p>
         <ul>
-            <li><code>a</code> is the average distance to the points in its own cluster</li>
-            <li><code>b</code> is the average distance to the points in the nearest other cluster</li>
+            <li>$a$ is the average distance to the points in its own cluster</li>
+            <li>$b$ is the average distance to the points in the nearest other cluster</li>
         </ul>
 
-        <p>The larger the better. Then we only need to choose the k with the largest average silhouette score.</p>
+        <p>The larger the better. Then we only need to choose the $k$ with the largest average silhouette score.</p>
 
         <h2>Pros and Cons of K-means</h2>
         <p><strong>Pros:</strong></p>
@@ -219,7 +226,7 @@ where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
 
         <p><strong>Cons:</strong></p>
         <ul>
-            <li>Requires manually choosing k</li>
+            <li>Requires manually choosing $k$</li>
             <li>Sensitive to initialization</li>
             <li>(Implicitly) Assumes spherical clusters with the same variance</li>
             <li>Sensitive to outliers</li>
@@ -240,11 +247,11 @@ where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
         </svg>
 
         <h2>Hierarchical K-means</h2>
-        <p>Hierarchical K-means fixes some of the above problems by splitting the data step by step, using K-means with only k = 2 each time:</p>
+        <p>Hierarchical K-means fixes some of the above problems by splitting the data step by step, using K-means with only $k = 2$ each time:</p>
         <ol>
-            <li>Start with all the data points as one cluster, and perform K-means with k = 2. This gives two sub-datasets.</li>
-            <li>Choose one leaf to split, e.g. the one with the largest variance, and perform K-means with k = 2 on it.</li>
-            <li>Repeat until we reach a given k, or a maximum tree depth, a minimum cluster size, a variance threshold, etc.</li>
+            <li>Start with all the data points as one cluster, and perform K-means with $k = 2$. This gives two sub-datasets.</li>
+            <li>Choose one leaf to split, e.g. the one with the largest variance, and perform K-means with $k = 2$ on it.</li>
+            <li>Repeat until we reach a given $k$, or a maximum tree depth, a minimum cluster size, a variance threshold, etc.</li>
         </ol>
 
         <svg viewBox="0 0 600 275" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
@@ -253,8 +260,8 @@ where mu_j = sum_i I(p_i = j) * x_i / sum_i I(p_i = j).</code></pre>
 
         <p>Compared with standard K-means, hierarchical K-means has the following advantages:</p>
         <ol>
-            <li><strong>Less sensitive to the initialization of centroids.</strong> At every step it only needs to solve k = 2, which is simpler.</li>
-            <li><strong>It works better with unequal variance clusters.</strong> Take three clusters where one has a much bigger variance than the other two. Standard K-means with k = 3 can end up splitting the big cluster, because that lowers the loss. Hierarchical K-means makes the first split between the big cluster and the rest, and by the second split the impact of the bigger variance cluster has been removed, so the two small clusters are separated properly.</li>
+            <li><strong>Less sensitive to the initialization of centroids.</strong> At every step it only needs to solve $k = 2$, which is simpler.</li>
+            <li><strong>It works better with unequal variance clusters.</strong> Take three clusters where one has a much bigger variance than the other two. Standard K-means with $k = 3$ can end up splitting the big cluster, because that lowers the loss. Hierarchical K-means makes the first split between the big cluster and the rest, and by the second split the impact of the bigger variance cluster has been removed, so the two small clusters are separated properly.</li>
         </ol>
 
         <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">

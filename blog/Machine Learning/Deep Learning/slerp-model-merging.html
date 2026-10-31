@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -201,12 +207,12 @@
         <h2>Method 1: LERP (Linear Interpolation)</h2>
         <p>The simplest approach is a direct weighted average of the two vectors:</p>
 
-        <pre><code>V = &alpha; V₁ + (1 - &alpha;) V₂ ,   where &alpha; &isin; [0, 1]</code></pre>
+        $$V = \alpha V_1 + (1 - \alpha) V_2, \qquad \text{where } \alpha \in [0, 1]$$
 
         <h3>Problem: Shrinkage</h3>
         <p>The norm of the interpolated vector is generally smaller than the norm of either input:</p>
 
-        <pre><code>||V||₂  &lt;  ||V₁||₂   or   ||V₂||₂</code></pre>
+        $$\|V\|_2 < \|V_1\|_2 \quad \text{or} \quad \|V_2\|_2$$
 
         <p>For model weights, this shrinkage can degrade performance because the magnitudes of weight matrices carry important information about learned representations.</p>
 
@@ -216,50 +222,54 @@
         <p>NLERP addresses the shrinkage problem by decoupling direction and magnitude, handling each separately:</p>
 
         <h3>Step 1: Compute the direction (unit vector)</h3>
-        <pre><code>U = (&alpha; V₁ + (1 - &alpha;) V₂) / ||&alpha; V₁ + (1 - &alpha;) V₂||₂</code></pre>
+        $$U = \frac{\alpha V_1 + (1 - \alpha) V_2}{\|\alpha V_1 + (1 - \alpha) V_2\|_2}$$
         <p>This normalizes the LERP result to a unit vector, so we only care about direction at this stage (norm = 1).</p>
 
         <h3>Step 2: Compute the magnitude (scale)</h3>
-        <pre><code>L = &alpha; ||V₁||₂ + (1 - &alpha;) ||V₂||₂</code></pre>
+        $$L = \alpha \|V_1\|_2 + (1 - \alpha) \|V_2\|_2$$
         <p>The target magnitude is a linear interpolation of the original norms. This cares about norm only.</p>
 
         <h3>Step 3: Rescale</h3>
-        <pre><code>V &larr; U &middot; L</code></pre>
+        $$V \leftarrow U \cdot L$$
         <p>We multiply the unit direction by the interpolated magnitude to get the final merged vector.</p>
 
-        <p>NLERP fixes the shrinkage problem, but it does not traverse the arc evenly. As &alpha; moves from 0 to 1, the interpolated direction does not cover equal angular distances in equal steps.</p>
+        <p>NLERP fixes the shrinkage problem, but it does not traverse the arc evenly. As $\alpha$ moves from 0 to 1, the interpolated direction does not cover equal angular distances in equal steps.</p>
 
         <h2>Method 3: SLERP (Spherical Linear Interpolation)</h2>
         <p>Compared with NLERP, SLERP moves along the arc at constant angular velocity, producing evenly-spaced intermediate points.</p>
 
         <h3>Step 1: Normalize both vectors</h3>
-        <pre><code>V₁' &larr; V₁ / ||V₁||₂
-V₂' &larr; V₂ / ||V₂||₂</code></pre>
+        $$\begin{aligned}
+V_1' &\leftarrow V_1 / \|V_1\|_2 \\
+V_2' &\leftarrow V_2 / \|V_2\|_2
+\end{aligned}$$
         <p>Scale both vectors to unit length so they sit on the same unit sphere (circle in 2D).</p>
 
         <h3>Step 2: Compute the angle between them</h3>
-        <pre><code>cos(&theta;) = V₁' &middot; V₂'       (dot product of unit vectors)
-           = (V₁ &middot; V₂) / (||V₁||₂ &middot; ||V₂||₂)</code></pre>
+        $$\begin{aligned}
+\cos(\theta) &= V_1' \cdot V_2' \qquad (\text{dot product of unit vectors}) \\
+&= (V_1 \cdot V_2) / (\|V_1\|_2 \cdot \|V_2\|_2)
+\end{aligned}$$
 
         <h3>Step 3: Spherical interpolation of direction</h3>
-        <pre><code>U = [sin(&alpha;&theta;) / sin(&theta;)] V₁' + [sin((1 - &alpha;)&theta;) / sin(&theta;)] V₂'</code></pre>
-        <p>Note that <code>||U||₂ = 1</code> by construction. As &alpha; varies from 0 to 1, U travels from V₂' to V₁' along the great-circle arc, covering equal angles for equal increments of &alpha;.</p>
+        $$U = \left[\sin(\alpha\theta) / \sin(\theta)\right] V_1' + \left[\sin((1 - \alpha)\theta) / \sin(\theta)\right] V_2'$$
+        <p>Note that $\|U\|_2 = 1$ by construction. As $\alpha$ varies from 0 to 1, $U$ travels from $V_2'$ to $V_1'$ along the great-circle arc, covering equal angles for equal increments of $\alpha$.</p>
 
         <h3>Step 4: Interpolate the magnitude</h3>
-        <pre><code>L = &alpha; ||V₁||₂ + (1 - &alpha;) ||V₂||₂</code></pre>
+        $$L = \alpha \|V_1\|_2 + (1 - \alpha) \|V_2\|_2$$
 
         <h3>Step 5: Rescale</h3>
-        <pre><code>V &larr; U &middot; L</code></pre>
+        $$V \leftarrow U \cdot L$$
 
         <h2>Comparing SLERP and NLERP</h2>
         <p>Both methods solve the shrinkage problem of plain LERP and produce vectors with appropriate magnitude. The key difference lies in how they traverse the angular space:</p>
 
         <ul>
-            <li><strong>SLERP</strong> (&alpha;: 0 &rarr; 1): moves evenly along the circle. Equal increments of &alpha; produce equal angular steps. This gives a geometrically uniform interpolation.</li>
-            <li><strong>NLERP</strong> (&alpha;: 0 &rarr; 1): moves unevenly. The angular speed varies. It moves faster near the midpoint and slower near the endpoints. This is because normalizing a linear combination distorts the angular spacing.</li>
+            <li><strong>SLERP</strong> ($\alpha: 0 \to 1$): moves evenly along the circle. Equal increments of $\alpha$ produce equal angular steps. This gives a geometrically uniform interpolation.</li>
+            <li><strong>NLERP</strong> ($\alpha: 0 \to 1$): moves unevenly. The angular speed varies. It moves faster near the midpoint and slower near the endpoints. This is because normalizing a linear combination distorts the angular spacing.</li>
         </ul>
 
-        <p>In practice, SLERP is preferred for model merging because the even angular traversal means it would be (practially) easier to tune or learn the optimal interpolation parameter &alpha.</p>
+        <p>In practice, SLERP is preferred for model merging because the even angular traversal means it would be (practially) easier to tune or learn the optimal interpolation parameter $\alpha$.</p>
 
         <h2>References</h2>
         <ul>

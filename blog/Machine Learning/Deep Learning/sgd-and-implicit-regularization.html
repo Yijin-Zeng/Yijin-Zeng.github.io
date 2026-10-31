@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -164,85 +170,87 @@
 
         <h2>Discrete Steps Can't Follow the Loss Landscape Perfectly</h2>
 
-        <p>Suppose we have a model parametrized by φ and a loss function L(φ). Discrete gradient descent updates the parameters as:</p>
+        <p>Suppose we have a model parametrized by $\phi$ and a loss function $L(\phi)$. Discrete gradient descent updates the parameters as:</p>
 
-        <pre><code>φ₁ = φ₀ - η∇L(φ₀)</code></pre>
+        $$\phi_1 = \phi_0 - \eta\nabla L(\phi_0)$$
 
         <p>Now imagine the step size could be infinitesimal. 
             Then the parameters would slide down the loss landscape perfectly, 
             following the curve at every point. We cannot physically do this,
-            but we can write it down mathematically below. This is called <strong>continuous gradient descent</strong> (i.e. gradient flow). Instead of discrete steps, the parameters flow continuously over time t:</p>
+            but we can write it down mathematically below. This is called <strong>continuous gradient descent</strong> (i.e. gradient flow). Instead of discrete steps, the parameters flow continuously over time $t$:</p>
 
-        <pre><code>dφ/dt = -∇L(φ(t))</code></pre>
+        $$\frac{d\phi}{dt} = -\nabla L(\phi(t))$$
 
-        <p>So the gradient descent method only minimizes L(φ) "directly" in the limit η → 0.
+        <p>So the gradient descent method only minimizes $L(\phi)$ "directly" in the limit $\eta \to 0$.
            With a finite step size, each update jumps across the landscape rather than following it perfectly.
            Consider contour plot of the loss: the continuous path curves smoothly toward the minimum, 
            while the discrete path jumps across the contours. 
            In some cases, they will end up the same local or global minimum,
            but they clearly not have same trajectory. 
-           This raises a question: if discrete gradient descent isn't following L(φ), what is it following?</p>
+           This raises a question: if discrete gradient descent isn't following $L(\phi)$, what is it following?</p>
 
         <h2>The Loss Gradient Descent Is Actually Optimizing</h2>
 
         <p>We consider a trick known as <strong>backward error analysis</strong>: 
-           instead of saying "gradient descent approximately optimizes L(φ)", we flip it around and say gradient 
-           descent <strong>exactly</strong> follows the gradient flow of a slightly different loss L̃(φ). 
+           instead of saying "gradient descent approximately optimizes $L(\phi)$", we flip it around and say gradient 
+           descent <strong>exactly</strong> follows the gradient flow of a slightly different loss $\tilde{L}(\phi)$. 
            The goal is to find this modified loss.</p>
 
-        <pre><code>-η∇L̃(φ₀) = ∫₀^η dφ/dt · dt    (with φ(0) = φ₀)</code></pre>
+        $$-\eta\nabla\tilde{L}(\phi_0) = \int_0^\eta \frac{d\phi}{dt} \cdot dt \qquad (\text{with } \phi(0) = \phi_0)$$
 
-        <p>Let us assume the gradient of this modified flow is the original gradient plus a correction term of order η:</p>
+        <p>Let us assume the gradient of this modified flow is the original gradient plus a correction term of order $\eta$:</p>
 
-        <pre><code>dφ(t)/dt = -∇L(φ) + η·g(φ)    evaluated at φ = φ(t)</code></pre>
+        $$\frac{d\phi(t)}{dt} = -\nabla L(\phi) + \eta \cdot g(\phi) \qquad (\text{evaluated at } \phi = \phi(t))$$
 
-        <p>where g is the unknown correction we need to solve for. Now Taylor-expand φ(t + η) around φ(t), taking t to be the point where φ(t) = φ₀:</p>
+        <p>where $g$ is the unknown correction we need to solve for. Now Taylor-expand $\phi(t + \eta)$ around $\phi(t)$, taking $t$ to be the point where $\phi(t) = \phi_0$:</p>
 
-        <pre><code>φ(t+η) = φ(t) + η·dφ/dt + (η²/2)·d²φ/dt² + O(η³)</code></pre>
+        $$\phi(t+\eta) = \phi(t) + \eta \cdot \frac{d\phi}{dt} + \frac{\eta^2}{2} \cdot \frac{d^2\phi}{dt^2} + O(\eta^3)$$
 
-        <p>Dropping the O(η³) remainder and substituting the flow equation (the second derivative comes from differentiating the flow once more through the chain rule):</p>
+        <p>Dropping the $O(\eta^3)$ remainder and substituting the flow equation (the second derivative comes from differentiating the flow once more through the chain rule):</p>
 
-        <pre><code>φ(t+η) ≈ φ₀ + η(-∇L(φ₀) + η·g(φ₀)) + (η²/2)(-∇²L(φ₀)·dφ/dt + ...)
-       ≈ φ₀ - η∇L(φ₀) + η²( g(φ₀) + 1/2·∇²L(φ₀)·∇L(φ₀) )</code></pre>
+        $$\begin{aligned}
+\phi(t+\eta) &\approx \phi_0 + \eta\left(-\nabla L(\phi_0) + \eta \cdot g(\phi_0)\right) + \frac{\eta^2}{2}\left(-\nabla^2 L(\phi_0) \cdot \frac{d\phi}{dt} + \ldots\right) \\
+&\approx \phi_0 - \eta\nabla L(\phi_0) + \eta^2\left( g(\phi_0) + \frac{1}{2} \cdot \nabla^2 L(\phi_0) \cdot \nabla L(\phi_0) \right)
+\end{aligned}$$
 
-        <p>Note that φ₀ - η∇L(φ₀) is exactly the update discrete gradient descent makes. So for the continuous flow to land in the same place as the discrete step, the η² term must vanish:</p>
+        <p>Note that $\phi_0 - \eta\nabla L(\phi_0)$ is exactly the update discrete gradient descent makes. So for the continuous flow to land in the same place as the discrete step, the $\eta^2$ term must vanish:</p>
 
-        <pre><code>g(φ₀) + 1/2·∇²L(φ₀)·∇L(φ₀) = 0    =>    g(φ₀) = -1/2·∇²L(φ₀)·∇L(φ₀)</code></pre>
+        $$g(\phi_0) + \frac{1}{2} \cdot \nabla^2 L(\phi_0) \cdot \nabla L(\phi_0) = 0 \qquad \Rightarrow \qquad g(\phi_0) = -\frac{1}{2} \cdot \nabla^2 L(\phi_0) \cdot \nabla L(\phi_0)$$
 
-        <p>where ∇²L is the Hessian matrix. Plug this back into the flow, and a bit of matrix calculus (∇²L·∇L is 1/2 the gradient of ||∇L||²) gives the modified loss:</p>
+        <p>where $\nabla^2 L$ is the Hessian matrix. Plug this back into the flow, and a bit of matrix calculus ($\nabla^2 L \cdot \nabla L$ is $1/2$ the gradient of $\|\nabla L\|^2$) gives the modified loss:</p>
 
-        <pre><code>L̃(φ) ≈ L(φ) + (η/4)·||∇L(φ)||²</code></pre>
+        $$\tilde{L}(\phi) \approx L(\phi) + \frac{\eta}{4} \cdot \|\nabla L(\phi)\|^2$$
 
-        <p>Thus, we have shown that Gradient descent with step size η behaves as if it were doing perfect gradient flow on the original loss <strong>plus a penalty on the squared gradient norm</strong>, scaled by the learning rate.</p>
+        <p>Thus, we have shown that Gradient descent with step size $\eta$ behaves as if it were doing perfect gradient flow on the original loss <strong>plus a penalty on the squared gradient norm</strong>, scaled by the learning rate.</p>
 
         <h2>What Does This Penalty Actually Do?</h2>
 
         <p>The implication: <strong>discrete gradient descent prefers places where the gradient norm is smaller</strong>. 
             A minimum sitting in a wide, gentle basin has small gradients all around it; a minimum at the bottom of a
-            narrow ravine is surrounded by steep walls, i.e. large gradients. The ||∇L||² penalty makes the flat basin 
+            narrow ravine is surrounded by steep walls, i.e. large gradients. The $\|\nabla L\|^2$ penalty makes the flat basin 
             look more attractive, which connects directly to the assumption that 
             <strong>flat minima generalize better than sharp ones</strong>.</p>
 
-        <p>Note that at any exact minimum, ∇L = 0, so the penalty is zero.
+        <p>Note that at any exact minimum, $\nabla L = 0$, so the penalty is zero.
            The <em>value</em> of every minimum is unchanged, and the minimum positions 
            of the continuous and discrete dynamics coincide. 
            What changes is the path. The penalty reshapes the landscape along the way, 
            so discrete gradient descent may end up in a different minimum than the idealized flow would. 
            The regularization acts on the journey, not the destination. 
-           Also notice the penalty scales with η. A larger learning rate means stronger 
+           Also notice the penalty scales with $\eta$. A larger learning rate means stronger 
            implicit regularization, which is one reason changing the learning rate down to 
            something tiny doesn't always help generalization.</p>
 
         <h2>Implicit Regularization in SGD</h2>
 
         <p>SGD doesn't compute the full gradient,
-           it uses one mini-batch at a time, cycling through B batches per epoch, 
-           each contributing its own gradient ∇L_b. 
+           it uses one mini-batch at a time, cycling through $B$ batches per epoch, 
+           each contributing its own gradient $\nabla L_b$. 
            Running the same backward error analysis over one epoch of SGD gives:</p>
 
-        <pre><code>L̃_SGD(φ) = L(φ) + (η/4)·||∇L||² + (η/4B)·Σ_{b=1}^{B} ||∇L_b - ∇L||²</code></pre>
+        $$\tilde{L}_{\mathrm{SGD}}(\phi) = L(\phi) + \frac{\eta}{4} \cdot \|\nabla L\|^2 + \frac{\eta}{4B} \cdot \sum_{b=1}^{B} \|\nabla L_b - \nabla L\|^2$$
 
-        <p>where B is the total number of batches. The first two terms are exactly what gradient descent had. 
+        <p>where $B$ is the total number of batches. The first two terms are exactly what gradient descent had. 
             But SGD picks up an <strong>extra regularization term</strong>: the average squared deviation of each 
             batch gradient from the total gradient, essentially the <strong>variance of the mini-batch gradients</strong>.</p>
 

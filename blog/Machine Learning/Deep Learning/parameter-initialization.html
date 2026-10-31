@@ -139,7 +139,14 @@
         .post-content strong {
             color: var(--text);
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -162,25 +169,35 @@
 
         <p>Consider a standard feedforward layer:</p>
 
-        <pre><code>f<sub>k</sub> = β<sub>k</sub> + Ω<sub>k</sub>h<sub>k</sub>
-   = β<sub>k</sub> + Ω<sub>k</sub> a(f<sub>k-1</sub>)</code></pre>
+        $$
+        \begin{aligned}
+        f_k &= \beta_k + \Omega_k h_k \\
+            &= \beta_k + \Omega_k\, a(f_{k-1})
+        \end{aligned}
+        $$
 
-        <p>where a(·) is the activation function (say, ReLU). Suppose we initialize β<sub>k</sub> to 0 and every element of Ω<sub>k</sub> independently from N(0, σ²). Then during forward process:</p>
+        <p>where $a(\cdot)$ is the activation function (say, ReLU). Suppose we initialize $\beta_k$ to 0 and every element of $\Omega_k$ independently from $\mathcal{N}(0, \sigma^2)$. Then during forward process:</p>
 
         <ul>
-            <li>If σ is small (e.g. 0.001), the magnitude of f<sub>k</sub> is much <strong>smaller</strong> than f<sub>k-1</sub> -- activations shrink at every layer.</li>
-            <li>If σ is large (e.g. 100), the magnitude of f<sub>k</sub> is much <strong>larger</strong> than f<sub>k-1</sub> -- activations blow up.</li>
+            <li>If $\sigma$ is small (e.g. 0.001), the magnitude of $f_k$ is much <strong>smaller</strong> than $f_{k-1}$ -- activations shrink at every layer.</li>
+            <li>If $\sigma$ is large (e.g. 100), the magnitude of $f_k$ is much <strong>larger</strong> than $f_{k-1}$ -- activations blow up.</li>
         </ul>
 
         <p>In a deep network this snowballs: <strong>the magnitude problem gets worse and worse through each layer</strong>. </p>
 
-        <p>And the backward pass has exactly the same problem. The gradient flowing into layer k-1 is:</p>
+        <p>And the backward pass has exactly the same problem. The gradient flowing into layer $k-1$ is:</p>
 
-        <pre><code>∂L/∂f<sub>k-1</sub> = (∂L/∂f<sub>k</sub>) · (∂f<sub>k</sub>/∂f<sub>k-1</sub>)
-        = (∂L/∂f<sub>k</sub>) · Ω<sub>k</sub> · diag(I{f<sub>k-1</sub> ≥ 0})    (if a = ReLU)</code></pre>
+        $$
+        \begin{aligned}
+        \frac{\partial L}{\partial f_{k-1}}
+        &= \frac{\partial L}{\partial f_k}\,\frac{\partial f_k}{\partial f_{k-1}} \\
+        &= \frac{\partial L}{\partial f_k}\,\Omega_k\,\frac{\partial a(f_{k-1})}{\partial f_{k-1}} \\
+        &= \frac{\partial L}{\partial f_k}\,\Omega_k\,\mathrm{diag}\big(\mathbf{1}\{f_{k-1} \ge 0\}\big) \qquad (\text{if } a = \text{ReLU})
+        \end{aligned}
+        $$
 
-        <p>The gradient gets multiplied by Ω<sub>k</sub> at every layer, 
-            so its scale depends directly on the scale of Ω<sub>k</sub>.
+        <p>The gradient gets multiplied by $\Omega_k$ at every layer, 
+            so its scale depends directly on the scale of $\Omega_k$.
             Initialize badly and the gradients either shrink towards zero (vanishing) 
             or grow without bound (exploding). Either way, the training would be unstable and hard. 
         </p>
@@ -188,95 +205,131 @@
         <h2>Proper Initialization to Keep the Variance Constant</h2>
 
         <p>So what would "proper" initialization look like? 
-           The idea is to choose σ² well so that the 
+           The idea is to choose $\sigma^2$ well so that the 
            <strong>variance stays unchanged</strong> as signals pass through each layer, in both directions:</p>
 
-        <pre><code>Forward pass:   Var(f<sub>k</sub>) ≈ Var(f<sub>k-1</sub>)
-Backward pass:  Var(∂L/∂f<sub>k-1</sub>) ≈ Var(∂L/∂f<sub>k</sub>)</code></pre>
+        $$
+        \begin{aligned}
+        \text{Forward pass:} \quad & \mathrm{Var}(f_k) \approx \mathrm{Var}(f_{k-1}) \\
+        \text{Backward pass:} \quad & \mathrm{Var}\!\left(\frac{\partial L}{\partial f_{k-1}}\right) \approx \mathrm{Var}\!\left(\frac{\partial L}{\partial f_k}\right)
+        \end{aligned}
+        $$
 
         <p>If neither the activations nor the gradients change scale layer by layer, 
             we can stack as many layers as we like without the signal degrading.</p>
 
         <h2>Forward Pass: Deriving the Variance</h2>
 
-        <p>Some notation to keep things readable: write f = f<sub>k-1</sub>, f′ = f<sub>k</sub>, Ω = Ω<sub>k</sub>, and f<sub>i</sub> for the i-th element. Biases are initialized to 0. The i-th output is f′<sub>i</sub> = β<sub>i</sub> + Σⱼ Ω<sub>ij</sub> a(f<sub>j</sub>), summing over the m neurons of the previous layer.</p>
+        <p>Some notation to keep things readable: write $f = f_{k-1}$, $f' = f_k$, $\Omega = \Omega_k$, and $f_i$ for the $i$-th element. Biases are initialized to 0. The $i$-th output is $f'_i = \beta_i + \sum_{j=1}^{m} \Omega_{ij}\, a(f_j)$, summing over the $m$ neurons of the previous layer.</p>
 
         <p>First, the mean:</p>
 
-        <pre><code>E(f′<sub>i</sub>) = E(β<sub>i</sub>) + Σⱼ E(Ω<sub>ij</sub> a(f<sub>j</sub>))
-      = 0 + Σⱼ E(Ω<sub>ij</sub>) E(a(f<sub>j</sub>))    (weights independent of layer outputs)
-      = Σⱼ 0 · E(a(f<sub>j</sub>)) = 0</code></pre>
+        $$
+        \begin{aligned}
+        \mathbb{E}[f'_i] &= \mathbb{E}[\beta_i] + \mathbb{E}\Big[\sum_{j=1}^{m} \Omega_{ij}\, a(f_j)\Big] \\
+        &= 0 + \sum_{j=1}^{m} \mathbb{E}[\Omega_{ij}]\;\mathbb{E}[a(f_j)] \qquad \text{(weights independent of layer outputs)} \\
+        &= \sum_{j=1}^{m} 0 \cdot \mathbb{E}[a(f_j)] = 0
+        \end{aligned}
+        $$
 
-        <p>The expectation splits because the parameters are initialized independently of the layer outputs. For the variance:</p>
+        <p>The expectation splits because the parameters are initialized independently of the layer outputs. Since the mean is 0, the variance is just the second moment:</p>
 
-        <pre><code>Var(f′<sub>i</sub>) = Var(Σⱼ Ω<sub>ij</sub> a(f<sub>j</sub>))
-        = Σⱼ Var(Ω<sub>ij</sub>) Var(a(f<sub>j</sub>))
-        = Σⱼ σ²<sub>Ω</sub> (E(a(f<sub>j</sub>)²) - E²(a(f<sub>j</sub>)))
-        = Σⱼ σ²<sub>Ω</sub> E(a(f<sub>j</sub>)²)</code></pre>
+        $$
+        \begin{aligned}
+        \mathrm{Var}(f'_i) &= \mathbb{E}[f_i'^2] - \mathbb{E}[f'_i]^2 = \mathbb{E}[f_i'^2] \\
+        &= \mathbb{E}\Big[\Big(\beta_i + \sum_{j=1}^{m} \Omega_{ij}\, a(f_j)\Big)^2\Big] \\
+        &= \mathbb{E}\Big[\Big(\sum_{j=1}^{m} \Omega_{ij}\, a(f_j)\Big)^2\Big] \qquad (\beta_i = 0) \\
+        &= \sum_{j=1}^{m} \mathbb{E}[\Omega_{ij}^2]\;\mathbb{E}[a(f_j)^2] \qquad (\mathbb{E}[\Omega_{ij}] = 0 \text{ and independence, so cross terms vanish}) \\
+        &= \sigma_\Omega^2 \sum_{j=1}^{m} \mathbb{E}[a(f_j)^2]
+        \end{aligned}
+        $$
 
-        <p>Use the fact that a = ReLU and split by the law of total expectation:</p>
+        <p>Now assume $a$ is ReLU, and write the expectation as an integral over the density $p(f_j)$:</p>
 
-        <pre><code>E(a(f<sub>j</sub>)²) = P(f<sub>j</sub> &gt; 0) E(a(f<sub>j</sub>)² | f<sub>j</sub> &gt; 0) + P(f<sub>j</sub> ≤ 0) E(a(f<sub>j</sub>)² | f<sub>j</sub> ≤ 0)
-         = 1/2 *  E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0) + 0</code></pre>
+        $$
+        \begin{aligned}
+        \mathbb{E}[a(f_j)^2] &= \int_{-\infty}^{\infty} \max(0, f_j)^2\, p(f_j)\, df_j \\
+        &= \int_{0}^{\infty} f_j^2\, p(f_j)\, df_j \\
+        &= \frac{1}{2} \int_{-\infty}^{\infty} f_j^2\, p(f_j)\, df_j \qquad (p \text{ symmetric around } 0) \\
+        &= \frac{1}{2}\, \sigma_f^2 \qquad (\mathbb{E}[f_j] = 0)
+        \end{aligned}
+        $$
 
         <p>Here we assume that the input is <strong>symmetric around 0</strong> 
             (reasonable if we preprocess each input to standard normal), 
-            so f<sub>j</sub> is positive half the time and the negative half gets zeor out by ReLU.
-            Using the symmetry again, E(f<sub>j</sub>² | f<sub>j</sub> &gt; 0)
-             contributes exactly half of the full second moment, so E(a(f<sub>j</sub>)²) = 1/2 * σ²<sub>f</sub>. 
-             Putting it together, we have:</p>
+            so $f_j$ is positive half the time and the negative half gets zeroed out by ReLU.
+            Using the symmetry again, the positive half contributes exactly half of the full second moment. 
+            Putting it together, we have:</p>
 
-        <pre><code>Var(f′<sub>i</sub>) = 1/2 *  m σ²<sub>Ω</sub> σ²<sub>f</sub></code></pre>
+        $$
+        \mathrm{Var}(f'_i) = \frac{1}{2}\, m\, \sigma_\Omega^2\, \sigma_f^2
+        $$
 
-        <p>So, if we want σ²<sub>f′</sub> = σ²<sub>f</sub>, we need to let:</p>
+        <p>So, if we want $\sigma_{f'}^2 = \sigma_f^2$, we need to let:</p>
 
-        <pre><code>σ²<sub>Ω</sub> = 2/m        (He initialization)</code></pre>
+        $$
+        \sigma_\Omega^2 = \frac{2}{m} \qquad \text{(He initialization)}
+        $$
 
-        <p>where m is the number of neurons in the previous layer (i.e. the number of columns of Ω<sub>k</sub>, the "fan-in"). The factor of 2 exists purely because <strong>ReLU throws away half the variance</strong> -- I find that a satisfying way to remember it.</p>
+        <p>where $m$ is the number of neurons in the previous layer (i.e. the number of columns of $\Omega_k$, the "fan-in"). The factor of 2 exists purely because <strong>ReLU throws away half the variance</strong> -- I find that a satisfying way to remember it.</p>
 
         <h2>Backward Pass</h2>
 
-        <p>For the backward pass, the logic is similar. Denote g′ = ∂L/∂f<sub>k</sub> and g = ∂L/∂f<sub>k-1</sub>, so g<sub>i</sub> = Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> 𝟙{f<sub>i</sub> ≥ 0}, now summing over the m′ neurons of the <strong>next</strong> layer. The mean is 0 by the same independence argument. For the variance:</p>
+        <p>For the backward pass, the logic is similar. Denote $g' = \partial L / \partial f_k$ and $g = \partial L / \partial f_{k-1}$, so $g_i = \sum_{j=1}^{m'} g'_j\, \Omega_{ji}\, \mathbf{1}\{f_i \ge 0\}$, now summing over the $m'$ neurons of the <strong>next</strong> layer. The mean is 0 by the same independence argument:</p>
 
-        <pre><code>Var(g<sub>i</sub>) = E((Σⱼ g′<sub>j</sub> Ω<sub>ji</sub> I{f<sub>i</sub> ≥ 0})²)
-        = Σⱼ E(g′<sub>j</sub>²) E(Ω<sub>ji</sub>²) E(I{f<sub>i</sub> ≥ 0}²)    (cross terms vanish; assuming independence)
-        = m′ σ²<sub>g′</sub> σ²<sub>Ω</sub> · 1/2</code></pre>
+        $$
+        \mathbb{E}[g_i] = \sum_{j=1}^{m'} \mathbb{E}[\Omega_{ji}]\;\mathbb{E}\big[g'_j\, \mathbf{1}\{f_i \ge 0\}\big] = 0
+        $$
 
-        <p>The indicator is 1 with probability 1/2 (symmetry again), which is where the final 1/2 comes from. 
-            So if we want σ²<sub>g</sub> = σ²<sub>g′</sub>, we need to have:</p>
+        <p>For the variance:</p>
 
-        <pre><code>σ²<sub>Ω</sub> = 2/m′</code></pre>
+        $$
+        \begin{aligned}
+        \mathrm{Var}(g_i) = \sigma_g^2 &= \mathbb{E}[g_i^2] \\
+        &= \mathbb{E}\Big[\Big(\sum_{j=1}^{m'} g'_j\, \Omega_{ji}\, \mathbf{1}\{f_i \ge 0\}\Big)^2\Big] \\
+        &= \sum_{j=1}^{m'} \mathbb{E}\big[g_j'^2\, \Omega_{ji}^2\, \mathbf{1}\{f_i \ge 0\}^2\big] \qquad (\mathbb{E}[\Omega_{ji}] = 0 \text{ and independence, so cross terms vanish}) \\
+        &= \sum_{j=1}^{m'} \sigma_\Omega^2\; \mathbb{E}\big[g_j'^2\big]\;\mathbb{E}\big[\mathbf{1}\{f_i \ge 0\}^2\big] \qquad (\text{assuming independence}) \\
+        &= \frac{1}{2}\, m'\, \sigma_\Omega^2\, \sigma_{g'}^2
+        \end{aligned}
+        $$
 
-        <p>Overall, to keep the variance unchanged during backward propogation, we need to initialize
-            the variance of the parameters to be m′ (fan-out).</p>
+        <p>The indicator is 1 with probability 1/2 (symmetry again), which is where the final $1/2$ comes from. 
+            So if we want $\sigma_g^2 = \sigma_{g'}^2$, we need to have:</p>
+
+        $$
+        \sigma_\Omega^2 = \frac{2}{m'}
+        $$
+
+        <p>Overall, to keep the variance unchanged during backward propagation, we need to initialize
+            the variance of the parameters to be $2/m'$ ($m'$ is the fan-out).</p>
 
         <h2>When Fan-In and Fan-Out Disagree</h2>
 
-        <p>Here we are with a small conflict: the forward pass wants σ² = 2/m, the backward pass wants σ² = 2/m′.</p>
+        <p>Here we are with a small conflict: the forward pass wants $\sigma^2 = 2/m$, the backward pass wants $\sigma^2 = 2/m'$.</p>
 
         <ul>
-            <li>If m = m′ (equal layer widths), there's no conflict, we
+            <li>If $m = m'$ (equal layer widths), there's no conflict, we
             can keep <strong>both forward and backward passes stable</strong>. 
             (One reason we should choose networks with uniform hidden widths.)</li>
-            <li>If m ≠ m′, we compromise by replacing m 
-                (or m′) with their average (m + m′)/2, 
-                so σ²<sub>Ω</sub> = 4/(m + m′).</li>
+            <li>If $m \ne m'$, we compromise by replacing $m$ 
+                (or $m'$) with their average $(m + m')/2$, 
+                so $\sigma_\Omega^2 = \dfrac{4}{m + m'}$.</li>
         </ul>
 
         <p>Neither pass is perfectly preserved in the second case, 
             but neither is badly broken either,
             and in practice it works. This averaging trick is the same move 
             Glorot and Bengio made for linear/tanh activations
-            (where the factor is 2/(m + m′) instead, no ReLU halving); He et al. adapted the analysis to ReLU, 
+            (where the factor is $2/(m + m')$ instead, no ReLU halving); He et al. adapted the analysis to ReLU, 
             which is where the extra 2 comes from.</p>
 
         <h2>Summary</h2>
 
         <ul>
             <li>Bad initialization snowballs layer by layer: activations and gradients either vanish or explode.</li>
-            <li>To fix this, we need to initialize the parameters well by choosing σ²<sub>Ω</sub> so that <strong>variance is preserved</strong> through each layer for both forwards and backwards.</li>
-            <li>For ReLU, the forward pass demands σ² = 2/m (He initialization); the backward pass demands σ² = 2/m′; the factor 2 is ReLU's fault for zero out half the signal.</li>
-            <li>When m ≠ m′, we compromise with σ² = 4/(m + m′).</li>
+            <li>To fix this, we need to initialize the parameters well by choosing $\sigma_\Omega^2$ so that <strong>variance is preserved</strong> through each layer for both forwards and backwards.</li>
+            <li>For ReLU, the forward pass demands $\sigma^2 = 2/m$ (He initialization); the backward pass demands $\sigma^2 = 2/m'$; the factor 2 is ReLU's fault for zeroing out half the signal.</li>
+            <li>When $m \ne m'$, we compromise with $\sigma^2 = 4/(m + m')$.</li>
         </ul>
 
         <h2>References</h2>

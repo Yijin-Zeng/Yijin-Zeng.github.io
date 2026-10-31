@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -180,9 +186,9 @@
         for the last token of the sequence is large. Another type of neuron can be activated is in <strong>attention layer</strong>.
         The output of the attention layer is a linear combination across heads:</p>
 
-        <pre><code>Output = Output_head_1 + ... + Output_head_n</code></pre>
+        $$\text{Output} = \text{Output}_{\text{head}_1} + \cdots + \text{Output}_{\text{head}_n}$$
 
-        <p>If <code>||Output_head_i||</code> is large, then we say that head <code>i</code> is activated. Since we only care about the final output, what matters is whether the last token has large components.</p>
+        <p>If $\|\text{Output}_{\text{head}_i}\|$ is large, then we say that head $i$ is activated. Since we only care about the final output, what matters is whether the last token has large components.</p>
 
         <h2>2. How the MLP Works in a Transformer (Decoder Only)</h2>
 
@@ -243,9 +249,9 @@ from transformer block
 
         <p>The contextual embedding of the last token from the transformer block can be expressed as a linear combination of neuron activations:</p>
 
-        <pre><code>e.g., french = a_1 * neuron_1 + a_2 * neuron_2 + ... + a_n * neuron_n</code></pre>
+        $$\text{e.g., french} = a_1 \cdot \text{neuron}_1 + a_2 \cdot \text{neuron}_2 + \cdots + a_n \cdot \text{neuron}_n$$
 
-        <p>Each column in the weight matrix is an independent vector (they form basis vectors in the vector space). Say <code>a_1, a_2, a_3 >> 0</code> while other <code>a_i ≈ 0</code> or are small. Then neurons 1, 2, 3 will "fire" (give large outputs) if the query is looking for "French."</p>
+        <p>Each column in the weight matrix is an independent vector (they form basis vectors in the vector space). Say $a_1, a_2, a_3 \gg 0$ while other $a_i \approx 0$ or are small. Then neurons 1, 2, 3 will "fire" (give large outputs) if the query is looking for "French."</p>
 
         <p>This is where polysemanticity happens. We might observe super large values for certain neurons in the expanded 16384-dimensional vector. Since this vector now represents how much information we need for each feature, it becomes mathematically impossible for one neuron to represent only one meaning -- this would require monosemanticity, but the model needs to cram many more concepts into the available neurons.</p>
 
@@ -262,46 +268,46 @@ from transformer block
 
         <p>According to superposition hypothesis, the root cause for polysemanticity is</p>
 
-        <pre><code>d_features >> d_model</code></pre>
+        $$d_{\text{features}} \gg d_{\text{model}}$$
 
         <p>Where:</p>
         <ul>
-            <li><code>d_features</code> = the number of distinct features/concepts the model needs to represent</li>
-            <li><code>d_model</code> = the dimension of the model output (e.g., 16384), which equals the maximum number of orthogonal vectors in the space</li>
+            <li>$d_{\text{features}}$ = the number of distinct features/concepts the model needs to represent</li>
+            <li>$d_{\text{model}}$ = the dimension of the model output (e.g., 16384), which equals the maximum number of orthogonal vectors in the space</li>
         </ul>
 
         <p>Under the superposition hypothesis, a single concept has to be represented as a linear combination of multiple neurons, because there is simply not enough room to represent all semantically independent concepts orthogonally.
             The math is simple, a 16384 dimensional space can have at most 16384 independent vectors.
         </p>
 
-        <p>If <code>d_features &lt; d_model</code>, then it would be possible to present each feature as a one-hot-like vector (e.g., <code>(1,0,0,0,...)</code>, <code>(0,1,0,...)</code>), achieving monosemanticity. Even if the representation is not axis-aligned, we can simply rotate them (e.g., via PCA). For instance, <code>(0.7, 0.7)</code> perpendicular to <code>(-0.5, 0.5)</code> can be rotated to align with axes.</p>
+        <p>If $d_{\text{features}} &lt; d_{\text{model}}$, then it would be possible to present each feature as a one-hot-like vector (e.g., $(1,0,0,0,\ldots)$, $(0,1,0,\ldots)$), achieving monosemanticity. Even if the representation is not axis-aligned, we can simply rotate them (e.g., via PCA). For instance, $(0.7, 0.7)$ perpendicular to $(-0.5, 0.5)$ can be rotated to align with axes.</p>
 
         <p>Note however, in high-dimensional space, the number of <strong>nearly</strong> orthogonal vectors grows exponentially with dimension. Vectors can have dot products as small as 0.01 and still be "almost orthogonal" -- this is related to the <strong>Johnson-Lindenstrauss Lemma</strong>.</p>
 
         <h2>4. More About Polysemanticity and Sparse Autoencoders</h2>
 
-        <p>We can explain the above more formally. Say for one layer, there are some concepts we want to activate. The "gold view" is a vector <code>h</code> in <code>R^(d_features x 1)</code> that would be super sparse:</p>
+        <p>We can explain the above more formally. Say for one layer, there are some concepts we want to activate. The "gold view" is a vector $h$ in $\mathbb{R}^{d_{\text{features}} \times 1}$ that would be super sparse:</p>
 
-        <pre><code>h = [0, 0, 0, ..., 1, 0, ..., 0, 0, ..., 0]   (mostly zeros, a few non-zero entries, e.g. for Paris, French)</code></pre>
+        $$h = [0, 0, 0, \ldots, 1, 0, \ldots, 0, 0, \ldots, 0] \qquad (\text{mostly zeros, a few non-zero entries, e.g. for Paris, French})$$
 
         <p>What we actually have in the model is:</p>
 
-        <pre><code>x = X_model * h</code></pre>
+        $$x = X_{\text{model}}\, h$$
 
-        <p>Where <code>x</code> is the model output (the contextual embedding of the last word) we can observe, <code>X_model</code> is in <code>R^(n x d)</code> with <code>n &lt;&lt; d</code>, and 
-        <code>h</code> represents the concepts we want to use for the contextual embedding. However, the problem is that we only have <code>n</code> neurons to represent the concept, far fewer than the <code>d</code> features.</p>
+        <p>Where $x$ is the model output (the contextual embedding of the last word) we can observe, $X_{\text{model}}$ is in $\mathbb{R}^{n \times d}$ with $n \ll d$, and 
+        $h$ represents the concepts we want to use for the contextual embedding. However, the problem is that we only have $n$ neurons to represent the concept, far fewer than the $d$ features.</p>
 
         <p>Consequences of this compression:</p>
         <ul>
-            <li><code>x_i</code> (individual neuron activations) are not independent, even if two concepts should be semantically independent</li>
+            <li>$x_i$ (individual neuron activations) are not independent, even if two concepts should be semantically independent</li>
             <li>One neuron may fire for independent concepts</li>
         </ul>
 
-        <p>In practice, we observe <code>x</code> in the model, and we want to know <code>h</code> (the underlying sparse concept vector):</p>
+        <p>In practice, we observe $x$ in the model, and we want to know $h$ (the underlying sparse concept vector):</p>
 
-        <pre><code>h = X_model^+ * x</code></pre>
+        $$h = X_{\text{model}}^{+}\, x$$
 
-        <p>Where <code>X_model^+</code> is the pseudo-inverse. It is not easy to learn h from the embedding directly,
+        <p>Where $X_{\text{model}}^{+}$ is the pseudo-inverse. It is not easy to learn $h$ from the embedding directly,
             because the firing neurons corresponding to different concepts might overlap. 
             For example, consider the following three concepts and their assumed firing neurons:
 
@@ -313,23 +319,24 @@ from transformer block
 
             Neurons 1, 4, 7, and 9 firing simultaneously, how do we know it's the combination of "Paris" + "Food", or "Paris" + "France"?
             
-            We learn h through a <strong>Sparse Autoencoder (SAE)</strong>.</p>
+            We learn $h$ through a <strong>Sparse Autoencoder (SAE)</strong>.</p>
 
         <h3>How SAEs work</h3>
 
         <p>A Sparse Autoencoder is trained to recover the sparse concept vector from the model's activations:</p>
 
-        <pre><code>Input: x --> f_e(x) --> g_d(e) --> x*
+        $$\text{Input: } x \to f_e(x) \to g_d(e) \to x^*$$
 
-        Where:
-        f_e = encoder: projects x to a sparse embedding (with n_features >> d_model)
-        g_d = decoder: reconstructs x from the sparse embedding
-
-        Loss = reconstruction error (||x - x*||) + L1 loss on the embedding layer (to enforce sparsity)</code></pre>
+        <p>Where:</p>
+        $$\begin{aligned}
+        f_e &= \text{encoder: projects } x \text{ to a sparse embedding (with } n_{\text{features}} \gg d_{\text{model}}) \\
+        g_d &= \text{decoder: reconstructs } x \text{ from the sparse embedding} \\[6pt]
+        \text{Loss} &= \text{reconstruction error } (\|x - x^*\|) + \text{L1 loss on the embedding layer (to enforce sparsity)}
+        \end{aligned}$$
 
         <p>After we learn the SAE, we can use it to interpret the model: pass a sentence with a concept close to "Paris" through the model, 
             observe which components in the sparse embedding layer are activated, and the next time we see those components activated, 
-            we know the concept "Paris" is being represented. The key for the success of SAE lies in the fact that n_features >> d_model, so the embedding
+            we know the concept "Paris" is being represented. The key for the success of SAE lies in the fact that $n_{\text{features}} \gg d_{\text{model}}$, so the embedding
             space in SAE has much more room to represent different concepts.</p>
 
         <h2>5. Why Is Polysemanticity Bad?</h2>

@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -164,7 +170,7 @@
             <li><strong>Image encoder</strong>: processes a batch of images into image embeddings</li>
         </ul>
 
-        <p>Given a batch of n (image, caption) pairs, both encoders produce embeddings that live in the same shared space. The model then computes a similarity matrix S between all image-text pairs:</p>
+        <p>Given a batch of $n$ (image, caption) pairs, both encoders produce embeddings that live in the same shared space. The model then computes a similarity matrix $S$ between all image-text pairs:</p>
 
         <!-- SVG diagram of CLIP architecture -->
         <svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
@@ -205,70 +211,70 @@
             </defs>
         </svg>
 
-        <p>Each entry <code>S_i,j</code> in the matrix represents the dot-product similarity between image embedding i and text embedding j. The diagonal entries (where i = j) correspond to the correct image-text pairings.</p>
+        <p>Each entry $S_{i,j}$ in the matrix represents the dot-product similarity between image embedding $i$ and text embedding $j$. The diagonal entries (where $i = j$) correspond to the correct image-text pairings.</p>
 
         <h2>Loss Function: Symmetric Cross-Entropy</h2>
         <p>CLIP uses a symmetric cross-entropy loss with a learnable temperature parameter. The loss operates in both directions: image-to-text and text-to-image.</p>
 
         <h3>Image-to-Text Loss</h3>
-        <p>For each image i, we want to maximize the probability of selecting the correct caption i from among all captions in the batch:</p>
+        <p>For each image $i$, we want to maximize the probability of selecting the correct caption $i$ from among all captions in the batch:</p>
 
-        <pre><code>L_i^(I->T) = -log( exp(S_i,i / tau) / sum_j exp(S_i,j / tau) )</code></pre>
+        $$L_i^{(I\to T)} = -\log\left( \frac{\exp(S_{i,i} / \tau)}{\sum_j \exp(S_{i,j} / \tau)} \right)$$
 
-        <p>The fraction inside the log can be interpreted as the probability that image i correctly identifies its paired text. Thus the loss is log-likelihood. 
-        The temperature <code>tau</code> is a learnable parameter which controls the sharpness of the distribution. Ideally, a good learned temperature
+        <p>The fraction inside the log can be interpreted as the probability that image $i$ correctly identifies its paired text. Thus the loss is log-likelihood. 
+        The temperature $\tau$ is a learnable parameter which controls the sharpness of the distribution. Ideally, a good learned temperature
         can tune the distances to reflect the true probability. If this is not the case, we could also consider the tune this parameter on a seperate dataset,
         e.g. by maximizing Expected Calibration Error (ECE). This is a different topic, though.</p>
 
         <h3>Text-to-Image Loss</h3>
-        <p>Symmetrically, for each text i, we want to maximize the probability of selecting the correct image i:</p>
+        <p>Symmetrically, for each text $i$, we want to maximize the probability of selecting the correct image $i$:</p>
 
-        <pre><code>L_i^(T->I) = -log( exp(S_i,i / tau) / sum_j exp(S_j,i / tau) )</code></pre>
+        $$L_i^{(T\to I)} = -\log\left( \frac{\exp(S_{i,i} / \tau)}{\sum_j \exp(S_{j,i} / \tau)} \right)$$
 
         <h3>Final Loss</h3>
         <p>The overall training objective averages both directions across all pairs in the batch:</p>
 
-        <pre><code>L = (1 / 2n) * sum_i [ L_i^(I->T) + L_i^(T->I) ]</code></pre>
+        $$L = \frac{1}{2n} \sum_i \left[ L_i^{(I\to T)} + L_i^{(T\to I)} \right]$$
 
         <p>This symmetric formulation ensures the model learns good representations from both the image and text perspectives simultaneously.</p>
 
         <h2>Other Contrastive Loss Methods</h2>
 
         <h3>Pairwise Contrastive Loss</h3>
-        <p>This method looks at one pair of samples at a time. Each pair is labeled as either positive (matching, e.g., image i with caption i) or negative (non-matching, e.g., image i with caption j).</p>
+        <p>This method looks at one pair of samples at a time. Each pair is labeled as either positive (matching, e.g., image $i$ with caption $i$) or negative (non-matching, e.g., image $i$ with caption $j$).</p>
 
-        <pre><code>Loss = Y * D^2 + (1 - Y) * max(0, m - D)^2</code></pre>
+        $$\text{Loss} = Y \cdot D^2 + (1 - Y) \cdot \max(0, m - D)^2$$
 
         <p>Where:</p>
         <ul>
-            <li><code>Y = 1</code> for positive pairs, <code>Y = 0</code> for negative pairs</li>
-            <li><code>D</code> is the distance between the two embeddings</li>
-            <li><code>m</code> is a margin hyperparameter</li>
+            <li>$Y = 1$ for positive pairs, $Y = 0$ for negative pairs</li>
+            <li>$D$ is the distance between the two embeddings</li>
+            <li>$m$ is a margin hyperparameter</li>
         </ul>
 
         <p>The intuition is straightforward:</p>
         <ul>
-            <li><strong>Positive pair (Y=1):</strong> minimize the distance D directly.</li>
-            <li><strong>Negative pair (Y=0):</strong> push the distance to be at least m apart (only penalize if D &lt; m). But if the distance is already larger than m, leave it as it is (the same idea as in support vector machine (SVM)).</li>
+            <li><strong>Positive pair ($Y=1$):</strong> minimize the distance $D$ directly.</li>
+            <li><strong>Negative pair ($Y=0$):</strong> push the distance to be at least $m$ apart (only penalize if $D &lt; m$). But if the distance is already larger than $m$, leave it as it is (the same idea as in support vector machine (SVM)).</li>
         </ul>
 
-        <p>The idea of pairwise contrastive loss is simple: if the pair matches, push the distance to 0; otherwise, push the distance large. However, once the distance is larger than m, the loss is 0. Why is this?</p>
+        <p>The idea of pairwise contrastive loss is simple: if the pair matches, push the distance to 0; otherwise, push the distance large. However, once the distance is larger than $m$, the loss is 0. Why is this?</p>
         <ol>
             <li>If there is no such margin, the model could push one mismatched pair to infinity, destroying the loss function.</li>
-            <li>This forces the model to update its weights from positive pairs and "hard negative" pairs. Since "easy negative" pairs easily have distance &gt; m, they do not provide any gradients.</li>
+            <li>This forces the model to update its weights from positive pairs and "hard negative" pairs. Since "easy negative" pairs easily have distance $&gt; m$, they do not provide any gradients.</li>
         </ol>
 
         <h3>Triplet Loss</h3>
         <p>Triplet loss considers three data points at a time:</p>
         <ol>
-            <li><strong>Anchor (a):</strong> the baseline image</li>
-            <li><strong>Positive (p):</strong> a paired caption (should be close to anchor)</li>
-            <li><strong>Negative (n):</strong> an unpaired caption (should be far from anchor)</li>
+            <li><strong>Anchor ($a$):</strong> the baseline image</li>
+            <li><strong>Positive ($p$):</strong> a paired caption (should be close to anchor)</li>
+            <li><strong>Negative ($n$):</strong> an unpaired caption (should be far from anchor)</li>
         </ol>
 
-        <pre><code>Loss = max(0, d(a,p) - d(a,n) + m)</code></pre>
+        $$\text{Loss} = \max(0,\, d(a,p) - d(a,n) + m)$$
 
-        <blockquote>The distance between anchor and positive should be smaller than the distance between anchor and negative by at least a margin m.</blockquote>
+        <blockquote>The distance between anchor and positive should be smaller than the distance between anchor and negative by at least a margin $m$.</blockquote>
 
         <p>We have a margin here for similar reasons as in pairwise contrastive loss. Note that, unlike pairwise loss, it only cares about <strong>relative distances</strong>.</p>
 
@@ -276,7 +282,7 @@
 
         <h2>Comparing the Approaches</h2>
         <ul>
-            <li><strong>Pairwise contrastive loss</strong> forces all matched pairs to have distance 0, while negative pairs must have distance &gt; m. This is too rigid and ignores the variances of each cluster (e.g. cars might have larger variance than dogs). Also, if we want to consider all pairs, it is not very efficient (most pairs do not provide much information).</li>
+            <li><strong>Pairwise contrastive loss</strong> forces all matched pairs to have distance 0, while negative pairs must have distance $&gt; m$. This is too rigid and ignores the variances of each cluster (e.g. cars might have larger variance than dogs). Also, if we want to consider all pairs, it is not very efficient (most pairs do not provide much information).</li>
             <li><strong>Triplet loss</strong> is more flexible than pairwise contrastive loss since it considers only relative distances. However, it is again not very computationally efficient: to make training work in practice, we need to find "hard negative" pairs during training.</li>
             <li><strong>Symmetric cross-entropy loss</strong> is very flexible since it cares about relative distances as well. Also, since we can use a large batch (e.g. 32768), it is statistically guaranteed to have "hard negatives" for each positive pair. It is therefore computationally much more efficient.</li>
         </ul>

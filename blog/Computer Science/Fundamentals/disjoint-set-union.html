@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -170,13 +176,13 @@ Location 1     Location 4
 
         <p><strong>Intuitive approach:</strong> Use breadth-first search (BFS) or depth-first search (DFS) to check if A and B are connected.</p>
 
-        <p><strong>Problem:</strong> Time complexity is O(n), where n is the sample size (different locations). If we ask the question many times, it becomes very slow.</p>
+        <p><strong>Problem:</strong> Time complexity is $O(n)$, where $n$ is the sample size (different locations). If we ask the question many times, it becomes very slow.</p>
 
         <h2>Better Solution: Disjoint Set Union (DSU)</h2>
 
         <p>Here's the key insight: <strong>to check if location A and B are connected, we don't actually need to find a path connecting A and B. We only need to find at least one location connecting to both A and B.</strong></p>
 
-        <p><strong>Speedup:</strong> Time complexity O(1) — nearly constant time per query!</p>
+        <p><strong>Speedup:</strong> Time complexity $O(1)$ — nearly constant time per query!</p>
 
         <h2>How DSU Works</h2>
 
@@ -196,8 +202,8 @@ Size: 1                      Size: 1                     ...    Size: 1</code></
         <p>Now we check all connected locations. If location A and location B are connected:</p>
 
         <ol>
-            <li><strong>Find the root</strong> of the set where location A is in — say <code>root = i</code>, <code>Set = Sᵢ</code></li>
-            <li><strong>Find the root</strong> of the set where location B is in — say <code>root = j</code>, <code>Set = Sⱼ</code></li>
+            <li><strong>Find the root</strong> of the set where location A is in — say <code>root = i</code>, $\text{Set} = S_i$</li>
+            <li><strong>Find the root</strong> of the set where location B is in — say <code>root = j</code>, $\text{Set} = S_j$</li>
             <li><strong>Check if they're in the same set:</strong>
                 <ul>
                     <li>If <code>i == j</code>, A and B are already in the same set — nothing to do</li>
@@ -240,7 +246,7 @@ else:
 
         <h2>Computational Complexity</h2>
 
-        <h3>Find: O(α(n)) ≈ O(1)</h3>
+        <h3>Find: $O(\alpha(n)) \approx O(1)$</h3>
 
         <p>It can be shown that if we:</p>
         <ul>
@@ -248,23 +254,23 @@ else:
             <li>Compress the path (as in the find step)</li>
         </ul>
 
-        <p>Then performing the find function once takes <strong>O(α(n))</strong> amortized time, where α is the inverse Ackermann function. This is <strong>mathematically almost O(1)</strong> — for all practical purposes, it's constant time.</p>
+        <p>Then performing the find function once takes <strong>$O(\alpha(n))$</strong> amortized time, where $\alpha$ is the inverse Ackermann function. This is <strong>mathematically almost $O(1)$</strong> — for all practical purposes, it's constant time.</p>
 
-        <p>The inverse Ackermann function grows so slowly that α(n) ≤ 4 for any n you'll encounter in practice. Even if n is the number of atoms in the universe, α(n) is still less than 5.</p>
+        <p>The inverse Ackermann function grows so slowly that $\alpha(n) \leq 4$ for any $n$ you'll encounter in practice. Even if $n$ is the number of atoms in the universe, $\alpha(n)$ is still less than 5.</p>
 
-        <h3>Union: O(1)</h3>
+        <h3>Union: $O(1)$</h3>
 
-        <p>Union essentially performs two finds, and then attaches the smaller set to the larger set. So it's also O(1) amortized.</p>
+        <p>Union essentially performs two finds, and then attaches the smaller set to the larger set. So it's also $O(1)$ amortized.</p>
 
-        <h3>Building DSU from Scratch: O(n + e)</h3>
+        <h3>Building DSU from Scratch: $O(n + e)$</h3>
 
         <p>To build the DSU from scratch given:</p>
         <ul>
-            <li><strong>n nodes</strong> — O(n) to initialize</li>
-            <li><strong>e edges</strong> — perform e union operations</li>
+            <li><strong>$n$ nodes</strong> — $O(n)$ to initialize</li>
+            <li><strong>$e$ edges</strong> — perform $e$ union operations</li>
         </ul>
 
-        <p>Total time complexity: <strong>O(n + e)</strong></p>
+        <p>Total time complexity: <strong>$O(n + e)$</strong></p>
 
         <h2>Implementation</h2>
 
@@ -319,7 +325,7 @@ print(dsu.connected(0, 6))  # True
 # Query: can we drive from location 0 to location 7?
 print(dsu.connected(0, 7))  # False</code></pre>
 
-        <p>Each query takes O(1) time — no matter how many times we ask!</p>
+        <p>Each query takes $O(1)$ time — no matter how many times we ask!</p>
 
         <h2>Common Applications</h2>
 
@@ -336,11 +342,11 @@ print(dsu.connected(0, 7))  # False</code></pre>
         <h2>Summary</h2>
 
         <ul>
-            <li>Disjoint Set Union (DSU) solves the connectivity problem in nearly O(1) time per query</li>
+            <li>Disjoint Set Union (DSU) solves the connectivity problem in nearly $O(1)$ time per query</li>
             <li>The key optimizations are <strong>union by size</strong> and <strong>path compression</strong></li>
-            <li>With both optimizations, each operation takes O(α(n)) ≈ O(1) amortized time</li>
-            <li>Building DSU from scratch takes O(n + e) for n nodes and e edges</li>
-            <li>The inverse Ackermann function α(n) is so slow-growing that it's effectively constant for any practical input</li>
+            <li>With both optimizations, each operation takes $O(\alpha(n)) \approx O(1)$ amortized time</li>
+            <li>Building DSU from scratch takes $O(n + e)$ for $n$ nodes and $e$ edges</li>
+            <li>The inverse Ackermann function $\alpha(n)$ is so slow-growing that it's effectively constant for any practical input</li>
         </ul>
 
         <p>This is one of those beautiful algorithms where two simple tricks — attach small to large, and flatten paths as you go — combine to give you something that's theoretically complex but practically constant time.</p>

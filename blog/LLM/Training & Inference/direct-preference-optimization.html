@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -184,14 +190,14 @@ Prompt (x) --> scored by human preference (could train a score model here as wel
         <h2>The DPO Loss</h2>
         <p>The loss function of DPO is defined as follows:</p>
 
-        <pre><code>-log(&sigma;(&beta; log(&pi;<sub>&theta;</sub>(y<sub>w</sub>|x) / &pi;<sub>ref</sub>(y<sub>w</sub>|x)) - &beta; log(&pi;<sub>&theta;</sub>(y<sub>l</sub>|x) / &pi;<sub>ref</sub>(y<sub>l</sub>|x)))),</code></pre>
+        $$-\log\!\left(\sigma\!\left(\beta \log\frac{\pi_\theta(y_w \mid x)}{\pi_{\text{ref}}(y_w \mid x)} - \beta \log\frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right)\right),$$
 
         <p>where:</p>
         <ul>
-            <li><code>π_θ(y_w|x)</code>: probability of generating the winning response under the current model</li>
-            <li><code>π_ref(y_w|x)</code>: probability of generating the winning response under the reference model</li>
-            <li><code>β</code>: controls how much we want to update the model compared to the reference, If <code>β</code> is large, then <code>σ(β·[...]) → 1</code>, making the loss <code>→ 0</code>.</li>
-            <li><code>σ</code>: sigmoid function</li>
+            <li>$\pi_\theta(y_w \mid x)$: probability of generating the winning response under the current model</li>
+            <li>$\pi_{\text{ref}}(y_w \mid x)$: probability of generating the winning response under the reference model</li>
+            <li>$\beta$: controls how much we want to update the model compared to the reference, If $\beta$ is large, then $\sigma(\beta \cdot [\ldots]) \to 1$, making the loss $\to 0$.</li>
+            <li>$\sigma$: sigmoid function</li>
         </ul>
 
         <h2>DPO vs RLHF (PPO)</h2>

@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -152,51 +158,51 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Computer Science/Fundamentals/Binary Indexed Tree.pdf">PDF</a>.</p>
 
-        <p>Say you have a huge array and you constantly need two operations: compute prefix sums and update individual elements. If you store the raw array, prefix sums cost O(n). If you store prefix sums directly, updates cost O(n). <strong>Binary Indexed Tree (BIT) strikes a balance &mdash; both operations in O(log n)</strong>.</p>
+        <p>Say you have a huge array and you constantly need two operations: compute prefix sums and update individual elements. If you store the raw array, prefix sums cost $O(n)$. If you store prefix sums directly, updates cost $O(n)$. <strong>Binary Indexed Tree (BIT) strikes a balance &mdash; both operations in $O(\log n)$</strong>.</p>
 
         <h2>The Problem</h2>
-        <p>Given an array <code>x_1, x_2, ..., x_n</code> (where n could be super large), we often want to know the prefix sum <code>Z_k = x_1 + ... + x_k</code>.</p>
+        <p>Given an array $x_1, x_2, \ldots, x_n$ (where $n$ could be super large), we often want to know the prefix sum $Z_k = x_1 + \ldots + x_k$.</p>
 
         <p>Two naive approaches:</p>
         <ul>
-            <li><strong>Store the original array:</strong> getting Z_k requires summing k elements &mdash; O(n)</li>
-            <li><strong>Store the prefix sum array directly:</strong> getting Z_k is O(1), but updating any x_k requires updating all subsequent prefix sums &mdash; O(n)</li>
+            <li><strong>Store the original array:</strong> getting $Z_k$ requires summing $k$ elements &mdash; $O(n)$</li>
+            <li><strong>Store the prefix sum array directly:</strong> getting $Z_k$ is $O(1)$, but updating any $x_k$ requires updating all subsequent prefix sums &mdash; $O(n)$</li>
         </ul>
 
-        <p>BIT gives us O(log n) for both.</p>
+        <p>BIT gives us $O(\log n)$ for both.</p>
 
         <h2>How BIT Stores Values</h2>
-        <p>Instead of storing the original array <code>x_1, ..., x_n</code>, BIT builds a new array <code>y_1, ..., y_n</code> where each y_i stores a partial sum. The key idea is that <strong>how many elements y_i covers depends on the binary representation of i</strong>:</p>
+        <p>Instead of storing the original array $x_1, \ldots, x_n$, BIT builds a new array $y_1, \ldots, y_n$ where each $y_i$ stores a partial sum. The key idea is that <strong>how many elements $y_i$ covers depends on the binary representation of $i$</strong>:</p>
 
         <ul>
-            <li>If i is odd: <code>y_i = x_i</code> (just that single element)</li>
-            <li>If i is even but not a power of 2: <code>y_i = x_i + x_{i-1}</code> (covers 2 elements)</li>
-            <li>If i is a power of 2 (i.e. i = 2^k): <code>y_i = x_1 + ... + x_i</code> (covers all elements up to i)</li>
+            <li>If $i$ is odd: $y_i = x_i$ (just that single element)</li>
+            <li>If $i$ is even but not a power of 2: $y_i = x_i + x_{i-1}$ (covers 2 elements)</li>
+            <li>If $i$ is a power of 2 (i.e. $i = 2^k$): $y_i = x_1 + \ldots + x_i$ (covers all elements up to $i$)</li>
         </ul>
 
-        <p>More precisely, y_i covers <code>2^(number of trailing zeros in binary of i)</code> elements ending at position i.</p>
+        <p>More precisely, $y_i$ covers $2^{(\text{number of trailing zeros in binary of } i)}$ elements ending at position $i$.</p>
 
         <h2>Operations</h2>
 
-        <h3>1. Construct a BIT: O(n log n)</h3>
-        <p>To add a new value x_{n+1} into the BIT:</p>
+        <h3>1. Construct a BIT: $O(n \log n)$</h3>
+        <p>To add a new value $x_{n+1}$ into the BIT:</p>
         <ul>
-            <li>If n+1 is odd: <code>y_{n+1} = x_{n+1}</code> &mdash; O(1)</li>
-            <li>If n+1 is even but not a power of 2: <code>y_{n+1} = x_{n+1} + x_n</code> &mdash; O(1)</li>
-            <li>If n+1 = 2^k: <code>y_{n+1} = x_{n+1} + x_n + y_{n-1} + y_{n-3} + ...</code> &mdash; O(log n)</li>
+            <li>If $n+1$ is odd: $y_{n+1} = x_{n+1}$ &mdash; $O(1)$</li>
+            <li>If $n+1$ is even but not a power of 2: $y_{n+1} = x_{n+1} + x_n$ &mdash; $O(1)$</li>
+            <li>If $n+1 = 2^k$: $y_{n+1} = x_{n+1} + x_n + y_{n-1} + y_{n-3} + \ldots$ &mdash; $O(\log n)$</li>
         </ul>
 
-        <h3>2. Search (prefix sum query): O(log n)</h3>
-        <p>To compute Z_i = x_1 + ... + x_i, we sum up a chain of y values by repeatedly stripping the lowest set bit from i:</p>
+        <h3>2. Search (prefix sum query): $O(\log n)$</h3>
+        <p>To compute $Z_i = x_1 + \ldots + x_i$, we sum up a chain of $y$ values by repeatedly stripping the lowest set bit from $i$:</p>
         <ul>
-            <li>If i = 2^k: <code>Z_i = y_i</code> &mdash; O(1), the whole prefix is stored directly</li>
-            <li>If i is even (not power of 2): <code>Z_i = y_i + y_{i-2} + ... + y_j</code></li>
-            <li>If i is odd: <code>Z_i = y_i + y_{i-1} + y_{i-3} + ... + y_j</code></li>
+            <li>If $i = 2^k$: $Z_i = y_i$ &mdash; $O(1)$, the whole prefix is stored directly</li>
+            <li>If $i$ is even (not power of 2): $Z_i = y_i + y_{i-2} + \ldots + y_j$</li>
+            <li>If $i$ is odd: $Z_i = y_i + y_{i-1} + y_{i-3} + \ldots + y_j$</li>
         </ul>
-        <p>In all cases, we hop at most O(log n) times.</p>
+        <p>In all cases, we hop at most $O(\log n)$ times.</p>
 
-        <h3>3. Update: O(log n)</h3>
-        <p>If we want to update x_i, we need to update all y values that include x_i in their partial sum. This propagates upward through the tree, affecting at most O(log n) entries.</p>
+        <h3>3. Update: $O(\log n)$</h3>
+        <p>If we want to update $x_i$, we need to update all $y$ values that include $x_i$ in their partial sum. This propagates upward through the tree, affecting at most $O(\log n)$ entries.</p>
 
         <h2>The Lowest Set Bit Trick</h2>
         <p>To efficiently jump between indices for build, search, and update, we need to find and remove the lowest set bit (LSB) of an index. There's a beautiful bit manipulation trick for this: <code>index & (-index)</code> gives you the lowest set bit.</p>
@@ -226,7 +232,7 @@ def update(bit, i, delta, n):
         bit[i] += delta
         i += i & (-i)  # add lowest set bit</code></pre>
 
-        <p>For example, to get Z_7: we need y_7, y_6, and y_4. In binary: 7 is <code>111</code>, strip LSB to get 6 (<code>110</code>), strip LSB to get 4 (<code>100</code>), strip LSB to get 0 &mdash; done. Three hops, three values summed.</p>
+        <p>For example, to get $Z_7$: we need $y_7$, $y_6$, and $y_4$. In binary: 7 is <code>111</code>, strip LSB to get 6 (<code>110</code>), strip LSB to get 4 (<code>100</code>), strip LSB to get 0 &mdash; done. Three hops, three values summed.</p>
     </div>
 </article>
 

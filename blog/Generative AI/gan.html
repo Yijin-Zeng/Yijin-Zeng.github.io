@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -165,95 +171,100 @@ normally random sample                    back-propagate: discriminator gets bet
 from standard Gaussian                    distinguishing fake and real images; the
                                           generator, on the other hand, makes this harder</code></pre>
 
-        <p>The discriminator is simply a <strong>binary classifier</strong>, so its loss is the usual cross-entropy (with <code>y_i = 1</code> if the image is real, <code>0</code> otherwise):</p>
+        <p>The discriminator is simply a <strong>binary classifier</strong>, so its loss is the usual cross-entropy (with $y_i = 1$ if the image is real, $0$ otherwise):</p>
 
-        <pre><code>φ̂ = argmin_φ  Σ_i −( y_i log f(x_i;φ) + (1−y_i) log(1 − f(x*_i;φ)) )</code></pre>
+        $$\hat{\phi} = \arg\min_{\phi} \sum_i -\Big( y_i \log f(x_i;\phi) + (1-y_i) \log\big(1 - f(x^*_i;\phi)\big) \Big)$$
 
-        <p>The generator wants to generate samples that are hard for the discriminator, so we choose <code>θ</code> to <strong>maximize</strong> this loss:</p>
+        <p>The generator wants to generate samples that are hard for the discriminator, so we choose $\theta$ to <strong>maximize</strong> this loss:</p>
 
-        <pre><code>θ̂ = argmax_θ  min_φ ( −Σ_i log f(x_i;φ) − Σ_j log(1 − f(g(z_j;θ);φ)) )</code></pre>
+        $$\hat{\theta} = \arg\max_{\theta} \min_{\phi} \Big( -\sum_i \log f(x_i;\phi) - \sum_j \log\big(1 - f(g(z_j;\theta);\phi)\big) \Big)$$
 
-        <p>This is a <strong>minmax problem</strong>: we want the loss to be large (images to look real) even for the <strong>best possible classifier</strong>. In practice we alternate: update <code>φ</code> with the cross-entropy loss above, then update <code>θ</code> with <code>L(θ) = Σ log(1 − f(x*_i;φ))</code>, i.e. decrease the likelihood of being caught by the discriminator.</p>
+        <p>This is a <strong>minmax problem</strong>: we want the loss to be large (images to look real) even for the <strong>best possible classifier</strong>. In practice we alternate: update $\phi$ with the cross-entropy loss above, then update $\theta$ with $L(\theta) = \sum_i \log(1 - f(x^*_i;\phi))$, i.e. decrease the likelihood of being caught by the discriminator.</p>
 
         <p>The idea is straightforward. However, it is notoriously difficult to train GANs — many tricks (Batch Norm, leaky ReLU, etc.) have to be used together to train stably. There are at least two reasons why:</p>
         <ul>
-            <li><strong>Mode collapse</strong>: the generator only generates a small subset of the training data — in the most extreme case, one image, regardless of <code>z_i</code>.</li>
+            <li><strong>Mode collapse</strong>: the generator only generates a small subset of the training data — in the most extreme case, one image, regardless of $z_i$.</li>
             <li><strong>Vanishing gradients</strong>: there is no gradient left to update the generator.</li>
         </ul>
 
         <p>Why would these happen? To understand this, we need to investigate the loss function.</p>
 
         <h2>What the Loss Actually Measures</h2>
-        <p>Weight the discriminator loss by sample sizes and take expectations, so sums become integrals over the real distribution <code>p(x)</code> and the generated distribution <code>q(x)</code>:</p>
+        <p>Weight the discriminator loss by sample sizes and take expectations, so sums become integrals over the real distribution $p(x)$ and the generated distribution $q(x)$:</p>
 
-        <pre><code>L(φ) ≈ −E_{x~p} log f(x;φ) − E_{x*~q} log(1 − f(x*;φ))
-     = −∫ p(x) log f(x;φ) dx − ∫ q(x*) log(1 − f(x*;φ)) dx*</code></pre>
+        $$\begin{aligned}
+L(\phi) &\approx -\mathbb{E}_{x\sim p} \log f(x;\phi) - \mathbb{E}_{x^*\sim q} \log\big(1 - f(x^*;\phi)\big) \\
+&= -\int p(x) \log f(x;\phi)\, dx - \int q(x^*) \log\big(1 - f(x^*;\phi)\big)\, dx^*
+\end{aligned}$$
 
         <p>Then consider how the <strong>optimal discriminator</strong> would classify images. This is just the generative way of classifying (i.e. the same Bayes reasoning behind LDA or naive Bayes):</p>
 
-        <pre><code>p(x̃ is real | x̃) = p(x̃ is real)·p(x̃) / ( p(x̃ is real)·p(x̃) + p(x̃ is generated)·q(x̃) )</code></pre>
+        $$p(\tilde{x} \text{ is real} \mid \tilde{x}) = \frac{p(\tilde{x} \text{ is real})\, p(\tilde{x})}{p(\tilde{x} \text{ is real})\, p(\tilde{x}) + p(\tilde{x} \text{ is generated})\, q(\tilde{x})}$$
 
-        <p>Suppose we feed the discriminator the same number of real and fake images, so both priors are 1/2. Then:</p>
+        <p>Suppose we feed the discriminator the same number of real and fake images, so both priors are $1/2$. Then:</p>
 
-        <pre><code>p(x̃ is real | x̃) = p(x̃) / (p(x̃) + q(x̃))</code></pre>
+        $$p(\tilde{x} \text{ is real} \mid \tilde{x}) = \frac{p(\tilde{x})}{p(\tilde{x}) + q(\tilde{x})}$$
 
-        <p>Plug this back into <code>L(φ)</code>. After pulling out a factor of 2 inside each log (this is the small algebraic trick that makes everything click), the loss with the optimal classifier becomes:</p>
+        <p>Plug this back into $L(\phi)$. After pulling out a factor of 2 inside each log (this is the small algebraic trick that makes everything click), the loss with the optimal classifier becomes:</p>
 
-        <pre><code>L(φ) = −½ KL( p(x) ‖ (p(x)+q(x))/2 )  −  ½ KL( q(x) ‖ (p(x)+q(x))/2 )  +  2 log 2
-              \_____________________/       \_____________________/
-                  coverage term                  quality term</code></pre>
+        $$L(\phi) = \underbrace{-\frac{1}{2} \mathrm{KL}\Big( p(x) \,\Big\|\, \frac{p(x)+q(x)}{2} \Big)}_{\text{coverage term}} \,\underbrace{-\frac{1}{2} \mathrm{KL}\Big( q(x) \,\Big\|\, \frac{p(x)+q(x)}{2} \Big)}_{\text{quality term}} \,+\, 2 \log 2$$
 
-        <p>This is (up to constants) the <strong>Jensen–Shannon divergence</strong> between <code>p</code> and <code>q</code>, and the two KL terms have lovely interpretations:</p>
+        <p>This is (up to constants) the <strong>Jensen–Shannon divergence</strong> between $p$ and $q$, and the two KL terms have lovely interpretations:</p>
         <ul>
-            <li><strong>Coverage term</strong>: when <code>p(x)</code> is large, <code>(p(x)+q(x))/2</code> should be large — i.e. there should be <strong>generated samples around real samples</strong>.</li>
-            <li><strong>Quality term</strong>: when <code>q(x)</code> is large, <code>(p(x)+q(x))/2</code> should be large — i.e. there should be <strong>real samples around generated samples</strong>.</li>
+            <li><strong>Coverage term</strong>: when $p(x)$ is large, $(p(x)+q(x))/2$ should be large — i.e. there should be <strong>generated samples around real samples</strong>.</li>
+            <li><strong>Quality term</strong>: when $q(x)$ is large, $(p(x)+q(x))/2$ should be large — i.e. there should be <strong>real samples around generated samples</strong>.</li>
         </ul>
 
         <p>So the optimal discriminator cares about both coverage and quality. Picture three densities on a line: the broad one is the real distribution; a sharp spike sitting inside it has good quality but poor coverage; a flat smear across everything has good coverage but poor quality. A good generator needs both.</p>
 
         <h2>Failure Mode 1: Mode Collapse</h2>
-        <p>Here is the catch: the generator is trained using <strong>only the quality term</strong> (its loss only involves <code>q</code> through the discriminator's output on generated samples). So the generator prefers <strong>quality over coverage</strong>. The only place the generator can learn to generate diverse images is through the discriminator:</p>
+        <p>Here is the catch: the generator is trained using <strong>only the quality term</strong> (its loss only involves $q$ through the discriminator's output on generated samples). So the generator prefers <strong>quality over coverage</strong>. The only place the generator can learn to generate diverse images is through the discriminator:</p>
         <ul>
-            <li>The <strong>optimal</strong> discriminator does force diversity — pushing the quality term to 0 requires <code>q(x) = p(x)</code>.</li>
+            <li>The <strong>optimal</strong> discriminator does force diversity — pushing the quality term to 0 requires $q(x) = p(x)$.</li>
             <li>A <strong>sub-optimal</strong> discriminator, however, may learn to classify each image independently (it has no memory across samples), so it ignores diversity. E.g. the neural net may rely on features of each individual image for classifying, not their distributions. This is just how a neural net would normally behave.</li>
         </ul>
 
-        <p>One potential solution is to introduce a <strong>batch-aware layer</strong> in the discriminator (minibatch discrimination). How is the batch score calculated? Take the feature vector of input <code>x_i</code>, multiply it by a 3D tensor <code>W ∈ R^(d×A×B)</code> to get a matrix <code>M_i</code> of shape <code>A×B</code>. Then row <code>k</code> of the batch score is computed by comparing <code>x_i</code> against every other sample in the batch:</p>
+        <p>One potential solution is to introduce a <strong>batch-aware layer</strong> in the discriminator (minibatch discrimination). How is the batch score calculated? Take the feature vector of input $x_i$, multiply it by a 3D tensor $W \in \mathbb{R}^{d\times A\times B}$ to get a matrix $M_i$ of shape $A\times B$. Then row $k$ of the batch score is computed by comparing $x_i$ against every other sample in the batch:</p>
 
-        <pre><code>C(x_i,k , x_j,k) = exp( −‖ M_i,k − M_j,k ‖₁ )     (L1 distance of row k)
+        $$\begin{aligned}
+C(x_{i,k}, x_{j,k}) &= \exp\big( -\| M_{i,k} - M_{j,k} \|_1 \big) \qquad (\text{L1 distance of row } k) \\
+S_{i,k} &= \sum_{j=1}^{B} C(x_{i,k}, x_{j,k}) \qquad (B = \text{batch size})
+\end{aligned}$$
 
-S_i,k = Σ_{j=1}^{B} C(x_i,k , x_j,k)              (B = batch size)</code></pre>
-
-        <p>The batch score <code>(S_i,1, ..., S_i,A)</code> is appended to the original feature vector. It is small if all images in the batch are different and large if they are similar — and each component may focus on different features for similarity, so the generator cannot fool the discriminator easily, e.g. by simply changing the background color. There are different ways to do this, but the key is to <strong>enforce that the discriminator cares about coverage (diversity)</strong>.</p>
+        <p>The batch score $(S_{i,1}, ..., S_{i,A})$ is appended to the original feature vector. It is small if all images in the batch are different and large if they are similar — and each component may focus on different features for similarity, so the generator cannot fool the discriminator easily, e.g. by simply changing the background color. There are different ways to do this, but the key is to <strong>enforce that the discriminator cares about coverage (diversity)</strong>.</p>
 
         <h2>Failure Mode 2: Vanishing Gradients</h2>
         <p>This one is easier. If the discriminator is trained too well, it separates the generated and real images perfectly:</p>
 
-        <pre><code>Σ_i log( 1 − f(g(z_i;θ);φ) ) = 0   -->  no gradient for the generator to update</code></pre>
+        $$\sum_i \log\big( 1 - f(g(z_i;\theta);\phi) \big) = 0 \qquad \longrightarrow \qquad \text{no gradient for the generator to update}$$
 
-        <p>And here is the deeper reason. The optimal discriminator is measuring the KL divergences of <code>q(x)</code> and <code>p(x)</code> (against their mixture). When the two distributions are <strong>disjoint</strong>, shifting the generated distribution a little closer to the real one does not change those KL terms at all — there is no gradient. KL divergence is simply insensitive to how far apart two non-overlapping distributions are.</p>
+        <p>And here is the deeper reason. The optimal discriminator is measuring the KL divergences of $q(x)$ and $p(x)$ (against their mixture). When the two distributions are <strong>disjoint</strong>, shifting the generated distribution a little closer to the real one does not change those KL terms at all — there is no gradient. KL divergence is simply insensitive to how far apart two non-overlapping distributions are.</p>
 
-        <p>Think of it another way: the discriminator maps inputs to high-dimensional feature vectors and applies a sigmoid over a separating boundary. If we move the generated samples closer to the real samples but they are still separable, the sigmoid output is still saturated at 0 (that <code>1/(1+e^(−t))</code> is pushed all the way to the flat region), and the loss does not move.</p>
+        <p>Think of it another way: the discriminator maps inputs to high-dimensional feature vectors and applies a sigmoid over a separating boundary. If we move the generated samples closer to the real samples but they are still separable, the sigmoid output is still saturated at 0 (that $1/(1+e^{-t})$ is pushed all the way to the flat region), and the loss does not move.</p>
 
         <p><strong>Solution: replace the KL divergence</strong> — which brings us to Wasserstein GANs.</p>
 
         <h2>Wasserstein GAN</h2>
         <p>GAN training, as we showed, minimizes the JSD, and this leads to gradient vanishing when the discriminator is too good, because KL divergence is insensitive to two distributions when they are mostly non-overlapping. The <strong>Wasserstein distance</strong> fixes exactly this: it measures the distance between two distributions <strong>even if they are non-overlapping</strong>.</p>
 
-        <pre><code>W(p, q) = min_π  ∫∫ c(x,y) dπ(x,y)
-          s.t.  ∫ π(x,y) dy = p(x),   ∫ π(x,y) dx = q(y)</code></pre>
+        $$\begin{aligned}
+W(p, q) &= \min_{\pi} \iint c(x,y)\, d\pi(x,y) \\
+&\text{s.t.} \quad \int \pi(x,y)\, dy = p(x), \quad \int \pi(x,y)\, dx = q(y)
+\end{aligned}$$
 
-        <p>i.e. <code>π(x,y)</code> is a coupling of <code>p</code> and <code>q</code> — intuitively, the cheapest way to transport mass from one distribution to the other. The magic is the <strong>dual form</strong>:</p>
+        <p>i.e. $\pi(x,y)$ is a coupling of $p$ and $q$ — intuitively, the cheapest way to transport mass from one distribution to the other. The magic is the <strong>dual form</strong>:</p>
 
-        <pre><code>W(p, q) = max_f ( E_{x~p} f(x) − E_{y~q} f(y) )
-          s.t. the Lipschitz constant of f ≤ 1
-               (i.e. |J_ij| ≤ 1, where J is the Jacobian matrix)</code></pre>
+        $$\begin{aligned}
+W(p, q) &= \max_{f} \Big( \mathbb{E}_{x\sim p} f(x) - \mathbb{E}_{y\sim q} f(y) \Big) \\
+&\text{s.t. the Lipschitz constant of } f \le 1 \\
+&\qquad (\text{i.e. } |J_{ij}| \le 1, \text{ where } J \text{ is the Jacobian matrix})
+\end{aligned}$$
 
-        <p>This turns the distance into an optimization over a function <code>f</code> — and that function can be a neural network. The WGAN target, with real images <code>x ~ p(x)</code> and generated images <code>x* ~ q(x*)</code>, approximating expectations over a mini-batch:</p>
+        <p>This turns the distance into an optimization over a function $f$ — and that function can be a neural network. The WGAN target, with real images $x \sim p(x)$ and generated images $x^* \sim q(x^*)$, approximating expectations over a mini-batch:</p>
 
-        <pre><code>min_θ  max_φ  ( 1/B Σ_i f(x_i;φ)  −  1/B Σ_i f(g(z_i;θ);φ) )</code></pre>
+        $$\min_{\theta} \max_{\phi} \Big( \frac{1}{B} \sum_i f(x_i;\phi) - \frac{1}{B} \sum_i f(g(z_i;\theta);\phi) \Big)$$
 
-        <p>The discriminator <code>f</code> (now usually called a critic — no sigmoid, no classification) must have Lipschitz constant ≤ 1. In practice this is enforced by adding a <strong>penalty to the discriminator's loss when its gradient norm exceeds 1</strong> (the gradient penalty). Because the Wasserstein distance keeps giving meaningful gradients even when the two distributions are disjoint, the vanishing gradient problem largely goes away.</p>
+        <p>The discriminator $f$ (now usually called a critic — no sigmoid, no classification) must have Lipschitz constant $\le 1$. In practice this is enforced by adding a <strong>penalty to the discriminator's loss when its gradient norm exceeds 1</strong> (the gradient penalty). Because the Wasserstein distance keeps giving meaningful gradients even when the two distributions are disjoint, the vanishing gradient problem largely goes away.</p>
 
         <h2>Summary</h2>
         <ul>

@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -154,24 +160,26 @@
 
         <p>Variational autoencoders (VAE) are a type of probabilistic generative model. The core idea is to model the "true" distribution as an integral over a latent variable:</p>
 
-        <pre><code>pr(x) = ∫ pr(z) pr(x|z) dz
+        $$\mathrm{pr}(x) = \int \mathrm{pr}(z)\, \mathrm{pr}(x|z)\, dz$$
 
-pr(z)    : latent variable
-pr(x|z)  : conditional likelihood given the latent variable</code></pre>
+        $$\begin{aligned}
+        \mathrm{pr}(z) &: \text{latent variable} \\
+        \mathrm{pr}(x|z) &: \text{conditional likelihood given the latent variable}
+        \end{aligned}$$
 
         <h2>Examples</h2>
         <p>Two examples of what this buys us.</p>
 
-        <p><strong>1. Gaussian Mixture Model.</strong> The latent variable is cluster membership: <code>z_ij = 1</code> if point <code>x_i</code> belongs to cluster <code>C_j</code>, 0 otherwise.
-           The conditional likelihood is just a Gaussian, <code>pr(x_i | z_ij = 1) = N(x_i; μ_j, Σ_j)</code>.
-           Both pieces are simple, but a weighted average of them — say <code>p(z=1) = 0.5</code>, <code>p(z=2) = 0.5</code> — can already model a complex, bimodal distribution.</p>
+        <p><strong>1. Gaussian Mixture Model.</strong> The latent variable is cluster membership: $z_{ij} = 1$ if point $x_i$ belongs to cluster $C_j$, 0 otherwise.
+           The conditional likelihood is just a Gaussian, $\mathrm{pr}(x_i \mid z_{ij} = 1) = \mathcal{N}(x_i; \mu_j, \Sigma_j)$.
+           Both pieces are simple, but a weighted average of them — say $p(z=1) = 0.5$, $p(z=2) = 0.5$ — can already model a complex, bimodal distribution.</p>
 
         <p><strong>2. 2D non-linear latent variable model.</strong> Say the data is 2D and scattered along a curve. How do we model this distribution?
-           Put a Gaussian prior on a scalar <code>z</code>, map it through a non-linear function <code>f(z; φ)</code>, and place a Gaussian at every point along the curve:</p>
+           Put a Gaussian prior on a scalar $z$, map it through a non-linear function $f(z; \phi)$, and place a Gaussian at every point along the curve:</p>
 
-        <pre><code>pr(x) = ∫ pr(z) N(x; f(z; φ), Σ) dz
+        $$\mathrm{pr}(x) = \int \mathrm{pr}(z)\, \mathcal{N}(x; f(z; \phi), \Sigma)\, dz$$
 
-    z axis (latent)              x space (data)
+        <pre><code>    z axis (latent)              x space (data)
     ────●────────►               ○ ○ ○
         │ f(z; φ)               ○     ○ ○      each circle is a
         ▼                      ○         ○ ○   Gaussian; averaging
@@ -183,84 +191,84 @@ pr(x|z)  : conditional likelihood given the latent variable</code></pre>
         <h2>The Problem of VAE</h2>
         <p>Take the model above and try to do maximum likelihood on it directly:</p>
 
-        <pre><code>pr(x) = ∫ pr(z) pr(x|z; φ) dz = ∫ N(z; 0, I) N(x; f(z; φ), σ²I) dz</code></pre>
+        $$\mathrm{pr}(x) = \int \mathrm{pr}(z)\, \mathrm{pr}(x|z; \phi)\, dz = \int \mathcal{N}(z; 0, I)\, \mathcal{N}(x; f(z; \phi), \sigma^2 I)\, dz$$
 
-        <p>This has no analytical form. We can approximate it with Monte Carlo instead, to estimate the marginal likelihood of <code>x</code>:</p>
+        <p>This has no analytical form. We can approximate it with Monte Carlo instead, to estimate the marginal likelihood of $x$:</p>
 
-        <pre><code>pr(x) ≈ E_{z~N(0,I)} [ N(x; f(z; φ), σ²I) ]</code></pre>
+        $$\mathrm{pr}(x) \approx \mathbb{E}_{z\sim\mathcal{N}(0,I)} \Big[ \mathcal{N}(x; f(z; \phi), \sigma^2 I) \Big]$$
 
-        <p>However, because the dimension of <code>z</code> is high, we need a very large sample size to make this work. For a given image <code>x</code>, if we sample randomly from <code>z ~ N(0, I)</code>,
-           it is very likely (&gt;99.9% of the time) that <code>N(x; f(z; φ), σ²I) ≈ 0</code>. So it is hard to maximize the marginal likelihood <code>pr(x)</code> directly.</p>
+        <p>However, because the dimension of $z$ is high, we need a very large sample size to make this work. For a given image $x$, if we sample randomly from $z \sim \mathcal{N}(0, I)$,
+           it is very likely (&gt;99.9% of the time) that $\mathcal{N}(x; f(z; \phi), \sigma^2 I) \approx 0$. So it is hard to maximize the marginal likelihood $\mathrm{pr}(x)$ directly.</p>
 
         <p>Instead, we will try to push up the lower bound of the marginal likelihood.</p>
 
         <h2>Deriving the ELBO</h2>
-        <p>Multiply and divide by a proposed distribution <code>q(z)</code> inside the log, then apply Jensen's inequality:</p>
+        <p>Multiply and divide by a proposed distribution $q(z)$ inside the log, then apply Jensen's inequality:</p>
 
-        <pre><code>log pr(x|φ) = log ( ∫ pr(x, z|φ) dz )
+        $$\begin{aligned}
+        \log \mathrm{pr}(x|\phi) &= \log \left( \int \mathrm{pr}(x, z|\phi)\, dz \right) \\
+        &= \log \left( \int q(z) \cdot \frac{\mathrm{pr}(x, z|\phi)}{q(z)}\, dz \right) \\
+        &\ge \int q(z) \log \left( \frac{\mathrm{pr}(x, z|\phi)}{q(z)} \right) dz \qquad (\text{Jensen's inequality})
+        \end{aligned}$$
 
-            = log ( ∫ q(z) · pr(x, z|φ) / q(z) dz )
+        <p>This is known as the evidence lower bound (ELBO). This proposed $q(z)$ can be anything, as long as it is a valid distribution, and it decides how far the ELBO is from $\mathrm{pr}(x|\phi)$. We can learn it as well, and denote it as $q(z|\theta)$ below:</p>
 
-            ≥ ∫ q(z) log ( pr(x, z|φ) / q(z) ) dz     ← Jensen's inequality</code></pre>
+        $$\mathrm{ELBO}(\theta, \phi) = \int q(z|\theta) \log \left( \frac{\mathrm{pr}(x, z|\phi)}{q(z|\theta)} \right) dz$$
 
-        <p>This is known as the evidence lower bound (ELBO). This proposed <code>q(z)</code> can be anything, as long as it is a valid distribution, and it decides how far the ELBO is from <code>pr(x|φ)</code>. We can learn it as well, and denote it as <code>q(z|θ)</code> below:</p>
-
-        <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log ( pr(x, z|φ) / q(z|θ) ) dz
-
-change θ: push up the ELBO itself
-change φ: move the ELBO (and the target) up together</code></pre>
+        $$\begin{aligned}
+        \text{change } \theta &: \text{push up the ELBO itself} \\
+        \text{change } \phi &: \text{move the ELBO (and the target) up together}
+        \end{aligned}$$
 
         <p>Another perspective of VAE: the neural network architecture built to maximize the ELBO is the VAE.</p>
 
         <h2>Analyzing the ELBO</h2>
 
         <h3>1. Tightness of the bound</h3>
-        <p>Expand <code>pr(x, z|φ) = pr(z|x, φ) pr(x|φ)</code>:</p>
+        <p>Expand $\mathrm{pr}(x, z|\phi) = \mathrm{pr}(z|x, \phi)\, \mathrm{pr}(x|\phi)$:</p>
 
-        <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log ( pr(z|x, φ) pr(x|φ) / q(z|θ) ) dz
+        $$\begin{aligned}
+        \mathrm{ELBO}(\theta, \phi) &= \int q(z|\theta) \log \left( \frac{\mathrm{pr}(z|x, \phi)\, \mathrm{pr}(x|\phi)}{q(z|\theta)} \right) dz \\
+        &= \log \mathrm{pr}(x|\phi) - \mathrm{KL}\big( q(z|\theta), \mathrm{pr}(z|x, \phi) \big)
+        \end{aligned}$$
 
-           = log pr(x|φ) − KL( q(z|θ), pr(z|x, φ) )</code></pre>
-
-        <p>When the proposed distribution <code>q(z|θ) = pr(z|x, φ)</code>, we have <code>ELBO(θ, φ) = log pr(x|φ)</code>. However, <code>pr(z|x, φ) = pr(z) pr(x|z, φ) / pr(x|φ)</code> could be very complex.</p>
+        <p>When the proposed distribution $q(z|\theta) = \mathrm{pr}(z|x, \phi)$, we have $\mathrm{ELBO}(\theta, \phi) = \log \mathrm{pr}(x|\phi)$. However, $\mathrm{pr}(z|x, \phi) = \mathrm{pr}(z)\, \mathrm{pr}(x|z, \phi) / \mathrm{pr}(x|\phi)$ could be very complex.</p>
 
         <h3>2. Constructing a loss function from the ELBO</h3>
-        <p>Now expand the joint the other way, <code>pr(x, z|φ) = pr(x|z, φ) pr(z)</code>, where <code>pr(z)</code> is the prior <code>z ~ N(0, I)</code>:</p>
+        <p>Now expand the joint the other way, $\mathrm{pr}(x, z|\phi) = \mathrm{pr}(x|z, \phi)\, \mathrm{pr}(z)$, where $\mathrm{pr}(z)$ is the prior $z \sim \mathcal{N}(0, I)$:</p>
 
-        <pre><code>ELBO(θ, φ) = ∫ q(z|θ) log pr(x|z, φ) dz − KL( q(z|θ), pr(z) )
-             ─────────────────────────    ──────────────────
-             reconstruction error          the proposed distribution q(z|θ) will be
-                                           penalized if it deviates from prior pr(z)
-
-           = E_{z~q(z|θ)} [ log pr(x|z, φ) ]</code></pre>
+        $$\begin{aligned}
+        \mathrm{ELBO}(\theta, \phi) &= \underbrace{\int q(z|\theta) \log \mathrm{pr}(x|z, \phi)\, dz}_{\text{reconstruction error}} - \underbrace{\mathrm{KL}\big( q(z|\theta), \mathrm{pr}(z) \big)}_{\text{the proposed distribution } q(z|\theta) \text{ will be penalized if it deviates from prior } \mathrm{pr}(z)} \\
+        &= \mathbb{E}_{z\sim q(z|\theta)} \big[ \log \mathrm{pr}(x|z, \phi) \big]
+        \end{aligned}$$
 
         <h2>Putting the Two Analyses Together</h2>
         <p>Combining the above two analyses, we now know that:</p>
 
         <ol>
-            <li>We want the proposed distribution <code>q(z|θ)</code> to be close to <code>pr(z|x, φ)</code>, so that ELBO → target.</li>
-            <li>We want the proposed distribution to minimize reconstruction error, which means it should provide enough information about the observation <code>x</code>.</li>
-            <li>We also want <code>q(z|θ)</code> to be close to <code>pr(z)</code>, so it should stay simple.</li>
+            <li>We want the proposed distribution $q(z|\theta)$ to be close to $\mathrm{pr}(z|x, \phi)$, so that ELBO $\to$ target.</li>
+            <li>We want the proposed distribution to minimize reconstruction error, which means it should provide enough information about the observation $x$.</li>
+            <li>We also want $q(z|\theta)$ to be close to $\mathrm{pr}(z)$, so it should stay simple.</li>
         </ol>
 
         <p>Solution: we let</p>
 
-        <pre><code>q(z|θ) = q(z|x, θ) = N( z; g_μ(x, θ), g_Σ(x, θ) )</code></pre>
+        $$q(z|\theta) = q(z|x, \theta) = \mathcal{N}\big( z; g_\mu(x, \theta), g_\Sigma(x, \theta) \big)$$
 
-        <p>where <code>g_μ</code> and <code>g_Σ</code> are neural networks that read <code>x</code> and output a mean and covariance. This is the variational approximation to <code>pr(z|x, φ)</code>, and it is also the encoder. This could be very complex, so this approximation may not be good, in which case the ELBO is not close to the log marginal likelihood.</p>
+        <p>where $g_\mu$ and $g_\Sigma$ are neural networks that read $x$ and output a mean and covariance. This is the variational approximation to $\mathrm{pr}(z|x, \phi)$, and it is also the encoder. This could be very complex, so this approximation may not be good, in which case the ELBO is not close to the log marginal likelihood.</p>
 
         <h2>Summary</h2>
         <p>The loss function is:</p>
 
-        <pre><code>L(θ, φ) = −∫ q(z|x, θ) log pr(x|z, φ) dz + KL( q(z|x, θ), pr(z) )
+        $$\begin{aligned}
+        L(\theta, \phi) &= -\int q(z|x, \theta) \log \mathrm{pr}(x|z, \phi)\, dz + \mathrm{KL}\big( q(z|x, \theta), \mathrm{pr}(z) \big) \\
+        &= -\mathbb{E}_{z\sim q(\cdot|x,\theta)} \big[ \log \mathrm{pr}(x|z, \phi) \big] + \mathrm{KL}\big( q(z|x, \theta), \mathrm{pr}(z) \big) \\
+        &\approx -\frac{1}{n} \sum_i \log \mathrm{pr}(x|z_i, \phi) + \mathrm{KL}\big( q(z|x, \theta), \mathrm{pr}(z) \big) \qquad z_i \sim q(z|x, \theta)
+        \end{aligned}$$
 
-        = −E_{z~q(·|x,θ)} [ log pr(x|z, φ) ] + KL( q(z|x, θ), pr(z) )
+        <p>Here $z$ is also high dimension, so why will this approximation work, but $\int \mathrm{pr}(z)\, \mathrm{pr}(x|z, \phi)\, dz = \mathbb{E}_{z\sim\mathcal{N}(0,I)}[\mathrm{pr}(x|z, \phi)]$ will fail?</p>
 
-        ≈ −(1/n) Σᵢ log pr(x|zᵢ, φ) + KL( q(z|x, θ), pr(z) )
-                  zᵢ ~ q(z|x, θ)</code></pre>
-
-        <p>Here <code>z</code> is also high dimension, so why will this approximation work, but <code>∫ pr(z) pr(x|z, φ) dz = E_{z~N(0,I)}[pr(x|z, φ)]</code> will fail?</p>
-
-        <p>Reason: if <code>z ~ N(0, I)</code>, then <code>pr(x|z, φ) ≈ 0</code>. If, however, <code>z ~ q(·|x, θ)</code>, then <code>pr(x|z, φ) &gt; 0</code>. The compression step (encoder) narrows down the scope in latent space to a small region:</p>
+        <p>Reason: if $z \sim \mathcal{N}(0, I)$, then $\mathrm{pr}(x|z, \phi) \approx 0$. If, however, $z \sim q(\cdot|x, \theta)$, then $\mathrm{pr}(x|z, \phi) &gt; 0$. The compression step (encoder) narrows down the scope in latent space to a small region:</p>
 
         <pre><code>   Latent Space N(0, I)                Sample Space
    ┌───────────────────┐              ┌──────────────────┐
@@ -273,7 +281,7 @@ change φ: move the ELBO (and the target) up together</code></pre>
      narrows the scope in latent
      space to a small region</code></pre>
 
-        <p>Since <code>q(z|x, θ)</code> is Gaussian and the prior is Gaussian, the KL term has an explicit form, so no sampling is needed for that term.</p>
+        <p>Since $q(z|x, \theta)$ is Gaussian and the prior is Gaussian, the KL term has an explicit form, so no sampling is needed for that term.</p>
 
         <h2>Encoder and Decoder</h2>
 
@@ -283,25 +291,25 @@ change φ: move the ELBO (and the target) up together</code></pre>
                                     loss: log N( x; f(z; φ), σ²I )   ◄────┘
                                           σ normally fixed at 1 or 0.5</code></pre>
 
-        <p>This <code>Σ</code> needs to be symmetric and semi-positive definite. Normally we assume <code>Σ = diag(σ₁², ..., σₙ²)</code>; otherwise we use the Cholesky decomposition <code>Σ = LLᵀ</code>, where <code>L</code> is a lower-triangular matrix with positive values on its diagonal.</p>
+        <p>This $\Sigma$ needs to be symmetric and semi-positive definite. Normally we assume $\Sigma = \mathrm{diag}(\sigma_1^2, ..., \sigma_n^2)$; otherwise we use the Cholesky decomposition $\Sigma = LL^{\top}$, where $L$ is a lower-triangular matrix with positive values on its diagonal.</p>
 
-        <p>Why does the decoder not learn <code>σ</code>? If the image is hard, it could push <code>σ → ∞</code>; if the image is easy, it would push <code>σ → 0</code>. So the decoder normally just learns the mean.</p>
+        <p>Why does the decoder not learn $\sigma$? If the image is hard, it could push $\sigma \to \infty$; if the image is easy, it would push $\sigma \to 0$. So the decoder normally just learns the mean.</p>
 
-        <p>Underneath this, there's a tension: we need to encode as much information about the image as possible to minimize reconstruction error, versus we need to be simple enough so that <code>KL(q(z|x, θ), N(0, I))</code> is small.</p>
+        <p>Underneath this, there's a tension: we need to encode as much information about the image as possible to minimize reconstruction error, versus we need to be simple enough so that $\mathrm{KL}(q(z|x, \theta), \mathcal{N}(0, I))$ is small.</p>
 
         <h2>A Few More Notes</h2>
 
-        <p><strong>1.</strong> Remember the target is to maximize <code>pr(x|φ)</code>. The loss function of VAE is maximizing the ELBO directly. So how about the distance between ELBO and <code>pr(x|φ)</code>?</p>
+        <p><strong>1.</strong> Remember the target is to maximize $\mathrm{pr}(x|\phi)$. The loss function of VAE is maximizing the ELBO directly. So how about the distance between ELBO and $\mathrm{pr}(x|\phi)$?</p>
 
-        <pre><code>pr(x|φ) = ELBO(θ, φ) + KL( q(z|θ), pr(z|x, φ) )</code></pre>
+        $$\mathrm{pr}(x|\phi) = \mathrm{ELBO}(\theta, \phi) + \mathrm{KL}\big( q(z|\theta), \mathrm{pr}(z|x, \phi) \big)$$
 
-        <p>The marginal likelihood depends on the decoder only. So for a given decoder <code>φ</code>, it is a constant for the encoder. As long as the encoder is pushing up ELBO, it is minimizing the distance <code>KL(q(z|θ), pr(z|x, φ))</code>, although we don't know what <code>pr(z|x, φ)</code> is. We can also think the encoder here is only trying to help the decoder learn: without an encoder, the decoder needs to evaluate the whole latent space to evaluate <code>pr(x|φ)</code>; with an encoder, it helps to narrow down the space to <code>q(z|x, θ)</code>.</p>
+        <p>The marginal likelihood depends on the decoder only. So for a given decoder $\phi$, it is a constant for the encoder. As long as the encoder is pushing up ELBO, it is minimizing the distance $\mathrm{KL}(q(z|\theta), \mathrm{pr}(z|x, \phi))$, although we don't know what $\mathrm{pr}(z|x, \phi)$ is. We can also think the encoder here is only trying to help the decoder learn: without an encoder, the decoder needs to evaluate the whole latent space to evaluate $\mathrm{pr}(x|\phi)$; with an encoder, it helps to narrow down the space to $q(z|x, \theta)$.</p>
 
         <p><strong>2.</strong> To generate an image from a VAE:</p>
 
         <pre><code>z ~ N(0, I)   (independent Gaussian)   →   decoder   →   generated image</code></pre>
 
-        <p><strong>3.</strong> In order to improve the quality of the generated images from a VAE, it seems not enough to model the prior <code>pr(z)</code> and the latent space <code>pr(z|x)</code> as Gaussian. Diffusion can generate higher quality images, and can be considered a VAE with hierarchical priors.</p>
+        <p><strong>3.</strong> In order to improve the quality of the generated images from a VAE, it seems not enough to model the prior $\mathrm{pr}(z)$ and the latent space $\mathrm{pr}(z|x)$ as Gaussian. Diffusion can generate higher quality images, and can be considered a VAE with hierarchical priors.</p>
 
         <h2>References</h2>
         <ul>

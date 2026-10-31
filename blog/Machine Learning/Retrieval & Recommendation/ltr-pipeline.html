@@ -139,7 +139,14 @@
         .post-content strong {
             color: var(--text);
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -162,7 +169,7 @@
 
         <p>Data collection for learning to rank splits into explicit feedback and implicit feedback.</p>
 
-        <p><strong>Explicit feedback:</strong> query <code>q_i</code> gives documents <code>D_i,1, ..., D_i,K_i</code>, a human sorts the results, and we get scores (e.g. ranks) <code>S_i,1, ..., S_i,K_i</code>.</p>
+        <p><strong>Explicit feedback:</strong> query $q_i$ gives documents $D_{i,1}, ..., D_{i,K_i}$, a human sorts the results, and we get scores (e.g. ranks) $S_{i,1}, ..., S_{i,K_i}$.</p>
 
         <p><strong>Pros:</strong> the dataset is clean and unbiased.<br>
         <strong>Cons:</strong> too expensive, and cannot scale easily.</p>
@@ -184,9 +191,9 @@
 
         <pre><code>context info, user info, product info, display position info, match score  →  model  →  P(click | impression)</code></pre>
 
-        <p>Similarly, we can train a conversion rate model using the items clicked: <code>P(conversion | click)</code>. Then we can compute the score for an item as:</p>
+        <p>Similarly, we can train a conversion rate model using the items clicked: $P(\text{conversion} \mid \text{click})$. Then we can compute the score for an item as:</p>
 
-        <pre><code>Expected revenue = P(click | impression) · P(conversion | click) · revenue</code></pre>
+        $$\text{Expected revenue} = P(\text{click} \mid \text{impression}) \cdot P(\text{conversion} \mid \text{click}) \cdot \text{revenue}$$
 
         <p>where revenue comes from the business side, since we care about revenue.</p>
 
@@ -215,15 +222,15 @@ dwell       → score 1</code></pre>
 
         <p>Normalized Discounted Cumulative Gain (NDCG):</p>
 
-        <pre><code>DCG_i = Σ_{j=1}^{k_i} S_i,j / log₂(j+1)</code></pre>
+        $$\mathrm{DCG}_i = \sum_{j=1}^{k_i} \frac{S_{i,j}}{\log_2(j+1)}$$
 
-        <p>where <code>S_i,j</code> is the score of the document for query <code>i</code> at position <code>j</code> (given by the model), and the label comes from, e.g., purchase → 4, add to cart → 3, click → 2, dwell → 1.</p>
+        <p>where $S_{i,j}$ is the score of the document for query $i$ at position $j$ (given by the model), and the label comes from, e.g., purchase → 4, add to cart → 3, click → 2, dwell → 1.</p>
 
-        <pre><code>iDCG_i = DCG_i if the model ranks perfectly (top → bottom = highest score → lowest score)
+        $$\mathrm{iDCG}_i = \mathrm{DCG}_i \quad \text{if the model ranks perfectly (top} \to \text{bottom} = \text{highest score} \to \text{lowest score)}$$
 
-NDCG_i = DCG_i / iDCG_i</code></pre>
+        $$\mathrm{NDCG}_i = \frac{\mathrm{DCG}_i}{\mathrm{iDCG}_i}$$
 
-        <p><code>iDCG_i</code> is the ideal DCG -- the best possible DCG for that query, used to normalize <code>DCG_i</code> so scores are comparable across queries with different numbers of documents.</p>
+        <p>$\mathrm{iDCG}_i$ is the ideal DCG -- the best possible DCG for that query, used to normalize $\mathrm{DCG}_i$ so scores are comparable across queries with different numbers of documents.</p>
     </div>
 </article>
 

@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -174,7 +180,7 @@
 return recursive(0, x)</code></pre>
 
         <h3>Time Complexity</h3>
-        <p>O(2^n), where n = len(nums). We consider all subsets of the array until we find the True case.</p>
+        <p>$O(2^n)$, where $n$ = len(nums). We consider all subsets of the array until we find the True case.</p>
 
         <h3>Key Observation: Overlapping Subproblems</h3>
         <p>However, notice that the state space is bounded. Since:</p>
@@ -182,10 +188,10 @@ return recursive(0, x)</code></pre>
             <li><code>0 &lt;= target &lt;= sum(nums) = m</code></li>
             <li><code>0 &lt;= index &lt;= n - 1</code></li>
         </ul>
-        <p>There are at most <code>n x m</code> different states! The brute force recursion recomputes the same sub-function multiple times. This is analogous to computing Fibonacci numbers naively -- <code>fib(n)</code> calls <code>fib(n-1)</code> and <code>fib(n-2)</code>, which share many overlapping subproblems.</p>
+        <p>There are at most $n \times m$ different states! The brute force recursion recomputes the same sub-function multiple times. This is analogous to computing Fibonacci numbers naively -- <code>fib(n)</code> calls <code>fib(n-1)</code> and <code>fib(n-2)</code>, which share many overlapping subproblems.</p>
 
         <h2>Solution 1.5: Recursion with Memoization</h2>
-        <p>The fix is simple: add a cache (e.g., Python's <code>@cache</code> decorator) before the recursive function. This reduces the time complexity to <code>O(m * n)</code>, since each distinct state requires O(1) work.</p>
+        <p>The fix is simple: add a cache (e.g., Python's <code>@cache</code> decorator) before the recursive function. This reduces the time complexity to $O(m \cdot n)$, since each distinct state requires $O(1)$ work.</p>
 
         <pre><code>from functools import cache
 
@@ -279,15 +285,15 @@ return recursive(0, x)</code></pre>
 
         <h3>Time and Space Complexity</h3>
         <ul>
-            <li><strong>Time:</strong> O(n * m), where n = len(nums) and m = sum(nums) / 2</li>
-            <li><strong>Space:</strong> O(m) using the 1D DP array</li>
+            <li><strong>Time:</strong> $O(n \cdot m)$, where $n$ = len(nums) and $m$ = sum(nums) / 2</li>
+            <li><strong>Space:</strong> $O(m)$ using the 1D DP array</li>
         </ul>
 
         <h2>Summary</h2>
         <ul>
-            <li><strong>Brute force recursion:</strong> O(2^n) -- explores all subsets.</li>
-            <li><strong>Recursion + memoization:</strong> O(n * m) -- caches overlapping subproblems.</li>
-            <li><strong>Bottom-up DP:</strong> O(n * m) -- iteratively builds up achievable sums.</li>
+            <li><strong>Brute force recursion:</strong> $O(2^n)$ -- explores all subsets.</li>
+            <li><strong>Recursion + memoization:</strong> $O(n \cdot m)$ -- caches overlapping subproblems.</li>
+            <li><strong>Bottom-up DP:</strong> $O(n \cdot m)$ -- iteratively builds up achievable sums.</li>
         </ul>
 
 

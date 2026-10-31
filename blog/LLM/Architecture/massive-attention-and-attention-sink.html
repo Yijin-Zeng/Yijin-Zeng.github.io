@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -170,7 +176,7 @@
 
         <p>Say we have a weight vector with values like:</p>
 
-        <pre><code>[0.01, 0.2, ..., 1000.02]</code></pre>
+        $$[0.01,\ 0.2,\ \ldots,\ 1000.02]$$
 
         <p>To store the outlier value of 1000.02 within the quantized range, the smaller values like 0.01 get squeezed down toward 0. This dramatically reduces the effective precision for the majority of weights, decreasing model accuracy.</p>
 
@@ -182,7 +188,7 @@
 
         <h3>Possible explanation: implicit bias terms</h3>
 
-        <p>One hypothesis is that massive activations act as <strong>bias terms</strong> that shift the model's internal focus. In a linear transformation <code>Ax + b</code>, the bias <code>b</code> shifts the output regardless of input. Similarly, these always-on massive activations may serve as learned constant offsets that the model uses to establish baseline attention patterns or feature representations, independent of the specific input being processed.</p>
+        <p>One hypothesis is that massive activations act as <strong>bias terms</strong> that shift the model's internal focus. In a linear transformation $Ax + b$, the bias $b$ shifts the output regardless of input. Similarly, these always-on massive activations may serve as learned constant offsets that the model uses to establish baseline attention patterns or feature representations, independent of the specific input being processed.</p>
 
         <h2>Attention Sink</h2>
 
@@ -192,7 +198,7 @@
 
         <h3>Problem: streaming LLM with sliding window</h3>
 
-        <p>Consider a streaming LLM scenario where we want the model to process an infinite length of text. A natural approach is to use a <strong>sliding window strategy</strong> for the KV cache, since the computational cost of full attention is O(n^2) for paying attention to all previous tokens.</p>
+        <p>Consider a streaming LLM scenario where we want the model to process an infinite length of text. A natural approach is to use a <strong>sliding window strategy</strong> for the KV cache, since the computational cost of full attention is $O(n^2)$ for paying attention to all previous tokens.</p>
 
         <pre><code>Full attention:    [t1, t2, t3, ..., tn] -- O(n^2) cost
 Sliding window:   [..., t_{i-w}, ..., t_i] -- O(w) cost per step</code></pre>

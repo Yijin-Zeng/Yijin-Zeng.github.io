@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -156,73 +162,79 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/SVD.pdf">PDF</a>.</p>
 
-        <p>Singular value decomposition (SVD) is a highlight of linear algebra -- almost all of the basic but important concepts in the subject show up somewhere in it. Unlike diagonalization, SVD works for <strong>any</strong> matrix <code>A ∈ R^(n×m)</code>. Diagonalization requires the matrix to be square, and even then, not every square matrix is diagonalizable.</p>
+        <p>Singular value decomposition (SVD) is a highlight of linear algebra -- almost all of the basic but important concepts in the subject show up somewhere in it. Unlike diagonalization, SVD works for <strong>any</strong> matrix $A \in \mathbb{R}^{n \times m}$. Diagonalization requires the matrix to be square, and even then, not every square matrix is diagonalizable.</p>
 
         <h2>What Is SVD?</h2>
 
-        <pre><code>A = U &Sigma; V^T</code></pre>
+        $$A = U \Sigma V^\top$$
 
         <ul>
-            <li><code>U</code> is orthonormal, made of the eigenvectors of <code>A A^T</code></li>
-            <li><code>V</code> is orthonormal, made of the eigenvectors of <code>A^T A</code></li>
-            <li><code>&Sigma;</code> is a diagonal matrix of <strong>singular values</strong> <code>σ_1 ≥ σ_2 ≥ ... ≥ σ_r > 0</code></li>
+            <li>$U$ is orthonormal, made of the eigenvectors of $A A^\top$</li>
+            <li>$V$ is orthonormal, made of the eigenvectors of $A^\top A$</li>
+            <li>$\Sigma$ is a diagonal matrix of <strong>singular values</strong> $\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_r > 0$</li>
         </ul>
 
         <h2>How It Is Derived</h2>
 
-        <p><code>A A^T</code> is a symmetric positive semi-definite matrix, so it is always diagonalizable: <code>A A^T = U Λ U^T</code>, where <code>Λ = diag(σ_u1, ..., σ_um)</code>, every <code>σ_ui ≥ 0</code>, and <code>U</code> is orthonormal.</p>
+        <p>$A A^\top$ is a symmetric positive semi-definite matrix, so it is always diagonalizable: $A A^\top = U \Lambda U^\top$, where $\Lambda = \mathrm{diag}(\sigma_{u1}, \dots, \sigma_{um})$, every $\sigma_{ui} \ge 0$, and $U$ is orthonormal.</p>
 
-        <p>Take any eigenvector <code>u_i</code> of <code>A A^T</code> with a non-zero eigenvalue <code>σ_ui</code>:</p>
+        <p>Take any eigenvector $u_i$ of $A A^\top$ with a non-zero eigenvalue $\sigma_{ui}$:</p>
 
-        <pre><code>A A^T u_i = σ_ui u_i
-=> u_i^T A A^T u_i = σ_ui u_i^T u_i
-=> ||A^T u_i||^2 = σ_ui</code></pre>
+        $$\begin{aligned}
+        A A^\top u_i &= \sigma_{ui} u_i \\
+        \Rightarrow\; u_i^\top A A^\top u_i &= \sigma_{ui} u_i^\top u_i \\
+        \Rightarrow\; \|A^\top u_i\|^2 &= \sigma_{ui}
+        \end{aligned}$$
 
-        <p>Now look at what happens if we left-multiply by <code>A^T</code> instead:</p>
+        <p>Now look at what happens if we left-multiply by $A^\top$ instead:</p>
 
-        <pre><code>A^T A A^T u_i = σ_ui A^T u_i
-=> A^T A (A^T u_i) = σ_ui (A^T u_i)</code></pre>
+        $$\begin{aligned}
+        A^\top A A^\top u_i &= \sigma_{ui} A^\top u_i \\
+        \Rightarrow\; A^\top A (A^\top u_i) &= \sigma_{ui} (A^\top u_i)
+        \end{aligned}$$
 
-        <p>So <code>A^T u_i</code> is itself an eigenvector of <code>A^T A</code>, with the <strong>same</strong> eigenvalue <code>σ_ui</code>. Denote its normalized version:</p>
+        <p>So $A^\top u_i$ is itself an eigenvector of $A^\top A$, with the <strong>same</strong> eigenvalue $\sigma_{ui}$. Denote its normalized version:</p>
 
-        <pre><code>v_i = A^T u_i / ||A^T u_i|| = A^T u_i / &radic;σ_ui</code></pre>
+        $$v_i = \frac{A^\top u_i}{\|A^\top u_i\|} = \frac{A^\top u_i}{\sqrt{\sigma_{ui}}}$$
 
-        <p>Rearranging gives <code>A^T u_i = &radic;σ_ui · v_i</code>. Left-multiplying by <code>A</code>:</p>
+        <p>Rearranging gives $A^\top u_i = \sqrt{\sigma_{ui}} \cdot v_i$. Left-multiplying by $A$:</p>
 
-        <pre><code>A A^T u_i = A v_i &radic;σ_ui
-=> σ_ui u_i = &radic;σ_ui · A v_i
-=> &radic;σ_ui · u_i = A v_i   (*)</code></pre>
+        $$\begin{aligned}
+        A A^\top u_i &= A v_i \sqrt{\sigma_{ui}} \\
+        \Rightarrow\; \sigma_{ui} u_i &= \sqrt{\sigma_{ui}} \cdot A v_i \\
+        \Rightarrow\; \sqrt{\sigma_{ui}} \cdot u_i &= A v_i \qquad (*)
+        \end{aligned}$$
 
-        <p>So for every eigenvector <code>u_i</code> of <code>A A^T</code> with a positive eigenvalue, there is a corresponding eigenvector <code>v_i</code> of <code>A^T A</code> with the <strong>same</strong> eigenvalue, satisfying <code>A v_i = σ_i u_i</code> where <code>σ_i = &radic;σ_ui</code>. The same argument runs the other way: starting from an eigenvector of <code>A^T A</code> gives a matching eigenvector of <code>A A^T</code> with the same eigenvalue.</p>
+        <p>So for every eigenvector $u_i$ of $A A^\top$ with a positive eigenvalue, there is a corresponding eigenvector $v_i$ of $A^\top A$ with the <strong>same</strong> eigenvalue, satisfying $A v_i = \sigma_i u_i$ where $\sigma_i = \sqrt{\sigma_{ui}}$. The same argument runs the other way: starting from an eigenvector of $A^\top A$ gives a matching eigenvector of $A A^\top$ with the same eigenvalue.</p>
 
-        <p>Collecting all <code>r</code> such pairs together (ordered by <code>σ_1 ≥ ... ≥ σ_r > 0</code>):</p>
+        <p>Collecting all $r$ such pairs together (ordered by $\sigma_1 \ge \dots \ge \sigma_r > 0$):</p>
 
-        <pre><code>A (v_1, ..., v_r) = (u_1, ..., u_r) diag(σ_1, ..., σ_r)</code></pre>
+        $$A (v_1, \dots, v_r) = (u_1, \dots, u_r)\, \mathrm{diag}(\sigma_1, \dots, \sigma_r)$$
 
         <h2>Why Is r the Rank of A?</h2>
 
         <p>Two facts, put together:</p>
 
         <ol>
-            <li><strong>rank(A^T A) = rank(A).</strong> They have the same null space: if <code>Ax = 0</code> then <code>A^T A x = 0</code> trivially; conversely if <code>A^T A x = 0</code> then <code>x^T A^T A x = 0</code>, i.e. <code>||Ax||^2 = 0</code>, so <code>Ax = 0</code>. Same null space means same row space, hence <code>rank(A^T A) = rank(A)</code>, and by the same logic <code>rank(A) = rank(A^T) = rank(A A^T)</code>.</li>
-            <li><strong>A^T A can be diagonalized</strong> as <code>U' Λ U'^T</code> where <code>U'</code> is an invertible (orthonormal) matrix. Multiplying by an invertible matrix never changes rank -- if <code>Mx = 0</code> for invertible <code>M</code> then <code>x = 0</code>, so <code>A^T A</code> and its diagonal form share the same null space. That means <code>rank(A^T A)</code> is exactly the number of non-zero, i.e. positive, eigenvalues.</li>
+            <li><strong>$\mathrm{rank}(A^\top A) = \mathrm{rank}(A)$.</strong> They have the same null space: if $Ax = 0$ then $A^\top A x = 0$ trivially; conversely if $A^\top A x = 0$ then $x^\top A^\top A x = 0$, i.e. $\|Ax\|^2 = 0$, so $Ax = 0$. Same null space means same row space, hence $\mathrm{rank}(A^\top A) = \mathrm{rank}(A)$, and by the same logic $\mathrm{rank}(A) = \mathrm{rank}(A^\top) = \mathrm{rank}(A A^\top)$.</li>
+            <li><strong>$A^\top A$ can be diagonalized</strong> as $U' \Lambda U'^\top$ where $U'$ is an invertible (orthonormal) matrix. Multiplying by an invertible matrix never changes rank -- if $Mx = 0$ for invertible $M$ then $x = 0$, so $A^\top A$ and its diagonal form share the same null space. That means $\mathrm{rank}(A^\top A)$ is exactly the number of non-zero, i.e. positive, eigenvalues.</li>
         </ol>
 
-        <p>Combining both: the number of positive eigenvalues of <code>A^T A</code> -- which is exactly <code>r</code>, the number of <code>(u_i, v_i)</code> pairs we found above -- equals <code>rank(A)</code>.</p>
+        <p>Combining both: the number of positive eigenvalues of $A^\top A$ -- which is exactly $r$, the number of $(u_i, v_i)$ pairs we found above -- equals $\mathrm{rank}(A)$.</p>
 
         <h2>Assembling the Full Decomposition</h2>
 
-        <p>So far <code>A (v_1, ..., v_r) = (u_1, ..., u_r) diag(σ_1, ..., σ_r)</code>, using only the eigenvectors with positive eigenvalues. Notice <code>u_i ∈ Col(A)</code> (each <code>u_i</code> is a scaled <code>Av_i</code>). Symmetrically, from <code>(*)</code> we also get <code>A^T (u_1, ..., u_r) = diag(σ_1, ..., σ_r)(v_1, ..., v_r)</code>, so each <code>v_i ∈ Col(A^T)</code>.</p>
+        <p>So far $A (v_1, \dots, v_r) = (u_1, \dots, u_r)\, \mathrm{diag}(\sigma_1, \dots, \sigma_r)$, using only the eigenvectors with positive eigenvalues. Notice $u_i \in \mathrm{Col}(A)$ (each $u_i$ is a scaled $Av_i$). Symmetrically, from $(*)$ we also get $A^\top (u_1, \dots, u_r) = \mathrm{diag}(\sigma_1, \dots, \sigma_r)(v_1, \dots, v_r)$, so each $v_i \in \mathrm{Col}(A^\top)$.</p>
 
-        <p>Now let <code>u_{r+1}, ..., u_n</code> be an orthonormal basis of <code>null(A^T)</code>, and <code>v_{r+1}, ..., v_m</code> be an orthonormal basis of <code>null(A)</code>. Putting everything together:</p>
+        <p>Now let $u_{r+1}, \dots, u_n$ be an orthonormal basis of $\mathrm{null}(A^\top)$, and $v_{r+1}, \dots, v_m$ be an orthonormal basis of $\mathrm{null}(A)$. Putting everything together:</p>
 
-        <pre><code>A (v_1, ..., v_r, v_{r+1}, ..., v_m) = (u_1, ..., u_r, u_{r+1}, ..., u_n) &Sigma;</code></pre>
+        $$A (v_1, \dots, v_r, v_{r+1}, \dots, v_m) = (u_1, \dots, u_r, u_{r+1}, \dots, u_n)\, \Sigma$$
 
-        <p>where <code>Σ ∈ R^(n×m)</code> is <code>diag(σ_1, ..., σ_r)</code> padded with zeros. Since <code>(v_1, ..., v_m)</code> and <code>(u_1, ..., u_n)</code> are both full orthonormal bases (orthogonal matrices), we can right-multiply both sides by <code>V^T</code> to get the familiar form:</p>
+        <p>where $\Sigma \in \mathbb{R}^{n \times m}$ is $\mathrm{diag}(\sigma_1, \dots, \sigma_r)$ padded with zeros. Since $(v_1, \dots, v_m)$ and $(u_1, \dots, u_n)$ are both full orthonormal bases (orthogonal matrices), we can right-multiply both sides by $V^\top$ to get the familiar form:</p>
 
-        <pre><code>A = U &Sigma; V^T</code></pre>
+        $$A = U \Sigma V^\top$$
 
-        <p>This is exactly the decomposition we started with -- what this derivation shows is that it always <strong>exists</strong>, for any matrix <code>A</code>, by building it directly out of the eigenvectors of <code>A A^T</code> and <code>A^T A</code>.</p>
+        <p>This is exactly the decomposition we started with -- what this derivation shows is that it always <strong>exists</strong>, for any matrix $A$, by building it directly out of the eigenvectors of $A A^\top$ and $A^\top A$.</p>
     </div>
 </article>
 

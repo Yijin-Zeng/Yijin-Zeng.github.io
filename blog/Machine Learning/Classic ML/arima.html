@@ -139,7 +139,14 @@
         .post-content strong {
             color: var(--text);
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -158,150 +165,154 @@
 
         <h2>White Noise Process</h2>
 
-        <p><code>{X_t}</code> is a <strong>white noise process</strong> if it is a sequence of uncorrelated random variables such that <code>E(X_t) = μ</code>, <code>V(X_t) = σ²</code>, for all <code>t</code>. The autocovariance is</p>
+        <p>$\{X_t\}$ is a <strong>white noise process</strong> if it is a sequence of uncorrelated random variables such that $E(X_t) = \mu$, $V(X_t) = \sigma^2$, for all $t$. The autocovariance is</p>
 
-        <pre><code>S_τ = Cov(X_t, X_{t+τ}) = σ²   if τ = 0
-                          = 0    otherwise</code></pre>
+        $$S_\tau = \mathrm{Cov}(X_t, X_{t+\tau}) = \begin{cases} \sigma^2 & \text{if } \tau = 0 \\ 0 & \text{otherwise} \end{cases}$$
 
-        <p>Note: white noise does not imply iid. Consider <code>{X_i}</code> an independent sequence with</p>
+        <p>Note: white noise does not imply iid. Consider $\{X_i\}$ an independent sequence with</p>
 
-        <pre><code>X_i = N(0,1)                if i is even
-X_i = Uniform(-√3, √3)       if i is odd</code></pre>
+        $$X_i = \begin{cases} \mathcal{N}(0,1) & \text{if } i \text{ is even} \\ \mathrm{Uniform}(-\sqrt{3}, \sqrt{3}) & \text{if } i \text{ is odd} \end{cases}$$
 
-        <p>When <code>i</code> is odd, we check <code>E(X) = 0</code> and compute <code>V(X)</code> directly from the uniform density on <code>(-√3, √3)</code>:</p>
+        <p>When $i$ is odd, we check $E(X) = 0$ and compute $V(X)$ directly from the uniform density on $(-\sqrt{3}, \sqrt{3})$:</p>
 
-        <pre><code>E(X²) = ∫_a^b (1/(b-a)) x² dx
-      = (1/(b-a)) [x³/3]_a^b
-      = (1/(b-a)) (b³-a³)/3
-      = (1/(2√3)) (2√3 + 2√3)/3     (with a=-√3, b=√3)
-      = 1</code></pre>
+        $$\begin{aligned}
+        E(X^2) &= \int_a^b \frac{1}{b-a} x^2 \, dx \\
+        &= \frac{1}{b-a} \left[\frac{x^3}{3}\right]_a^b \\
+        &= \frac{1}{b-a} \cdot \frac{b^3-a^3}{3} \\
+        &= \frac{1}{2\sqrt{3}} \cdot \frac{2\sqrt{3} + 2\sqrt{3}}{3} \qquad (\text{with } a=-\sqrt{3},\ b=\sqrt{3}) \\
+        &= 1
+        \end{aligned}$$
 
-        <p>So <code>V(X) = 1</code> in this case as well. So the process is white noise, however not iid.</p>
+        <p>So $V(X) = 1$ in this case as well. So the process is white noise, however not iid.</p>
 
         <h2>Moving Average Process MA(q)</h2>
 
         <p>A <strong>moving average process</strong> is defined as</p>
 
-        <pre><code>X_t = μ - Σ_{i=0}^ℓ θ_i e_{t-i}</code></pre>
+        $$X_t = \mu - \sum_{i=0}^{\ell} \theta_i e_{t-i}$$
 
-        <p>where <code>{e_t}</code> is a white noise process with mean <code>μ = 0</code>.</p>
+        <p>where $\{e_t\}$ is a white noise process with mean $\mu = 0$.</p>
 
-        <p><code>X_t</code> is a stationary process. Computing <code>Cov(X_t, X_{t+τ})</code>:</p>
+        <p>$X_t$ is a stationary process. Computing $\mathrm{Cov}(X_t, X_{t+\tau})$:</p>
 
-        <pre><code>Cov(X_t, X_{t+τ}) = E(X_t X_{t+τ}) - E(X_t)E(X_{t+τ})
+        $$\begin{aligned}
+        \mathrm{Cov}(X_t, X_{t+\tau}) &= E(X_t X_{t+\tau}) - E(X_t)E(X_{t+\tau}) \\[6pt]
+        &= E\left[ \left(\mu - \sum_{i=0}^{\ell} \theta_i e_{t-i}\right)\left(\mu - \sum_{i=0}^{\ell} \theta_i e_{t+\tau-i}\right) \right] - \mu^2 \\[6pt]
+        &= E\left[ \left(\sum_{i=0}^{\ell} \theta_i e_{t-i}\right)\left(\sum_{i=0}^{\ell} \theta_i e_{t+\tau-i}\right) \right] \\[6pt]
+        &= \begin{cases} \sigma^2 \displaystyle\sum_{i=0}^{\ell} \theta_i \theta_{i+\tau} & \text{if } \tau \le q \\ 0 & \text{if } \tau > q \end{cases}
+        \end{aligned}$$
 
-= E[ (μ - Σ_{i=0}^ℓ θ_i e_{t-i})(μ - Σ_{i=0}^ℓ θ_i e_{t+τ-i}) ] - μ²
-
-= E[ (Σ_{i=0}^ℓ θ_i e_{t-i})(Σ_{i=0}^ℓ θ_i e_{t+τ-i}) ]
-
-= σ² Σ_{i=0}^ℓ θ_i θ_{i+τ}     if τ ≤ q
-= 0                            if τ > q</code></pre>
-
-        <p>This depends on <code>τ</code> only, which is why the process is stationary.</p>
+        <p>This depends on $\tau$ only, which is why the process is stationary.</p>
 
         <h3>Estimating the Parameters</h3>
 
-        <p>Assuming <code>θ_{-i} = 0</code>, we estimate <code>ê_t</code> with the recursive scheme</p>
+        <p>Assuming $\theta_{-i} = 0$, we estimate $\hat{e}_t$ with the recursive scheme</p>
 
-        <pre><code>θ_0 ê_1 = (X_1 - μ)
-θ_0 ê_2 = (X_2 - μ) - θ_1 ê_1
-   ⋮
-θ_0 ê_t = (X_t - μ) - Σ_{j=1}^{t-1} θ_j ê_{t-j}</code></pre>
+        $$\begin{aligned}
+        \theta_0 \hat{e}_1 &= (X_1 - \mu) \\
+        \theta_0 \hat{e}_2 &= (X_2 - \mu) - \theta_1 \hat{e}_1 \\
+        &\;\;\vdots \\
+        \theta_0 \hat{e}_t &= (X_t - \mu) - \sum_{j=1}^{t-1} \theta_j \hat{e}_{t-j}
+        \end{aligned}$$
 
         <p>and then solve</p>
 
-        <pre><code>argmin_{μ, θ} Σ_{t=1}^n ê_t²</code></pre>
+        $$\underset{\mu,\, \theta}{\arg\min} \sum_{t=1}^{n} \hat{e}_t^2$$
 
         <h3>Making Predictions</h3>
 
-        <p>To predict <code>X_{t+ℓ}</code> given <code>X_1, ..., X_t</code>:</p>
+        <p>To predict $X_{t+\ell}$ given $X_1, ..., X_t$:</p>
 
-        <pre><code>E(X_{t+ℓ} | X_1,...,X_t) = E(μ - Σ_{i=0}^ℓ θ_i e_{t+ℓ-i} | X_1,...,X_t)
+        $$\begin{aligned}
+        E(X_{t+\ell} \mid X_1,\ldots,X_t) &= E\left(\mu - \sum_{i=0}^{\ell} \theta_i e_{t+\ell-i} \,\middle|\, X_1,\ldots,X_t\right) \\[6pt]
+        &= \mu - \sum_{i=1}^{\ell} \theta_i E(e_{t+\ell-i} \mid X_1,\ldots,X_t) - \theta_0 E(e_{t+\ell})
+        \end{aligned}$$
 
-= μ - Σ_{i=1}^ℓ θ_i E(e_{t+ℓ-i} | X_1,...,X_t) - θ_0 E(e_{t+ℓ})</code></pre>
-
-        <p>So we need to estimate <code>e_{t+ℓ-i}</code> given all the observations.</p>
+        <p>So we need to estimate $e_{t+\ell-i}$ given all the observations.</p>
 
         <h3>Forward Recursion</h3>
 
-        <p>Given the observed data sequence <code>X_{1:t}</code>, we predict</p>
+        <p>Given the observed data sequence $X_{1:t}$, we predict</p>
 
-        <pre><code>ê_t = (X_t - X̂_t) / θ̂_0</code></pre>
+        $$\hat{e}_t = \frac{X_t - \hat{X}_t}{\hat{\theta}_0}$$
 
-        <p>where <code>X_t</code> is the real value and <code>X̂_t</code> is the predicted value. Substituting the model for <code>X_t</code> and the predicted <code>X̂_t</code>, and letting <code>θ̂_i → θ_i</code>, <code>μ̂ → μ</code>, the estimation error <code>e_t</code> (the difference between <code>ê_t</code> and the true <code>e_t</code>) satisfies</p>
+        <p>where $X_t$ is the real value and $\hat{X}_t$ is the predicted value. Substituting the model for $X_t$ and the predicted $\hat{X}_t$, and letting $\hat{\theta}_i \to \theta_i$, $\hat{\mu} \to \mu$, the estimation error $e_t$ (the difference between $\hat{e}_t$ and the true $e_t$) satisfies</p>
 
-        <pre><code>θ_0 e_t = Σ_{i=1}^p θ_i e_{t-i}</code></pre>
+        $$\theta_0 e_t = \sum_{i=1}^{p} \theta_i e_{t-i}$$
 
-        <p>For <code>p = 1</code>, this reduces to</p>
+        <p>For $p = 1$, this reduces to</p>
 
-        <pre><code>θ_0 e_t = θ_1 e_{t-1}
-=> e_t = (θ_1/θ_0) e_{t-1}
-=> e_t = (θ_1/θ_0)^t e_0</code></pre>
+        $$\begin{aligned}
+        \theta_0 e_t &= \theta_1 e_{t-1} \\
+        \Rightarrow\; e_t &= \frac{\theta_1}{\theta_0} e_{t-1} \\
+        \Rightarrow\; e_t &= \left(\frac{\theta_1}{\theta_0}\right)^t e_0
+        \end{aligned}$$
 
-        <p>When <code>θ_1/θ_0 &lt; 1</code>, this converges to 0, so the estimation gets better and better as <code>t</code> increases. When <code>θ_1/θ_0 &gt; 1</code>, the estimate error accumulates to infinity.</p>
+        <p>When $\theta_1/\theta_0 &lt; 1$, this converges to 0, so the estimation gets better and better as $t$ increases. When $\theta_1/\theta_0 &gt; 1$, the estimate error accumulates to infinity.</p>
 
         <h2>Autoregressive Process AR(p)</h2>
 
         <p>An <strong>autoregressive process</strong> is defined as</p>
 
-        <pre><code>X_t = φ_1 X_{t-1} + ... + φ_p X_{t-p} + e_t</code></pre>
+        $$X_t = \phi_1 X_{t-1} + \cdots + \phi_p X_{t-p} + e_t$$
 
         <p>Note: not all AR processes are stationary.</p>
 
-        <p>Consider <code>AR(1)</code>, where <code>X_t = φ X_{t-1} + e_t</code>. Unrolling the recursion (assuming <code>X_0 = 0</code>):</p>
+        <p>Consider $\mathrm{AR}(1)$, where $X_t = \phi X_{t-1} + e_t$. Unrolling the recursion (assuming $X_0 = 0$):</p>
 
-        <pre><code>X_t = φ(φ X_{t-2} + e_{t-1}) + e_t
-    = φ² X_{t-2} + φ e_{t-1} + e_t
-    = e_t + φ e_{t-1} + φ² e_{t-2} + ...
-    = Σ_{k=0}^{t-1} φ^k e_{t-k} + φ^t X_0
-    = Σ_{k=0}^{t-1} φ^k e_{t-k}</code></pre>
+        $$\begin{aligned}
+        X_t &= \phi(\phi X_{t-2} + e_{t-1}) + e_t \\
+        &= \phi^2 X_{t-2} + \phi e_{t-1} + e_t \\
+        &= e_t + \phi e_{t-1} + \phi^2 e_{t-2} + \cdots \\
+        &= \sum_{k=0}^{t-1} \phi^k e_{t-k} + \phi^t X_0 \\
+        &= \sum_{k=0}^{t-1} \phi^k e_{t-k}
+        \end{aligned}$$
 
         <p>So</p>
 
-        <pre><code>E(X_t) = 0
+        $$E(X_t) = 0$$
 
-V(X_t) = E(X_t²) = E[ (Σ_{k=0}^{t-1} φ^k e_{t-k})² ]
-       = Σ_{k=0}^{t-1} φ^{2k} σ²
-       = σ² (1-φ^{2t}) / (1-φ²)</code></pre>
+        $$\begin{aligned}
+        V(X_t) = E(X_t^2) &= E\left[ \left(\sum_{k=0}^{t-1} \phi^k e_{t-k}\right)^2 \right] \\
+        &= \sum_{k=0}^{t-1} \phi^{2k} \sigma^2 \\
+        &= \sigma^2 \, \frac{1-\phi^{2t}}{1-\phi^2}
+        \end{aligned}$$
 
-        <p>So for <code>V(X_t) &lt; ∞</code>, we must have <code>|φ| &lt; 1</code>, giving</p>
+        <p>So for $V(X_t) &lt; \infty$, we must have $|\phi| &lt; 1$, giving</p>
 
-        <pre><code>V(X_t) ≈ σ² / (1-φ²)   when t is large enough</code></pre>
+        $$V(X_t) \approx \frac{\sigma^2}{1-\phi^2} \qquad (\text{when } t \text{ is large enough})$$
 
         <p>There are three cases:</p>
 
         <ul>
-            <li>If <code>|φ| &lt; 1</code> (stationary), the influence of past <code>e</code> decays exponentially.</li>
-            <li>If <code>|φ| = 1</code> (non-stationary), this is a random walk, and the effect of <code>e</code> stays.</li>
-            <li>If <code>|φ| &gt; 1</code> (non-stationary), the effect of past <code>e</code> increases exponentially.</li>
+            <li>If $|\phi| &lt; 1$ (stationary), the influence of past $e$ decays exponentially.</li>
+            <li>If $|\phi| = 1$ (non-stationary), this is a random walk, and the effect of $e$ stays.</li>
+            <li>If $|\phi| &gt; 1$ (non-stationary), the effect of past $e$ increases exponentially.</li>
         </ul>
 
         <h2>ARMA and ARIMA</h2>
 
         <p>An <strong>ARMA(q,p)</strong> process combines the AR(p) and MA(q) parts:</p>
 
-        <pre><code>X_t = Σ_{k=1}^p φ_k X_{t-k} + e_t - Σ_{k=1}^q θ_k e_{t-k}
-      └──────────────────┘         └──────────────────┘
-             AR(p)                        MA(q)</code></pre>
+        $$X_t = \underbrace{\sum_{k=1}^{p} \phi_k X_{t-k}}_{\mathrm{AR}(p)} + e_t - \underbrace{\sum_{k=1}^{q} \theta_k e_{t-k}}_{\mathrm{MA}(q)}$$
 
-        <p>Define the difference operator <code>Δ = (1-B)</code>, where <code>B X_t = X_{t-1}</code> is the <strong>backward shift operator</strong>.</p>
+        <p>Define the difference operator $\Delta = (1-B)$, where $B X_t = X_{t-1}$ is the <strong>backward shift operator</strong>.</p>
 
         <p>We can rewrite ARMA(q,p) as</p>
 
-        <pre><code>X_t - Σ_{k=1}^p φ_k B^k X_t = e_t - Σ_{k=1}^q θ_k B^k e_t
+        $$X_t - \sum_{k=1}^{p} \phi_k B^k X_t = e_t - \sum_{k=1}^{q} \theta_k B^k e_t$$
 
-(1 - Σ_{k=1}^p φ_k B^k) X_t = (1 - Σ_{k=1}^q θ_k B^k) e_t
-        Φ(B)                          Θ(B)
+        $$\underbrace{\left(1 - \sum_{k=1}^{p} \phi_k B^k\right)}_{\Phi(B)} X_t = \underbrace{\left(1 - \sum_{k=1}^{q} \theta_k B^k\right)}_{\Theta(B)} e_t$$
 
-ARMA:  Φ(B) X_t = Θ(B) e_t</code></pre>
+        $$\mathrm{ARMA}: \quad \Phi(B) X_t = \Theta(B) e_t$$
 
         <p>and <strong>ARIMA(q,d,p)</strong> as</p>
 
-        <pre><code>Φ(B) (1-B)^d X_t = Θ(B) e_t
+        $$\Phi(B) (1-B)^d X_t = \Theta(B) e_t$$
 
-or equivalently
+        <p>or equivalently</p>
 
-Φ(B) Δ^d X_t = Θ(B) e_t</code></pre>
+        $$\Phi(B) \Delta^d X_t = \Theta(B) e_t$$
 
         <h2>References</h2>
         <ul>

@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -187,11 +193,11 @@
 
         <h2>Stage 1: Training a Reward Model (Using Human Feedback)</h2>
         <p>The goal of this stage is to build a scalar reward function that can score any output from the LLM. 
-            We denote the reward model as <code>r_&theta;</code>. It is usually initialized from a fine-tuned LLM (often the same model after SFT).</p>
+            We denote the reward model as $r_\theta$. It is usually initialized from a fine-tuned LLM (often the same model after SFT).</p>
 
         <h3>The Process</h3>
         <p>We feed a prompt into the fine-tuned model and generate multiple candidate answers. For example, given a prompt, the model produces answers A, B, and C. 
-            Human annotators then rank these answers by quality (e.g., A &gt; B &gt; C). The idea here to let annotators to rank, rather than scoring each one, is because
+            Human annotators then rank these answers by quality (e.g., $A &gt; B &gt; C$). The idea here to let annotators to rank, rather than scoring each one, is because
             humans might not be good at to give exact scores, but are good at pairwise ranking.</p>
 
         <!-- Diagram: Reward model training flow -->
@@ -204,7 +210,7 @@ Prompt --> Fine-tuned LLM +--> Answer B --|---> Ranked by humans (e.g. A > B > C
         <h3>The Loss Function</h3>
         <p>For each pair of responses where one is preferred over the other (e.g., A is preferred over B), the reward model is trained (fine tuned) using a pairwise loss:</p>
 
-        <pre><code>Loss = -log(sigmoid(r_&theta;(A) - r_&theta;(B))), where A is preferred over B</code></pre>
+        $$\text{Loss} = -\log\!\left(\sigma\!\left(r_\theta(A) - r_\theta(B)\right)\right) \qquad (\text{where } A \text{ is preferred over } B)$$
 
         <p>More precisely, this is the negative log-sigmoid of the difference in scores, encouraging the reward model to assign a higher score to the preferred response. </p>
 
@@ -217,7 +223,7 @@ Prompt --> Fine-tuned LLM +--> Answer B --|---> Ranked by humans (e.g. A > B > C
            This stage introduces two additional models on top of the policy (the LLM being trained):</p>
 
         <ul>
-            <li><strong>Score model (reward model r_&theta;)</strong>: the frozen reward model from Stage 1 that scores outputs. We take the score from this model as the ground truth.</li>
+            <li><strong>Score model (reward model $r_\theta$)</strong>: the frozen reward model from Stage 1 that scores outputs. We take the score from this model as the ground truth.</li>
             <li><strong>Value model</strong>: estimates the expected score of the LLM's output given all current tokens; normally initialized as a copy of the model after SFT (so at the begining, would be very bad at scoring, but will be updated and improved gradually).
             The value model is a tool for credit assignment, we need to decide how each token contributes to the score.
             </li>
@@ -242,7 +248,7 @@ Prompt ---> Model ---> Output ------+
         <h3>The Advantage</h3>
         <p>The key signal for the policy update is the <strong>advantage</strong>:</p>
 
-        <pre><code>A = advantage = score - estimated_score</code></pre>
+        $$A = \text{advantage} = \text{score} - \text{estimated\_score}$$
 
         <p>This tells us how much better (or worse) the actual output was compared to what we expected. A positive advantage for a token encouraging the model to output it more often, while a negative advantage discouraging the model.
            Below, we discuss how the weights of the model is updated.
@@ -251,12 +257,12 @@ Prompt ---> Model ---> Output ------+
         <h3>Vanilla Policy Gradient</h3>
         <p>We can simply compute the gradient of the log-probability of the output (treating the answer as correct), then update the weights:</p>
 
-        <pre><code>weights = weights - delta * gradients</code></pre>
+        $$\text{weights} = \text{weights} - \delta \cdot \text{gradients}$$
 
-        <p>Where <code>delta</code> is proportional to the advantage:</p>
+        <p>Where $\delta$ is proportional to the advantage:</p>
         <ul>
-            <li>If <code>A &gt; 0</code>: increase the probability of this output</li>
-            <li>If <code>A &lt; 0</code>: decrease the probability of this output</li>
+            <li>If $A &gt; 0$: increase the probability of this output</li>
+            <li>If $A &lt; 0$: decrease the probability of this output</li>
         </ul>
 
         <h3>The Problem with Vanilla Policy Gradient</h3>
@@ -265,26 +271,26 @@ Prompt ---> Model ---> Output ------+
 
         <h3>Proximal Policy Optimization (PPO) - Clipping</h3>
             <p>PPO solves the instability of massive updates by constraining the 
-            <strong>probability ratio</strong> of the objective function. This ratio for a specific token <code>w</code> is defined as:</p>
+            <strong>probability ratio</strong> of the objective function. This ratio for a specific token $w$ is defined as:</p>
 
-        <pre><code>r = prob(w under the current, updating policy) / prob(w under the old, frozen policy)</code></pre>
+        $$r = \frac{\text{prob}(w \text{ under the current, updating policy})}{\text{prob}(w \text{ under the old, frozen policy})}$$
 
-        <p>The objective function for PPO is then calculated by multiplying this ratio by the token's Advantage (<code>A</code>):</p>
+        <p>The objective function for PPO is then calculated by multiplying this ratio by the token's Advantage ($A$):</p>
 
-        <pre><code>L_CLIP = - min(r * A, clip(r, 1 - epsilon, 1 + epsilon) * A)</code></pre>
+        $$L_{\text{CLIP}} = - \min\!\left(r A,\; \mathrm{clip}(r, 1 - \epsilon, 1 + \epsilon)\, A\right)$$
 
         <p>Notice how PPO restricts the ratio between
 
-        <pre><code>[1 - epsilon, 1 + epsilon] (typically, <code>epsilon = 0.2</code>).</code></pre>
+        $$[1 - \epsilon, 1 + \epsilon] \quad (\text{typically, } \epsilon = 0.2).$$
 
-        <p>For example, if the advantage A is positive (means we want to increase the probability for the token),
-           then without clipping at all, we have L_CLIP = - r * A, in order to minimize this loss, the weights
-           will be moved to maximize r, which means the to increase the probability of the token after updating the weights.
-           Since A is positive, this is what we want, however the risk here without any clipping is that the weights might move
+        <p>For example, if the advantage $A$ is positive (means we want to increase the probability for the token),
+           then without clipping at all, we have $L_{\text{CLIP}} = - r A$, in order to minimize this loss, the weights
+           will be moved to maximize $r$, which means the to increase the probability of the token after updating the weights.
+           Since $A$ is positive, this is what we want, however the risk here without any clipping is that the weights might move
            too much and causing catastrophic forgetting problem.
         </p>
 
-        <p>With clipping, if r is smaller than 1 - epsilon, then we have L_CLIP = (1 - epsilon) * A,
+        <p>With clipping, if $r$ is smaller than $1 - \epsilon$, then we have $L_{\text{CLIP}} = (1 - \epsilon) A$,
             a constant that does not depend on the model weights anymore. So the weights would stop moving
             because there is no gradients.
         </p>

@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -152,79 +158,80 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/LLM/Architecture/Linear Self Attention.pdf">PDF</a>.</p>
         <p>The idea behind linear self-attention is simple: 
-           computing (QK^T)V requires O(s^2) computational time,
-           while computing Q(K^T V) requires only O(s). 
+           computing $(QK^T)V$ requires $O(s^2)$ computational time,
+           while computing $Q(K^T V)$ requires only $O(s)$. 
            However, in order to switch the computational order,
            we need to replace softmax with something else that allows this reordering.</p>
 
         <h2>Recap: Standard Self-Attention</h2>
         <p>The standard self-attention mechanism computes:</p>
 
-        <pre><code>Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) V</code></pre>
+        $$\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$
 
         <p>The shapes of the matrices are:</p>
         <ul>
-            <li>Q: (seq, d_k)</li>
-            <li>K: (seq, d_k)</li>
-            <li>V: (seq, d_v)</li>
+            <li>$Q$: (seq, $d_k$)</li>
+            <li>$K$: (seq, $d_k$)</li>
+            <li>$V$: (seq, $d_v$)</li>
         </ul>
 
         <h3>Computational Complexity</h3>
-        <p>Let <code>s</code> denote the sequence length, <code>d</code> the model dimension (d_k or d_v).</p>
+        <p>Let $s$ denote the sequence length, $d$ the model dimension ($d_k$ or $d_v$).</p>
         <ul>
-            <li>Computing QK^T: O(s^2 d) -- but since d is fixed and relatively small (e.g. 1024), this is effectively <strong>O(s^2)</strong></li>
-            <li>Multiplying (QK^T) V: O(s^2 d) -- again effectively <strong>O(s^2)</strong></li>
+            <li>Computing $QK^T$: $O(s^2 d)$ -- but since $d$ is fixed and relatively small (e.g. 1024), this is effectively <strong>$O(s^2)$</strong></li>
+            <li>Multiplying $(QK^T) V$: $O(s^2 d)$ -- again effectively <strong>$O(s^2)$</strong></li>
         </ul>
 
-        <p>The key problem is QK^T. Sequence length s can be very long, while d is fixed and relatively small. The s^2 term dominates and makes standard attention prohibitively expensive for long sequences.</p>
+        <p>The key problem is $QK^T$. Sequence length $s$ can be very long, while $d$ is fixed and relatively small. The $s^2$ term dominates and makes standard attention prohibitively expensive for long sequences.</p>
 
         <h2>The Solution: Linear Self-Attention</h2>
         <p>Linear self-attention replaces the softmax with a feature mapping function and changes the order of computation:</p>
 
-        <pre><code>LinearAttention(Q, K, V) = phi(Q) (phi(K)^T V) / (phi(Q) (phi(K)^T 1))</code></pre>
+        $$\mathrm{LinearAttention}(Q, K, V) = \frac{\phi(Q) \left(\phi(K)^T V\right)}{\phi(Q) \left(\phi(K)^T \mathbf{1}\right)}$$
 
         <p>There are three key ideas here:</p>
 
         <h3>1. Change the Order of Multiplication</h3>
-        <p>In standard attention, we compute (Q K^T) V -- multiplying Q and K first produces an s x s matrix, then we multiply by V. In linear attention, we compute Q (K^T V) -- multiplying K and V first:</p>
+        <p>In standard attention, we compute $(Q K^T) V$ -- multiplying $Q$ and $K$ first produces an $s \times s$ matrix, then we multiply by $V$. In linear attention, we compute $Q (K^T V)$ -- multiplying $K$ and $V$ first:</p>
 
-        <pre><code>Standard:  (Q . K^T) . V
-           O(s^2) + O(s^2 d)  =  O(s^2)
+        $$\begin{aligned}
+\text{Standard:} \quad & (Q \cdot K^T) \cdot V & O(s^2) + O(s^2 d) &= O(s^2) \\
+\text{Linear:} \quad & Q \cdot (K^T \cdot V) & O(s d^2) + O(s d) &= O(s)
+\end{aligned}$$
 
-Linear:    Q . (K^T . V)
-           O(s d^2) + O(s d)  =  O(s)</code></pre>
+        <p>Since $d$ is fixed and small relative to $s$, the linear version scales as $O(s)$ rather than $O(s^2)$. This is the fundamental insight -- by rearranging the associativity of matrix multiplication, we avoid ever forming the $s \times s$ attention matrix.</p>
 
-        <p>Since d is fixed and small relative to s, the linear version scales as O(s) rather than O(s^2). This is the fundamental insight -- by rearranging the associativity of matrix multiplication, we avoid ever forming the s x s attention matrix.</p>
+        <h3>2. The Feature Mapping $\phi$</h3>
+        <p>We cannot simply reorder the multiplication in standard attention because softmax is applied to $QK^T$ as a whole (it normalizes across columns for each row). Instead, we replace softmax with a feature mapping $\phi$ applied independently to $Q$ and $K$, which allows the reordering.</p>
 
-        <h3>2. The Feature Mapping phi</h3>
-        <p>We cannot simply reorder the multiplication in standard attention because softmax is applied to QK^T as a whole (it normalizes across columns for each row). Instead, we replace softmax with a feature mapping <code>phi</code> applied independently to Q and K, which allows the reordering.</p>
+        <p>A common choice for $\phi$ is:</p>
 
-        <p>A common choice for phi is:</p>
+        $$\phi(x) = \mathrm{ELU}(x) + 1$$
 
-        <pre><code>phi(x) = ELU(x) + 1
-
-where ELU(x) = { x           if x > 0
-               { alpha(e^x - 1)  otherwise    (normally alpha = 1)</code></pre>
+        <p>where</p>
+        $$\mathrm{ELU}(x) = \begin{cases} x & \text{if } x > 0 \\ \alpha(e^x - 1) & \text{otherwise} \end{cases} \qquad (\text{normally } \alpha = 1)$$
 
         <p>Why this choice? Three reasons:</p>
         <ol>
-            <li><strong>Forces all values to be positive.</strong> Since ELU(x) >= -1 for all x (with alpha=1), adding 1 ensures phi(x) >= 0. This is important because we want the feature-mapped values to act like unnormalized attention weights, which must be non-negative.</li>
+            <li><strong>Forces all values to be positive.</strong> Since $\mathrm{ELU}(x) \geq -1$ for all $x$ (with $\alpha=1$), adding 1 ensures $\phi(x) \geq 0$. This is important because we want the feature-mapped values to act like unnormalized attention weights, which must be non-negative.</li>
             <li><strong>Introduces non-linearity.</strong> Softmax is non-linear; a purely linear replacement would lose expressiveness. ELU + 1 preserves non-linear transformation of the inputs.</li>
-            <li><strong>Approximates the softmax kernel.</strong> Recall that in standard attention, the (i, j) entry of the attention matrix is proportional to exp(q_i . k_j). When we use feature mappings, phi(Q) phi(K)^T gives us entry phi(q_i) . phi(k_j). With the exponential in ELU, this loosely approximates the product of exponentials: e^(q_i,1) * e^(k_j,1) + ... + e^(q_i,d) * e^(k_j,d), which is related to exp(q_i . k_j) via a kernel decomposition.</li>
+            <li><strong>Approximates the softmax kernel.</strong> Recall that in standard attention, the $(i, j)$ entry of the attention matrix is proportional to $\exp(q_i \cdot k_j)$. When we use feature mappings, $\phi(Q) \phi(K)^T$ gives us entry $\phi(q_i) \cdot \phi(k_j)$. With the exponential in ELU, this loosely approximates the product of exponentials: $e^{q_{i,1}} e^{k_{j,1}} + \cdots + e^{q_{i,d}} e^{k_{j,d}}$, which is related to $\exp(q_i \cdot k_j)$ via a kernel decomposition.</li>
         </ol>
 
         <h3>3. The Normalization Denominator</h3>
-        <p>The denominator <code>phi(Q)(phi(K)^T 1)</code> serves as the normalizing factor, analogous to how softmax normalizes attention weights to sum to 1. Expanding it:</p>
+        <p>The denominator $\phi(Q)(\phi(K)^T \mathbf{1})$ serves as the normalizing factor, analogous to how softmax normalizes attention weights to sum to 1. Expanding it:</p>
 
-        <pre><code>phi(Q)(phi(K)^T 1) = [phi(q_i) . phi(k_j)]  summed over j
-                   = sum_j  phi(q_i) . phi(k_j)</code></pre>
+        $$\begin{aligned}
+\phi(Q)(\phi(K)^T \mathbf{1}) &= [\phi(q_i) \cdot \phi(k_j)] \text{ summed over } j \\
+&= \sum_j \phi(q_i) \cdot \phi(k_j)
+\end{aligned}$$
 
-        <p>This is the sum of all "attention weights" for query i, ensuring the output is a proper weighted average of the values, just like standard attention.</p>
+        <p>This is the sum of all "attention weights" for query $i$, ensuring the output is a proper weighted average of the values, just like standard attention.</p>
 
         <h2>Summary</h2>
         <ul>
-            <li>Linear attention computes Q(K^T V) instead of (QK^T)V, avoiding the s x s matrix entirely -- O(s) instead of O(s^2)</li>
-            <li>A feature mapping phi (e.g., ELU + 1) replaces softmax to enable this reordering while keeping values non-negative</li>
+            <li>Linear attention computes $Q(K^T V)$ instead of $(QK^T)V$, avoiding the $s \times s$ matrix entirely -- $O(s)$ instead of $O(s^2)$</li>
+            <li>A feature mapping $\phi$ (e.g., ELU + 1) replaces softmax to enable this reordering while keeping values non-negative</li>
             <li>The denominator normalizes the output to be a proper weighted average, analogous to softmax normalization</li>
         </ul>
 

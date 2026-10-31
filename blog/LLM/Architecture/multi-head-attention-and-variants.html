@@ -145,7 +145,13 @@
             max-width: 100%;
             height: auto;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -169,7 +175,7 @@
 
         <h2>Standard Multi-Head Attention</h2>
 
-        <p>In standard Multi-Head Attention, the input <code>X</code> is projected into multiple independent sets of queries, keys, and values.
+        <p>In standard Multi-Head Attention, the input $X$ is projected into multiple independent sets of queries, keys, and values.
             Each set acts as a "head," and each head computes its own attention independently. 
         </p>
 
@@ -183,25 +189,27 @@
             the second head could focus on the past tense, and so on. This would allow the output of the Multi-Head Attention to represent more information more easily.</p>
 
         <h3>Per-Head Projections</h3>
-        <p>For each head <code>i</code>, we project the input through learned weight matrices:</p>
+        <p>For each head $i$, we project the input through learned weight matrices:</p>
 
-        <pre><code>Q^i = X * W_Q^i
-K^i = X * W_K^i
-V^i = X * W_V^i</code></pre>
+        $$\begin{aligned}
+Q^i &= X W_Q^i \\
+K^i &= X W_K^i \\
+V^i &= X W_V^i
+\end{aligned}$$
 
-        <p>Where <code>W_Q^i</code>, <code>W_K^i</code>, and <code>W_V^i</code> are the projection matrices for head <code>i</code>. Each head operates in a lower-dimensional subspace (typically <code>d_model / num_heads</code>).</p>
+        <p>Where $W_Q^i$, $W_K^i$, and $W_V^i$ are the projection matrices for head $i$. Each head operates in a lower-dimensional subspace (typically $d_{\text{model}} / \text{num\_heads}$).</p>
 
         <h3>Per-Head Attention Computation</h3>
         <p>Each head computes scaled dot-product attention independently:</p>
 
-        <pre><code>C_i = softmax(Q^i * (K^i)^T / sqrt(d_k)) * V^i</code></pre>
+        $$C_i = \mathrm{softmax}\!\left(\frac{Q^i (K^i)^T}{\sqrt{d_k}}\right) V^i$$
 
         <h3>Concatenation and Output Projection</h3>
         <p>The outputs of all heads are concatenated and passed through a final linear projection:</p>
 
-        <pre><code>Output = [C_1, C_2, ..., C_h] * W_o</code></pre>
+        $$\text{Output} = [C_1, C_2, \ldots, C_h]\, W_o$$
 
-        <p>Where <code>W_o</code> is the output projection matrix and <code>h</code> is the total number of heads.</p>
+        <p>Where $W_o$ is the output projection matrix and $h$ is the total number of heads.</p>
 
         <div class="diagram">
             <svg width="520" height="340" viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg">
@@ -279,8 +287,8 @@ V^i = X * W_V^i</code></pre>
         <p>The problem is that this cache grows linearly with sequence length and scales with the number of heads:</p>
 
         <ul>
-            <li>Each head maintains its own separate K and V cache</li>
-            <li>Memory usage: <code>2 * num_heads * seq_len * d_k</code> (factor of 2 for K and V)</li>
+            <li>Each head maintains its own separate $K$ and $V$ cache</li>
+            <li>Memory usage: $2 \times \text{num\_heads} \times \text{seq\_len} \times d_k$ (factor of 2 for $K$ and $V$)</li>
             <li>For models with many heads (e.g., 32 or 64), this becomes a significant memory bottleneck during long-context inference</li>
             <li>The cache gets longer and longer as more tokens are generated, eventually becoming the dominant memory cost</li>
         </ul>
@@ -298,24 +306,24 @@ V^i = X * W_V^i</code></pre>
 
         <h3>How GQA Works</h3>
 
-        <p>Instead of having <code>h</code> independent K and V projections (one per query head), GQA uses only <code>g</code> groups of K/V pairs, where <code>g &lt; h</code>. Multiple query heads within the same group share the same K and V:</p>
+        <p>Instead of having $h$ independent $K$ and $V$ projections (one per query head), GQA uses only $g$ groups of $K$/$V$ pairs, where $g &lt; h$. Multiple query heads within the same group share the same $K$ and $V$:</p>
 
-        <pre><code>For group j (containing query heads i_1, i_2, ..., i_n):
+        <p>For group $j$ (containing query heads $i_1, i_2, \ldots, i_n$):</p>
 
-  K^j = X * W_K^j       (shared key for the group)
-  V^j = X * W_V^j       (shared value for the group)
+        $$\begin{aligned}
+        K^j &= X W_K^j \qquad (\text{shared key for the group}) \\
+        V^j &= X W_V^j \qquad (\text{shared value for the group}) \\[6pt]
+        Q^{(i_1)} &= X W_Q^{(i_1)} \qquad (\text{each query head still has its own projection}) \\
+        Q^{(i_2)} &= X W_Q^{(i_2)} \\
+        &\;\;\vdots \\[6pt]
+        C^{(i_1)} &= \mathrm{softmax}\!\left(\frac{Q^{(i_1)} (K^j)^T}{\sqrt{d_k}}\right) V^j \\
+        C^{(i_2)} &= \mathrm{softmax}\!\left(\frac{Q^{(i_2)} (K^j)^T}{\sqrt{d_k}}\right) V^j \\
+        &\;\;\vdots
+        \end{aligned}$$
 
-  Q^(i_1) = X * W_Q^(i_1)   (each query head still has its own projection)
-  Q^(i_2) = X * W_Q^(i_2)
-  ...
+        <p>The final output is still the concatenation of all head outputs projected through $W_o$:</p>
 
-  C^(i_1) = softmax(Q^(i_1) * (K^j)^T / sqrt(d_k)) * V^j
-  C^(i_2) = softmax(Q^(i_2) * (K^j)^T / sqrt(d_k)) * V^j
-  ...</code></pre>
-
-        <p>The final output is still the concatenation of all head outputs projected through <code>W_o</code>:</p>
-
-        <pre><code>Output = [C^(1,1), ..., C^(1,n), C^(2,1), ..., C^(g,n)] * W_o</code></pre>
+        $$\text{Output} = [C^{(1,1)}, \ldots, C^{(1,n)}, C^{(2,1)}, \ldots, C^{(g,n)}]\, W_o$$
 
         <div class="diagram">
             <svg width="520" height="380" viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg">
@@ -388,23 +396,23 @@ V^i = X * W_V^i</code></pre>
 
         <h3>Memory Savings</h3>
 
-        <p>The KV cache reduction is proportional to the grouping factor. If we have <code>h</code> heads and <code>g</code> groups:</p>
+        <p>The KV cache reduction is proportional to the grouping factor. If we have $h$ heads and $g$ groups:</p>
 
         <ul>
-            <li><strong>Standard MHA</strong>: KV cache size = <code>2 * h * seq_len * d_k</code></li>
-            <li><strong>GQA</strong>: KV cache size = <code>2 * g * seq_len * d_k</code></li>
-            <li><strong>Reduction factor</strong>: <code>h / g</code></li>
+            <li><strong>Standard MHA</strong>: KV cache size = $2 \times h \times \text{seq\_len} \times d_k$</li>
+            <li><strong>GQA</strong>: KV cache size = $2 \times g \times \text{seq\_len} \times d_k$</li>
+            <li><strong>Reduction factor</strong>: $h / g$</li>
         </ul>
 
-        <p>For example, with 32 query heads and 8 KV groups, the KV cache is reduced by 4x.</p>
+        <p>For example, with 32 query heads and 8 KV groups, the KV cache is reduced by $4\times$.</p>
 
         <h3>Special Cases</h3>
 
         <p>GQA is a generalization that includes two extremes:</p>
 
         <ul>
-            <li><strong>When g = h</strong> (one group per head): This is standard Multi-Head Attention &mdash; every query head has its own K and V.</li>
-            <li><strong>When g = 1</strong> (one group for all heads): This is Multi-Query Attention (MQA, Shazeer 2019) &mdash; all query heads share a single K and V, giving the maximum cache reduction but potentially sacrificing quality.</li>
+            <li><strong>When $g = h$</strong> (one group per head): This is standard Multi-Head Attention &mdash; every query head has its own K and V.</li>
+            <li><strong>When $g = 1$</strong> (one group for all heads): This is Multi-Query Attention (MQA, Shazeer 2019) &mdash; all query heads share a single K and V, giving the maximum cache reduction but potentially sacrificing quality.</li>
         </ul>
 
         <p>GQA strikes a balance between MHA (full quality, large cache) and MQA (minimal cache, potential quality loss). In practice, models like LLaMA 2 70B use GQA with 8 KV heads for 64 query heads.</p>
@@ -414,7 +422,7 @@ V^i = X * W_V^i</code></pre>
         <ul>
             <li><strong>Standard MHA</strong>: Each head has independent Q, K, V projections. Powerful but memory-intensive at inference due to per-head KV caching.</li>
             <li><strong>KV Cache Bottleneck</strong>: During autoregressive generation, caching K and V for all heads across all past tokens dominates memory usage.</li>
-            <li><strong>GQA</strong>: Groups query heads to share K/V, reducing cache by a factor of <code>h/g</code> while retaining most of MHA's representational power.</li>
+            <li><strong>GQA</strong>: Groups query heads to share K/V, reducing cache by a factor of $h/g$ while retaining most of MHA's representational power.</li>
         </ul>
 
         <h3>References</h3>

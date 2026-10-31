@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -166,98 +172,104 @@
 
         <p>The encoder in diffusion is fixed and simple. At each step:</p>
 
-        <pre><code>z_1 = √(1-β_1) x     + √β_1 ε_1
-z_t = √(1-β_t) z_t-1 + √β_t ε_t ,     where ε_1, ..., ε_t ~ N(0, I) i.i.d.</code></pre>
+        $$\begin{aligned}
+        z_1 &= \sqrt{1-\beta_1}\, x + \sqrt{\beta_1}\, \epsilon_1 \\
+        z_t &= \sqrt{1-\beta_t}\, z_{t-1} + \sqrt{\beta_t}\, \epsilon_t , \qquad \text{where } \epsilon_1, ..., \epsilon_t \sim \mathcal{N}(0, I) \text{ i.i.d.}
+        \end{aligned}$$
 
-        <p>Here <code>β_t</code> is the noise schedule — how much noise we inject at step <code>t</code>. Whatever the distribution of <code>x</code> looks like (and image distributions are wildly multi-modal), after enough steps everything gets washed into a standard Gaussian.</p>
+        <p>Here $\beta_t$ is the noise schedule — how much noise we inject at step $t$. Whatever the distribution of $x$ looks like (and image distributions are wildly multi-modal), after enough steps everything gets washed into a standard Gaussian.</p>
 
         <h3>A Property That Is Not Immediately Obvious</h3>
         <p>The encoder looks easy. But one property of it is not immediately clear: <strong>we can jump to any step in one shot</strong>. Unrolling two steps,</p>
 
-        <pre><code>z_t = √(1-β_t) z_t-1 + √β_t ε_t
-    = √(1-β_t) (√(1-β_t-1) x + √β_t-1 ε_t-1) + √β_t ε_t
-    = √((1-β_t)(1-β_t-1)) x + (noise term) ,   noise ~ N(0, (1-(1-β_t)(1-β_t-1)) I)</code></pre>
+        $$\begin{aligned}
+        z_t &= \sqrt{1-\beta_t}\, z_{t-1} + \sqrt{\beta_t}\, \epsilon_t \\
+        &= \sqrt{1-\beta_t} \left( \sqrt{1-\beta_{t-1}}\, x + \sqrt{\beta_{t-1}}\, \epsilon_{t-1} \right) + \sqrt{\beta_t}\, \epsilon_t \\
+        &= \sqrt{(1-\beta_t)(1-\beta_{t-1})}\, x + (\text{noise term}) , \qquad \text{noise} \sim \mathcal{N}\big(0, (1-(1-\beta_t)(1-\beta_{t-1})) I\big)
+        \end{aligned}$$
 
         <p>The two Gaussian noises merge into one (sum of independent Gaussians is Gaussian — the variances just add up). Repeating this all the way down:</p>
 
-        <pre><code>p(z_t | x) = N( √ᾱ_t x , (1-ᾱ_t) I ) ,   i.e.  z_t = √ᾱ_t x + √(1-ᾱ_t) ε
+        $$p(z_t \mid x) = \mathcal{N}\big( \sqrt{\bar\alpha_t}\, x ,\, (1-\bar\alpha_t) I \big) , \qquad \text{i.e.} \quad z_t = \sqrt{\bar\alpha_t}\, x + \sqrt{1-\bar\alpha_t}\, \epsilon$$
 
-where  ᾱ_t = ∏_{i=1}^{t} (1-β_i)</code></pre>
+        $$\text{where} \quad \bar\alpha_t = \prod_{i=1}^{t} (1-\beta_i)$$
 
         <p>This is the identity that makes training practical later — we never have to simulate the chain step by step to get a noisy sample.</p>
 
-        <h2>The Decoder, and Why We Condition on x</h2>
-        <p>Our goal is to learn the true reverse distribution <code>p(z_t-1 | z_t)</code>. Unfortunately it has <strong>no closed form</strong>: by Bayes it involves <code>p(z_t-1) = ∫ p(z_t-1|x) p(x) dx</code>, and <code>p(x)</code> is the distribution of natural images — exactly the thing we don't know.</p>
+        <h2>The Decoder, and Why We Condition on $x$</h2>
+        <p>Our goal is to learn the true reverse distribution $p(z_{t-1} \mid z_t)$. Unfortunately it has <strong>no closed form</strong>: by Bayes it involves $p(z_{t-1}) = \int p(z_{t-1}|x)\, p(x)\, dx$, and $p(x)$ is the distribution of natural images — exactly the thing we don't know.</p>
 
-        <p>However — and this is very important — <code>p(z_t-1 | z_t, x)</code> <strong>does</strong> have closed form. Conditioning on the clean image makes everything Gaussian, and standard Gaussian identities give:</p>
+        <p>However — and this is very important — $p(z_{t-1} \mid z_t, x)$ <strong>does</strong> have closed form. Conditioning on the clean image makes everything Gaussian, and standard Gaussian identities give:</p>
 
-        <pre><code>p(z_t-1 | z_t, x) = N( (1-ᾱ_t-1)/(1-ᾱ_t) · √(1-β_t) · z_t
-                       + √ᾱ_t-1 · β_t/(1-ᾱ_t) · x ,
-                       β_t (1-ᾱ_t-1)/(1-ᾱ_t) · I )</code></pre>
+        $$p(z_{t-1} \mid z_t, x) = \mathcal{N}\left( \frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t} \cdot \sqrt{1-\beta_t} \cdot z_t + \sqrt{\bar\alpha_{t-1}} \cdot \frac{\beta_t}{1-\bar\alpha_t} \cdot x ,\; \frac{\beta_t (1-\bar\alpha_{t-1})}{1-\bar\alpha_t} \cdot I \right)$$
 
         <p>This distribution is what we will learn to imitate for reversing. The decoder approximates the reverse chain with Gaussians:</p>
 
-        <pre><code>pr(z_T)        = N(0, I)
-pr(z_t-1 | z_t) = N( f_t(z_t; φ_t) , σ_t² I )      &lt;- the neural network lives in f_t
-pr(x | z_1)     = N( f_1(z_1; φ_1) , σ_1² I )</code></pre>
+        $$\begin{aligned}
+        \mathrm{pr}(z_T) &= \mathcal{N}(0, I) \\
+        \mathrm{pr}(z_{t-1} \mid z_t) &= \mathcal{N}\big( f_t(z_t; \phi_t) ,\, \sigma_t^2 I \big) \qquad \leftarrow \text{the neural network lives in } f_t \\
+        \mathrm{pr}(x \mid z_1) &= \mathcal{N}\big( f_1(z_1; \phi_1) ,\, \sigma_1^2 I \big)
+        \end{aligned}$$
 
-        <p>Two things worth noting: the larger the number of steps <code>T</code>, the better this Gaussian approximation becomes (each reverse step only needs to undo a tiny bit of noise); and <code>σ_t²</code> is pre-determined, e.g. 1 or 0.5 — we don't learn it.</p>
+        <p>Two things worth noting: the larger the number of steps $T$, the better this Gaussian approximation becomes (each reverse step only needs to undo a tiny bit of noise); and $\sigma_t^2$ is pre-determined, e.g. 1 or 0.5 — we don't learn it.</p>
 
         <h2>Training: ELBO, and Why Diffusion Beats VAE Here</h2>
-        <p>Ideally we'd maximize the marginal likelihood <code>pr(x | φ_1..T)</code>, but that integral over all <code>z_1, ..., z_T</code> is intractable. So, as in VAE, we work with its lower bound (ELBO):</p>
+        <p>Ideally we'd maximize the marginal likelihood $\mathrm{pr}(x \mid \phi_{1..T})$, but that integral over all $z_1, ..., z_T$ is intractable. So, as in VAE, we work with its lower bound (ELBO):</p>
 
-        <pre><code>log pr(x) ≥ ∫ q(z_1..z_T | x) log [ pr(x, z_1..z_T | φ) / q(z_1..z_T | x) ] dz  =  ELBO</code></pre>
+        $$\log \mathrm{pr}(x) \ge \int q(z_1..z_T \mid x) \log \left[ \frac{\mathrm{pr}(x, z_1..z_T \mid \phi)}{q(z_1..z_T \mid x)} \right] dz = \mathrm{ELBO}$$
 
-        <p>where <code>q</code> is the encoder distribution. The gap between ELBO and the true log-likelihood is exactly <code>KL(q(z_1..T | x) || pr(z_1..T | x, φ))</code>.</p>
+        <p>where $q$ is the encoder distribution. The gap between ELBO and the true log-likelihood is exactly $\mathrm{KL}\big(q(z_{1..T} \mid x) \,\|\, \mathrm{pr}(z_{1..T} \mid x, \phi)\big)$.</p>
 
-        <p>This is where diffusion has a structural advantage over VAE. In VAE, both encoder and decoder optimize the ELBO, and the encoder can help close the gap — but a Gaussian variational encoder may be far from the true posterior, so the ELBO is often not close to the marginal likelihood, which is one reason VAE images look blurry. <strong>In diffusion, the encoder is fixed for a given x, so the decoder has to do all the work</strong> — and crucially, the thing the decoder must match, <code>q(z_t-1 | z_t, x)</code>, is a fixed Gaussian. Much easier to learn than chasing a moving target that depends on the decoder itself.</p>
+        <p>This is where diffusion has a structural advantage over VAE. In VAE, both encoder and decoder optimize the ELBO, and the encoder can help close the gap — but a Gaussian variational encoder may be far from the true posterior, so the ELBO is often not close to the marginal likelihood, which is one reason VAE images look blurry. <strong>In diffusion, the encoder is fixed for a given $x$, so the decoder has to do all the work</strong> — and crucially, the thing the decoder must match, $q(z_{t-1} \mid z_t, x)$, is a fixed Gaussian. Much easier to learn than chasing a moving target that depends on the decoder itself.</p>
 
         <h3>Simplify the ELBO</h3>
-        <p>Expanding the joint in the reverse direction and the <code>q</code> in the forward direction, then applying Bayes' theorem to flip <code>q(z_t | z_t-1)</code> into <code>q(z_t-1 | z_t, x)</code> (this flip is the crucial move — it aligns each <code>q</code> term with a decoder term going the same direction), the ELBO becomes:</p>
+        <p>Expanding the joint in the reverse direction and the $q$ in the forward direction, then applying Bayes' theorem to flip $q(z_t \mid z_{t-1})$ into $q(z_{t-1} \mid z_t, x)$ (this flip is the crucial move — it aligns each $q$ term with a decoder term going the same direction), the ELBO becomes:</p>
 
-        <pre><code>ELBO ≈ E[ log pr(x | z_1, φ_1) ]  -  Σ_{t=2}^{T} E[ KL( q(z_t-1 | z_t, x) || pr(z_t-1 | z_t, φ_t) ) ]</code></pre>
+        $$\mathrm{ELBO} \approx \mathbb{E}\big[ \log \mathrm{pr}(x \mid z_1, \phi_1) \big] - \sum_{t=2}^{T} \mathbb{E}\Big[ \mathrm{KL}\big( q(z_{t-1} \mid z_t, x) \,\|\, \mathrm{pr}(z_{t-1} \mid z_t, \phi_t) \big) \Big]$$
 
-        <p>(The leftover term <code>log(pr(z_T)/q(z_T|x))</code> is ≈ 0, since after T steps <code>q(z_T|x)</code> is very close to standard normal.) The first term is a reconstruction error; each KL term compares two Gaussians, which has an explicit form — up to constants, it is just the <strong>squared distance between the two means</strong>:</p>
+        <p>(The leftover term $\log\big(\mathrm{pr}(z_T)/q(z_T|x)\big)$ is $\approx 0$, since after $T$ steps $q(z_T|x)$ is very close to standard normal.) The first term is a reconstruction error; each KL term compares two Gaussians, which has an explicit form — up to constants, it is just the <strong>squared distance between the two means</strong>:</p>
 
-        <pre><code>KL term ∝ (1/2σ_t²) || mean of q(z_t-1 | z_t, x)  -  f_t(z_t; φ_t) ||²</code></pre>
+        $$\text{KL term} \propto \frac{1}{2\sigma_t^2} \Big\| \text{mean of } q(z_{t-1} \mid z_t, x) - f_t(z_t; \phi_t) \Big\|^2$$
 
-        <p>We could stop here. This loss can already train a network to reverse the process: at each step, learn to predict the mean of <code>q(z_t-1 | z_t, x)</code>. But there is a nicer form.</p>
+        <p>We could stop here. This loss can already train a network to reverse the process: at each step, learn to predict the mean of $q(z_{t-1} \mid z_t, x)$. But there is a nicer form.</p>
 
         <h2>Reparameterization: It All Collapses to Predicting Noise</h2>
-        <p>Recall <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code>, so <code>x = z_t/√ᾱ_t - √(1-ᾱ_t)/√ᾱ_t · ε</code>. Substituting this into the mean of <code>q(z_t-1 | z_t, x)</code> and grinding through the algebra (all the <code>ᾱ</code> factors cancel), the target mean becomes:</p>
+        <p>Recall $z_t = \sqrt{\bar\alpha_t}\, x + \sqrt{1-\bar\alpha_t}\, \epsilon$, so $x = z_t/\sqrt{\bar\alpha_t} - \frac{\sqrt{1-\bar\alpha_t}}{\sqrt{\bar\alpha_t}} \cdot \epsilon$. Substituting this into the mean of $q(z_{t-1} \mid z_t, x)$ and grinding through the algebra (all the $\bar\alpha$ factors cancel), the target mean becomes:</p>
 
-        <pre><code>mean of q(z_t-1 | z_t, x)  =  1/√(1-β_t) · z_t  -  β_t/(√(1-ᾱ_t)√(1-β_t)) · ε</code></pre>
+        $$\text{mean of } q(z_{t-1} \mid z_t, x) = \frac{1}{\sqrt{1-\beta_t}} \cdot z_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}\sqrt{1-\beta_t}} \cdot \epsilon$$
 
-        <p>So instead of predicting the mean directly, we parameterize the network in exactly the same shape and let it predict <code>ε</code>:</p>
+        <p>So instead of predicting the mean directly, we parameterize the network in exactly the same shape and let it predict $\epsilon$:</p>
 
-        <pre><code>f_t(z_t; φ_t)  =  1/√(1-β_t) · z_t  -  β_t/(√(1-ᾱ_t)√(1-β_t)) · g_t(z_t; φ_t)</code></pre>
+        $$f_t(z_t; \phi_t) = \frac{1}{\sqrt{1-\beta_t}} \cdot z_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}\sqrt{1-\beta_t}} \cdot g_t(z_t; \phi_t)$$
 
         <p>The difference of means is then just the difference of noise terms, and the whole loss collapses to:</p>
 
-        <pre><code>L(φ_1..T) ∝ Σ_i Σ_t  β_t²/(2σ_t²(1-ᾱ_t)(1-β_t)) · || ε_it - g_t( √ᾱ_t x_i + √(1-ᾱ_t) ε_it ; φ_t ) ||²</code></pre>
+        $$L(\phi_{1..T}) \propto \sum_i \sum_t \frac{\beta_t^2}{2\sigma_t^2 (1-\bar\alpha_t)(1-\beta_t)} \cdot \Big\| \epsilon_{it} - g_t\big( \sqrt{\bar\alpha_t}\, x_i + \sqrt{1-\bar\alpha_t}\, \epsilon_{it} ;\, \phi_t \big) \Big\|^2$$
 
-        <p>Noise up an image to step <code>t</code>, ask the network which noise was used, penalize the squared error. That's the entire training objective.</p>
+        <p>Noise up an image to step $t$, ask the network which noise was used, penalize the squared error. That's the entire training objective.</p>
 
         <h3>Why Is This Better Than the Loss Before Reparameterization?</h3>
-        <p>Although mathematically equivalent, the new loss is much more practical because it <strong>decomposes into a sum over sample size and step size</strong>. Before, to train with SGD we'd sample <code>b</code> images and train all <code>T</code> steps for each — if <code>T</code> is large, <code>b</code> has to be tiny (or doesn't fit in RAM at all), and with <code>b=1, T=1000</code> the losses within a batch are highly correlated while gradient directions across batches vary wildly. Now we simply sample <code>B</code> pairs from <strong>all combinations of image and step</strong> — a proper i.i.d.-ish minibatch.</p>
+        <p>Although mathematically equivalent, the new loss is much more practical because it <strong>decomposes into a sum over sample size and step size</strong>. Before, to train with SGD we'd sample $b$ images and train all $T$ steps for each — if $T$ is large, $b$ has to be tiny (or doesn't fit in RAM at all), and with $b=1, T=1000$ the losses within a batch are highly correlated while gradient directions across batches vary wildly. Now we simply sample $B$ pairs from <strong>all combinations of image and step</strong> — a proper i.i.d.-ish minibatch.</p>
 
-        <p>Note that the <code>ε</code>'s we regress against at different steps do <strong>not</strong> come from independent noise (they're all tied to the same <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code> decomposition). So why would learning the noise work? Because <strong>on average, the noise points in the right direction</strong> to move from the target distribution toward the standard normal — and its negation points back.</p>
+        <p>Note that the $\epsilon$'s we regress against at different steps do <strong>not</strong> come from independent noise (they're all tied to the same $z_t = \sqrt{\bar\alpha_t}\, x + \sqrt{1-\bar\alpha_t}\, \epsilon$ decomposition). So why would learning the noise work? Because <strong>on average, the noise points in the right direction</strong> to move from the target distribution toward the standard normal — and its negation points back.</p>
 
         <h2>Sampling: Don't Forget to Add Noise Back</h2>
         <p>Generation runs the learned chain backwards:</p>
 
-        <pre><code>z_T ~ N(0, I)
-for t = T, ..., 2:
-    ẑ_t-1 = 1/√(1-β_t) · z_t - β_t/(√(1-ᾱ_t)√(1-β_t)) · g_t(z_t; φ_t)
-    z_t-1 = ẑ_t-1 + σ_t ε ,    ε ~ N(0, I)
-x = 1/√(1-β_1) · z_1 - β_1/(√(1-ᾱ_1)√(1-β_1)) · g_1(z_1; φ_1)</code></pre>
+        $$\begin{aligned}
+        &z_T \sim \mathcal{N}(0, I) \\
+        &\text{for } t = T, ..., 2: \\
+        &\qquad \hat{z}_{t-1} = \frac{1}{\sqrt{1-\beta_t}} \cdot z_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}\sqrt{1-\beta_t}} \cdot g_t(z_t; \phi_t) \\
+        &\qquad z_{t-1} = \hat{z}_{t-1} + \sigma_t \epsilon , \qquad \epsilon \sim \mathcal{N}(0, I) \\
+        &x = \frac{1}{\sqrt{1-\beta_1}} \cdot z_1 - \frac{\beta_1}{\sqrt{1-\bar\alpha_1}\sqrt{1-\beta_1}} \cdot g_1(z_1; \phi_1)
+        \end{aligned}$$
 
-        <p>The subtle point: <code>ẑ_t-1</code> is only the <strong>mean</strong> of the reverse distribution — the "average" direction at the current step. In image generation, average means <strong>blurry</strong> (the average of many dog images is a grey smudge, not a dog). <strong>It is important to add noise back at each step</strong> — by adding noise, we force the image to add details. Strictly speaking noise should be added at the very last step too, but in practice it doesn't matter.</p>
+        <p>The subtle point: $\hat{z}_{t-1}$ is only the <strong>mean</strong> of the reverse distribution — the "average" direction at the current step. In image generation, average means <strong>blurry</strong> (the average of many dog images is a grey smudge, not a dog). <strong>It is important to add noise back at each step</strong> — by adding noise, we force the image to add details. Strictly speaking noise should be added at the very last step too, but in practice it doesn't matter.</p>
 
         <h2>Summary</h2>
         <ul>
-            <li>The <strong>encoder is fixed</strong>: gradually Gaussian-noise an image, with the one-shot identity <code>z_t = √ᾱ_t x + √(1-ᾱ_t) ε</code>.</li>
-            <li><code>p(z_t-1 | z_t)</code> is intractable, but <strong>conditioning on x makes it a closed-form Gaussian</strong> — that's the target the decoder learns.</li>
+            <li>The <strong>encoder is fixed</strong>: gradually Gaussian-noise an image, with the one-shot identity $z_t = \sqrt{\bar\alpha_t}\, x + \sqrt{1-\bar\alpha_t}\, \epsilon$.</li>
+            <li>$p(z_{t-1} \mid z_t)$ is intractable, but <strong>conditioning on $x$ makes it a closed-form Gaussian</strong> — that's the target the decoder learns.</li>
             <li>The ELBO reduces to per-step Gaussian KLs, and because the encoder is fixed, the decoder chases a <strong>fixed target</strong> — the key advantage over VAE.</li>
             <li>Reparameterization turns everything into <strong>noise prediction</strong>, which decomposes the loss over (image, step) pairs and plays nicely with SGD.</li>
             <li>At sampling time, <strong>add noise back at every step</strong> — the mean alone gives you blurry averages, the noise gives you details.</li>

@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -158,49 +164,39 @@
 
         <h2>How to Solve a Linear System?</h2>
 
-        <p>We want to solve <code>Ax = b</code>. As an example, take</p>
+        <p>We want to solve $Ax = b$. As an example, take</p>
 
-        <pre><code>A = [ 2  4 -2 ]     b = [ 2 ]
-    [ 4  9 -3 ]         [ 8 ]
-    [-2 -3  7 ]         [10]</code></pre>
+        $$A = \begin{bmatrix} 2 & 4 & -2 \\ 4 & 9 & -3 \\ -2 & -3 & 7 \end{bmatrix} \qquad b = \begin{bmatrix} 2 \\ 8 \\ 10 \end{bmatrix}$$
 
         <p>The idea is to do <strong>Gaussian elimination</strong> first, so the equation becomes</p>
 
-        <pre><code>[ 2  4 -2 ]         [2]
-[ 0  1  1 ] x =     [4]
-[ 0  0  4 ]         [8]</code></pre>
+        $$\begin{bmatrix} 2 & 4 & -2 \\ 0 & 1 & 1 \\ 0 & 0 & 4 \end{bmatrix} x = \begin{bmatrix} 2 \\ 4 \\ 8 \end{bmatrix}$$
 
-        <p>Then we can do <strong>backward substitution</strong> to solve <code>x_1, x_2, x_3</code> easily:</p>
+        <p>Then we can do <strong>backward substitution</strong> to solve $x_1, x_2, x_3$ easily:</p>
 
-        <pre><code>4x_3 = 8              => x_3 = 2
-x_2 + x_3 = 4          => x_2 = 2
-2x_1 + 4x_2 - 2x_3 = 2 => x_1 = -1</code></pre>
+        $$\begin{aligned}
+        4x_3 &= 8 &&\Rightarrow x_3 = 2 \\
+        x_2 + x_3 &= 4 &&\Rightarrow x_2 = 2 \\
+        2x_1 + 4x_2 - 2x_3 &= 2 &&\Rightarrow x_1 = -1
+        \end{aligned}$$
 
         <h2>Gaussian Elimination</h2>
 
-        <p>Going back to the same example, write <code>A</code> and <code>b</code> together as an augmented matrix and eliminate row by row.</p>
+        <p>Going back to the same example, write $A$ and $b$ together as an augmented matrix and eliminate row by row.</p>
 
-        <pre><code>[ 2  4 -2 |  2]
-[ 4  9 -3 |  8]
-[-2 -3  7 | 10]</code></pre>
+        $$\left[\begin{array}{ccc|c} 2 & 4 & -2 & 2 \\ 4 & 9 & -3 & 8 \\ -2 & -3 & 7 & 10 \end{array}\right]$$
 
         <p><strong>Second row &minus; 2&times;first row:</strong></p>
 
-        <pre><code>[ 2  4 -2 |  2]
-[ 0  1  1 |  4]
-[-2 -3  7 | 10]</code></pre>
+        $$\left[\begin{array}{ccc|c} 2 & 4 & -2 & 2 \\ 0 & 1 & 1 & 4 \\ -2 & -3 & 7 & 10 \end{array}\right]$$
 
         <p><strong>Third row + first row:</strong></p>
 
-        <pre><code>[ 2  4 -2 |  2]
-[ 0  1  1 |  4]
-[ 0  1  5 | 12]</code></pre>
+        $$\left[\begin{array}{ccc|c} 2 & 4 & -2 & 2 \\ 0 & 1 & 1 & 4 \\ 0 & 1 & 5 & 12 \end{array}\right]$$
 
         <p><strong>Third row &minus; second row:</strong></p>
 
-        <pre><code>[ 2  4 -2 | 2]
-[ 0  1  1 | 4]
-[ 0  0  4 | 8]</code></pre>
+        $$\left[\begin{array}{ccc|c} 2 & 4 & -2 & 2 \\ 0 & 1 & 1 & 4 \\ 0 & 0 & 4 & 8 \end{array}\right]$$
 
         <p>That's the upper triangular system we used above.</p>
 
@@ -208,74 +204,71 @@ x_2 + x_3 = 4          => x_2 = 2
 
         <p>Each of the row operations above can be written as left-multiplication by a matrix. For instance, "second row &minus; 2&times;first row" is</p>
 
-        <pre><code>E_21 = [ 1  0  0]
-       [-2  1  0]
-       [ 0  0  1]</code></pre>
+        $$E_{21} = \begin{bmatrix} 1 & 0 & 0 \\ -2 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
 
         <h2>LU Decomposition</h2>
 
         <p>To generalize, we have</p>
 
-        <pre><code>E_{n,n-1} ... E_{m1} ... E_{21} A = U</code></pre>
+        $$E_{n,n-1} \cdots E_{m1} \cdots E_{21} A = U$$
 
-        <p>where the product of elimination matrices on the left are the elimination steps, and <code>U</code> is the resulting upper triangular matrix. Inverting both sides,</p>
+        <p>where the product of elimination matrices on the left are the elimination steps, and $U$ is the resulting upper triangular matrix. Inverting both sides,</p>
 
-        <pre><code>A = E_21^{-1} E_{m1}^{-1} ... E_{n,n-1}^{-1} U</code></pre>
+        $$A = E_{21}^{-1} E_{m1}^{-1} \cdots E_{n,n-1}^{-1} U$$
 
-        <p><strong>Result 1:</strong> if <code>E_ij</code> is the identity matrix with <code>L_ij</code> at entry <code>(i,j)</code>, then <code>E_ij^{-1}</code> is the identity matrix with <code>-L_ij</code> at entry <code>(i,j)</code>.</p>
+        <p><strong>Result 1:</strong> if $E_{ij}$ is the identity matrix with $L_{ij}$ at entry $(i,j)$, then $E_{ij}^{-1}$ is the identity matrix with $-L_{ij}$ at entry $(i,j)$.</p>
 
-        <p><strong>Result 2:</strong> the product <code>E_21^{-1} E_31^{-1} ... E_{n,n-1}^{-1}</code> is a single lower triangular matrix with all the <code>-L_ij</code> entries stacked in their respective positions, e.g.</p>
+        <p><strong>Result 2:</strong> the product $E_{21}^{-1} E_{31}^{-1} \cdots E_{n,n-1}^{-1}$ is a single lower triangular matrix with all the $-L_{ij}$ entries stacked in their respective positions, e.g.</p>
 
-        <pre><code>[    1      0    0]
-[ -L_21     1    0]
-[ -L_31  -L_32   1]</code></pre>
+        $$\begin{bmatrix} 1 & 0 & 0 \\ -L_{21} & 1 & 0 \\ -L_{31} & -L_{32} & 1 \end{bmatrix}$$
 
-        <p>We can prove this by induction: multiplying <code>E_ij^{-1}</code> (which has <code>-L_ij</code> at entry <code>(i,j)</code> and zeros elsewhere off the diagonal) into the product so far only fills in entry <code>(i,j)</code> with <code>-L_ij</code>, since the entry at <code>(i,j)</code> in the partial product is still zero at that point and any other entries below the diagonal are left untouched.</p>
+        <p>We can prove this by induction: multiplying $E_{ij}^{-1}$ (which has $-L_{ij}$ at entry $(i,j)$ and zeros elsewhere off the diagonal) into the product so far only fills in entry $(i,j)$ with $-L_{ij}$, since the entry at $(i,j)$ in the partial product is still zero at that point and any other entries below the diagonal are left untouched.</p>
 
-        <p>The effect of this matrix: a Gaussian elimination step takes the <code>i</code>-th row, times <code>L_ij</code>, and adds it to the <code>j</code>-th row, where <code>j &gt; i</code>. So this operation only affects entry <code>(i,j)</code>.</p>
+        <p>The effect of this matrix: a Gaussian elimination step takes the $i$-th row, times $L_{ij}$, and adds it to the $j$-th row, where $j > i$. So this operation only affects entry $(i,j)$.</p>
 
-        <p>So we have <code>A = LU</code>. This is the known <strong>LU decomposition</strong>.</p>
+        <p>So we have $A = LU$. This is the known <strong>LU decomposition</strong>.</p>
 
         <h2>LU Decomposition Isn't Always Possible</h2>
 
         <p>For example, if</p>
 
-        <pre><code>A = [0 2 3]
-    [1 3 5]
-    [4 0 2]</code></pre>
+        $$A = \begin{bmatrix} 0 & 2 & 3 \\ 1 & 3 & 5 \\ 4 & 0 & 2 \end{bmatrix}$$
 
-        <p>then the first row cannot eliminate the second or third row, because the <code>(1,1)</code> entry is <code>0</code>.</p>
+        <p>then the first row cannot eliminate the second or third row, because the $(1,1)$ entry is $0$.</p>
 
-        <p>Define the <strong>row exchange matrix</strong> <code>P_ij</code> as the identity matrix with rows <code>i</code> and <code>j</code> swapped. The effect of this matrix: <code>P_ij A</code> swaps rows <code>A_i</code> and <code>A_j</code> of <code>A</code>.</p>
+        <p>Define the <strong>row exchange matrix</strong> $P_{ij}$ as the identity matrix with rows $i$ and $j$ swapped. The effect of this matrix: $P_{ij} A$ swaps rows $A_i$ and $A_j$ of $A$.</p>
 
-        <p>An important property of <code>P_ij</code>: <code>P_ij = P_ij^{-1}</code>. This is obvious because <code>P_ij^2 = I</code> &mdash; swap rows <code>i</code> and <code>j</code>, then swap them again, and we're back where we started.</p>
+        <p>An important property of $P_{ij}$: $P_{ij} = P_{ij}^{-1}$. This is obvious because $P_{ij}^2 = I$ &mdash; swap rows $i$ and $j$, then swap them again, and we're back where we started.</p>
 
         <h2>PLU Decomposition</h2>
 
-        <p>So in many cases we have a chain that mixes elimination steps and row exchanges, something like <code>(E ... P E ... P E ... E) A = U</code>, and we want to collect all the <code>P</code>'s together. Since <code>PE = E'P</code> where <code>E' = PEP</code>, each time we push a permutation matrix <code>P</code> through an elimination matrix <code>E</code>, <code>E</code> turns into a new elimination matrix <code>E'</code> acting on the permuted row indices.</p>
+        <p>So in many cases we have a chain that mixes elimination steps and row exchanges, something like $(E \cdots P E \cdots P E \cdots E) A = U$, and we want to collect all the $P$'s together. Since $PE = E'P$ where $E' = PEP$, each time we push a permutation matrix $P$ through an elimination matrix $E$, $E$ turns into a new elimination matrix $E'$ acting on the permuted row indices.</p>
 
-        <p>Concretely, for a chain like <code>E_32 P_23 E_31 E_21</code>:</p>
+        <p>Concretely, for a chain like $E_{32} P_{23} E_{31} E_{21}$:</p>
 
-        <pre><code>E_32 P_23 E_31 E_21
-= E_32 E'_31 P_23 E_21
-= E_32 E'_31 E'_21 P_23</code></pre>
+        $$\begin{aligned}
+        E_{32} P_{23} E_{31} E_{21} &= E_{32} E'_{31} P_{23} E_{21} \\
+        &= E_{32} E'_{31} E'_{21} P_{23}
+        \end{aligned}$$
 
         <p>where</p>
 
-        <pre><code>E'_31 = P_23 E_31 P_23
-      = P_23 (I + L_31 e_3 e_1^T) P_23
-      = I + L_31 P_23 e_3 e_1^T P_23
-      = I + L_31 e_2 e_1^T   (goes to row 2)</code></pre>
+        $$\begin{aligned}
+        E'_{31} &= P_{23} E_{31} P_{23} \\
+        &= P_{23} (I + L_{31} e_3 e_1^\top) P_{23} \\
+        &= I + L_{31} P_{23} e_3 e_1^\top P_{23} \\
+        &= I + L_{31} e_2 e_1^\top \qquad (\text{goes to row 2})
+        \end{aligned}$$
 
         <p>and similarly</p>
 
-        <pre><code>E'_21 = I + L_21 e_3 e_1^T   (goes to row 3)</code></pre>
+        $$E'_{21} = I + L_{21} e_3 e_1^\top \qquad (\text{goes to row 3})$$
 
-        <p>Putting it back together, <code>E_32 P_23 E_31 E_21 A = U</code> becomes <code>E_32 E'_31 E'_21 (P_23 A) = U</code>, so</p>
+        <p>Putting it back together, $E_{32} P_{23} E_{31} E_{21} A = U$ becomes $E_{32} E'_{31} E'_{21} (P_{23} A) = U$, so</p>
 
-        <pre><code>P_23 A = (E_32 E'_31 E'_21)^{-1} U = LU</code></pre>
+        $$P_{23} A = (E_{32} E'_{31} E'_{21})^{-1} U = LU$$
 
-        <p>This is the <strong>PLU decomposition</strong>: <code>PA = LU</code>.</p>
+        <p>This is the <strong>PLU decomposition</strong>: $PA = LU$.</p>
     </div>
 </article>
 

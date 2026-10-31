@@ -145,7 +145,13 @@
             max-width: 100%;
             height: auto;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -170,7 +176,7 @@
             an attention layer followed by a feed-forward network (FFN). 
             The FFN is applied independently to each token position and typically consists of two linear transformations with a nonlinear activation in between:</p>
 
-        <pre><code>FFN(x) = W2 * activation(W1 * x + b1) + b2</code></pre>
+        $$\mathrm{FFN}(x) = W_2\, \mathrm{activation}(W_1 x + b_1) + b_2$$
 
         <p>For example, if <code>d_model = 4096</code>, the FFN typically expands the dimension by a factor of 4 in the first layer (to 16384) 
             and projects it back down in the second layer (back to 4096). The activation function is commonly GELU or SiLU in modern architectures.</p>
@@ -255,18 +261,18 @@
         <h2>The Router</h2>
         <p>The router is the mechanism that decides which experts handle each token. It is a simple learned linear projection from the token representation to a score for each expert:</p>
 
-        <pre><code>router_logits = Softmax(x * W_R)    where W_R has shape (d_model, num_experts)</code></pre>
+        $$\text{router\_logits} = \mathrm{Softmax}(x W_R) \qquad (\text{where } W_R \text{ has shape } (d_{\text{model}}, \text{num\_experts}))$$
 
-        <p>The input <code>x</code> here is the output of the attention layer. For example, with a sequence of 300 tokens and <code>d_model = 4096</code>, 
+        <p>The input $x$ here is the output of the attention layer. For example, with a sequence of 300 tokens and <code>d_model = 4096</code>, 
            the input shape would be <code>(300, 4096)</code>, and the router produces scores of shape <code>(300, num_experts)</code>, one score per expert for each token.</p>
 
         <h3>Top-K Selection</h3>
-        <p>The router assigns a score to each expert, but we do not activate all of them. Instead, we pick the top-K experts (typically K=2) for each token:</p>
+        <p>The router assigns a score to each expert, but we do not activate all of them. Instead, we pick the top-K experts (typically $K=2$) for each token:</p>
         <ul>
             <li>Compute router scores for all experts</li>
             <li>Select the top-K scores (e.g., top-2)</li>
             <li>Zero out all other scores</li>
-            <li>Renormalize the remaining K scores so they sum to 1 (i.e., S_1 + S_2 = 1)</li>
+            <li>Renormalize the remaining K scores so they sum to 1 (i.e., $S_1 + S_2 = 1$)</li>
         </ul>
 
         <p>Only two experts are activated per token. This is what makes MoE "sparse". Despite having many experts, only a small subset does computation for any given token.</p>
@@ -274,29 +280,33 @@
         <h3>Combining Expert Outputs</h3>
         <p>Once the top-K experts have processed the token, their outputs are combined via a weighted sum using the normalized router scores:</p>
 
-        <pre><code>output = S_1 * y_1 + S_2 * y_2
+        $$\text{output} = S_1 y_1 + S_2 y_2$$
 
-where:
-  S_1, S_2 = normalized routing scores (S_1 + S_2 = 1)
-  y_1, y_2 = outputs from the two selected experts</code></pre>
+        <p>where:</p>
+        $$\begin{aligned}
+        S_1, S_2 &= \text{normalized routing scores } (S_1 + S_2 = 1) \\
+        y_1, y_2 &= \text{outputs from the two selected experts}
+        \end{aligned}$$
 
         <h2>The Experts</h2>
         <p>Each expert is structurally identical to a standard FFN: two linear layers with a nonlinear activation in between. They all share the same architecture and are normally initialized the same way at the start of training, but they diverge and specialize as training progresses.</p>
 
-        <pre><code>Expert_i(x) = W2_i * GELU(W1_i * x)
+        $$\text{Expert}_i(x) = W_{2,i}\, \mathrm{GELU}(W_{1,i}\, x)$$
 
-Dimensions (example):
-  First layer:  4096 -> 4096*k (expand)
-  Second layer: 4096*k -> 4096 (project back)</code></pre>
+        <p>Dimensions (example):</p>
+        $$\begin{aligned}
+        \text{First layer:} &\quad 4096 \to 4096k \quad (\text{expand}) \\
+        \text{Second layer:} &\quad 4096k \to 4096 \quad (\text{project back})
+        \end{aligned}$$
 
         <p>The key difference from a standard Transformer is that instead of one large FFN shared across all tokens, there are many smaller experts, and each token only uses a few of them. This dramatically increases the total parameter count while keeping the per-token compute roughly constant.</p>
 
         <h2>How the Router Gets Trained</h2>
         <p>A natural question is: how do gradients flow through the top-K selection, which is a discrete operation? The approach used in practice introduces a constant mask matrix. Conceptually:</p>
 
-        <pre><code>scores = Softmax(x * W_R * M_mask)</code></pre>
+        $$\text{scores} = \mathrm{Softmax}(x W_R M_{\text{mask}})$$
 
-        <p>The mask <code>M_mask</code> is derived from the top-K selection and applied to allow gradients to flow back through the softmax to the router weights <code>W_R</code>. 
+        <p>The mask $M_{\text{mask}}$ is derived from the top-K selection and applied to allow gradients to flow back through the softmax to the router weights $W_R$. 
             Since the softmax and the linear projection are both differentiable, the router weights get updated via standard backpropagation. 
             The top-K selection itself is handled by zeroing out non-selected logits before the softmax (or equivalently, setting them to negative infinity), 
             which means the gradient with respect to those positions is zero, while the gradient flows normally through the selected positions.</p>

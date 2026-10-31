@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -152,8 +158,8 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Generative AI/Conditional and Style GAN.pdf">PDF</a>.</p>
 
-        <p>Once a GAN is trained, we can sample <code>z ~ N(0, I)</code>, pass it through the generator, and get a high quality image. What we <strong>cannot</strong> do is control what image we get.
-           Suppose we trained on images of animals and now we want a dog. The only option is to keep sampling <code>z</code> until one of the outputs happens to be a dog. That's inefficient, and it's the problem this note works through.</p>
+        <p>Once a GAN is trained, we can sample $z \sim \mathcal{N}(0, I)$, pass it through the generator, and get a high quality image. What we <strong>cannot</strong> do is control what image we get.
+           Suppose we trained on images of animals and now we want a dog. The only option is to keep sampling $z$ until one of the outputs happens to be a dog. That's inefficient, and it's the problem this note works through.</p>
 
         <pre><code>                                        x_i (real image)
                                             \
@@ -162,13 +168,13 @@ z_i --> [ g(z; θ) ] --> x*_i  --------> [ f(x; φ) ] --> P(x is real)
 latent variable,       cannot control it)
 ~ N(0, I)</code></pre>
 
-        <h2>Why Can't Each Dimension of z Control One Thing?</h2>
-        <p>In a standard GAN, why doesn't each feature of <code>z</code> just control one part of the image — say <code>z₁</code> for color, <code>z₂</code> for background, and so on? If that were true, controlling generation would be trivial.</p>
+        <h2>Why Can't Each Dimension of $z$ Control One Thing?</h2>
+        <p>In a standard GAN, why doesn't each feature of $z$ just control one part of the image — say $z_1$ for color, $z_2$ for background, and so on? If that were true, controlling generation would be trivial.</p>
 
         <p>Here's the argument for why this <strong>can't</strong> be true: if each dimension independently controlled one attribute, then <strong>all possible combinations of attributes would be equally likely</strong> — and many combinations violate how the real world works.
-           A concrete example: suppose <code>z₁</code> controls gender and <code>z₂</code> controls beard, independently. Then "male + beard" and "female + beard" would be generated with equal probability. The second one is much less realistic, so a generator that produces realistic images simply cannot let those two dimensions act independently. The features <strong>have to be entangled</strong>.</p>
+           A concrete example: suppose $z_1$ controls gender and $z_2$ controls beard, independently. Then "male + beard" and "female + beard" would be generated with equal probability. The second one is much less realistic, so a generator that produces realistic images simply cannot let those two dimensions act independently. The features <strong>have to be entangled</strong>.</p>
 
-        <p>The latent variable <code>z</code> encodes all the information for generating the image, and the generator acts as a <strong>decoder</strong>. It decodes <code>z</code> into an image without any disentanglement of features.</p>
+        <p>The latent variable $z$ encodes all the information for generating the image, and the generator acts as a <strong>decoder</strong>. It decodes $z$ into an image without any disentanglement of features.</p>
 
         <p>One nice property survives, though: the latent space in a GAN is <strong>smooth</strong>. Interpolate between two latent codes and the image morphs smoothly:</p>
 
@@ -178,10 +184,10 @@ latent variable,       cannot control it)
  |
 z₂ --> generator --> image B</code></pre>
 
-        <p>But because features are highly entangled, changing <strong>one component</strong> of <code>z</code> changes <strong>many parts</strong> of the image at once. Smooth, yes. Controllable, no.</p>
+        <p>But because features are highly entangled, changing <strong>one component</strong> of $z$ changes <strong>many parts</strong> of the image at once. Smooth, yes. Controllable, no.</p>
 
         <h2>Conditional GAN: Just Tell It What You Want</h2>
-        <p>The most direct fix is to pass the desired attribute in explicitly. Alongside <code>z_i</code>, we feed the generator an attribute vector <code>c_i</code> — e.g. a class embedding. If we want a cat, we pass the embedding for the cat category.</p>
+        <p>The most direct fix is to pass the desired attribute in explicitly. Alongside $z_i$, we feed the generator an attribute vector $c_i$ — e.g. a class embedding. If we want a cat, we pass the embedding for the cat category.</p>
 
         <pre><code>z_i, c_i --> [ g(z, c; θ) ] --> (x*_i, c_i) --> [ f(x, c; φ) ] --> P(pair (x, c) is real)
                                                      ^
@@ -189,23 +195,23 @@ z₂ --> generator --> image B</code></pre>
                                        a real image of a cat always comes
                                        with the attribute vector for cat</code></pre>
 
-        <p>The key change is on the discriminator side: it no longer judges the image alone, it judges the <strong>pair</strong> <code>(x, c)</code>. A realistic image of a dog paired with the attribute vector for cat comes from a different joint distribution than real pairs — so the discriminator can catch it. Now the generator has to produce an image that is not just realistic, but <strong>realistic and consistent with the given attribute</strong>.</p>
+        <p>The key change is on the discriminator side: it no longer judges the image alone, it judges the <strong>pair</strong> $(x, c)$. A realistic image of a dog paired with the attribute vector for cat comes from a different joint distribution than real pairs — so the discriminator can catch it. Now the generator has to produce an image that is not just realistic, but <strong>realistic and consistent with the given attribute</strong>.</p>
 
         <h3>Auxiliary Classifier GAN</h3>
-        <p>A variant on the same idea. The generator still takes <code>(z_i, c_i)</code> with <code>c_i</code> a class embedding, but the discriminator now has two heads: <code>P(x is real)</code> and <code>P(x belongs to each class)</code>. The discriminator learns to minimize <code>L_adversarial + L_classification</code>, while the generator learns to minimize <code>-L_adversarial + L_classification</code> — i.e. fool the realness head, but cooperate with the classification head so the generated image is recognizably the right class.</p>
+        <p>A variant on the same idea. The generator still takes $(z_i, c_i)$ with $c_i$ a class embedding, but the discriminator now has two heads: $P(x \text{ is real})$ and $P(x \text{ belongs to each class})$. The discriminator learns to minimize $L_{\text{adversarial}} + L_{\text{classification}}$, while the generator learns to minimize $-L_{\text{adversarial}} + L_{\text{classification}}$ — i.e. fool the realness head, but cooperate with the classification head so the generated image is recognizably the right class.</p>
 
         <h3>InfoGAN: Make the Model Discover the Attributes</h3>
-        <p>Conditional GAN needs labeled attributes. InfoGAN asks: what if we don't have labels? We concatenate <code>(z_i, c_i)</code> where <code>c_i</code> is drawn <strong>randomly</strong> — it could come from:</p>
+        <p>Conditional GAN needs labeled attributes. InfoGAN asks: what if we don't have labels? We concatenate $(z_i, c_i)$ where $c_i$ is drawn <strong>randomly</strong> — it could come from:</p>
         <ul>
             <li>a categorical distribution, where each category represents a class;</li>
             <li>a list of class embeddings;</li>
-            <li>a uniform distribution <code>U[0, 1]</code> — this could end up controlling, say, rotation angle.</li>
+            <li>a uniform distribution $U[0, 1]$ — this could end up controlling, say, rotation angle.</li>
         </ul>
 
         <pre><code>(z_i, c_i) --> [ g(z, c; θ) ] --> x*_i --> [ f(x; φ) ] --> P(x is real)
                                                        --> estimate c_i  (reconstruct c)</code></pre>
 
-        <p>The discriminator gets a second job: <strong>reconstruct the random vector <code>c</code> from the generated image</strong>, and both the generator and discriminator minimize this reconstruction loss. This is the clever part: because <code>c</code> needs to be reconstructed, the generator is <strong>forced to encode important information into the image</strong> so that <code>c</code> can be recovered from it — things like class, style, posture. Meanwhile <code>z</code> ends up deciding the unimportant features. Nobody told the model what <code>c</code> should mean; the training objective made it mean something.</p>
+        <p>The discriminator gets a second job: <strong>reconstruct the random vector $c$ from the generated image</strong>, and both the generator and discriminator minimize this reconstruction loss. This is the clever part: because $c$ needs to be reconstructed, the generator is <strong>forced to encode important information into the image</strong> so that $c$ can be recovered from it — things like class, style, posture. Meanwhile $z$ ends up deciding the unimportant features. Nobody told the model what $c$ should mean; the training objective made it mean something.</p>
 
         <h2>Style GAN: Restructure the Generator Itself</h2>
         <p>StyleGAN goes further and redesigns the generator around controllability. Three ingredients:</p>
@@ -227,18 +233,18 @@ input            ^                  ^                  ^
         z ~ N(0,I) --> dense layers (e.g. 7) --> w (1x1x512, "intermediate variable")</code></pre>
 
         <ul>
-            <li><strong>Style</strong>: the latent <code>z ~ N(0, I)</code> is first mapped through a stack of dense layers (e.g. 7) into an <strong>intermediate variable <code>w</code></strong>. At every resolution level, a linear transform <code>wM + b</code> turns <code>w</code> into per-channel scale and offset values that modulate the feature maps.</li>
+            <li><strong>Style</strong>: the latent $z \sim \mathcal{N}(0, I)$ is first mapped through a stack of dense layers (e.g. 7) into an <strong>intermediate variable $w$</strong>. At every resolution level, a linear transform $wM + b$ turns $w$ into per-channel scale and offset values that modulate the feature maps.</li>
             <li><strong>Noise</strong>: at each level, spatial noise (e.g. <code>4x4x1</code>) is added per channel, multiplied by a <strong>learnable scaling factor</strong> (<code>1x1x512</code>).</li>
-            <li><strong>Constant input</strong>: the pipeline doesn't even start from <code>z</code> — it starts from a <strong>trainable constant</strong> tensor. All the variation comes in through <code>w</code> and the noise.</li>
+            <li><strong>Constant input</strong>: the pipeline doesn't even start from $z$ — it starts from a <strong>trainable constant</strong> tensor. All the variation comes in through $w$ and the noise.</li>
         </ul>
 
         <h3>Why Is the Noise Scaling 4x4x1 Times a Learnable 1x1x512, Not Just 4x4x512?</h3>
         <p>The insight: each channel may control one detail of the image — darkness, pores, hairs, etc. All spatial positions within a channel need a <strong>consistent signal</strong> to work together and make a realistic combination — which is why the noise itself is <code>4x4x1</code>, shared across channels spatially. But different features may need <strong>different levels of noise</strong> (hair needs more randomness than overall darkness, say), so each channel gets its own learnable scaling factor.</p>
 
-        <h3>Why Map z to w First?</h3>
-        <p><code>z</code> is Gaussian noise, and as we argued at the start, it is hard for the model to use one dimension of a Gaussian to control one feature — everything is entangled. The mapping network lets the model learn a <strong>new distribution for <code>w</code> that fits well with real world images</strong>, and in doing so it can <strong>untangle</strong> the features.</p>
+        <h3>Why Map $z$ to $w$ First?</h3>
+        <p>$z$ is Gaussian noise, and as we argued at the start, it is hard for the model to use one dimension of a Gaussian to control one feature — everything is entangled. The mapping network lets the model learn a <strong>new distribution for $w$ that fits well with real world images</strong>, and in doing so it can <strong>untangle</strong> the features.</p>
 
-        <p>After training, we can actually edit <code>w</code> to control the output. How do we find, say, the component of <code>w</code> that controls gender? Empirically:</p>
+        <p>After training, we can actually edit $w$ to control the output. How do we find, say, the component of $w$ that controls gender? Empirically:</p>
 
         <pre><code>z₁ ... zₙ --> generator --> images of male    --> w₁ ... wₙ
                         --> images of female  --> w*₁ ... w*ₙ
@@ -248,24 +254,24 @@ gender vector  w̃ = w̄ - w̄*     (difference of averages)
 w        --> generator --> an image of a female
 w + w̃   --> generator --> an image of a male     (operation in latent space)</code></pre>
 
-        <p>This simple <strong>vector arithmetic in latent space</strong> works: average the <code>w</code>'s of male images, subtract the average of female images, and the result is a direction you can add to any <code>w</code> to change gender.</p>
+        <p>This simple <strong>vector arithmetic in latent space</strong> works: average the $w$'s of male images, subtract the average of female images, and the result is a direction you can add to any $w$ to change gender.</p>
 
         <h3>Why Would Style GAN Work?</h3>
-        <p>There's an implicit assumption underneath all of this: <strong>if there are many ways for a neural network to solve a problem, it has a bias to pick the easy one</strong>. The architecture makes the disentangled solution the easy one — modulate global attributes through <code>w</code>, sprinkle randomness through per-layer noise — so that's what training converges to. It's an inductive-bias argument, not a proof, but it's the assumption StyleGAN's design rests on.</p>
+        <p>There's an implicit assumption underneath all of this: <strong>if there are many ways for a neural network to solve a problem, it has a bias to pick the easy one</strong>. The architecture makes the disentangled solution the easy one — modulate global attributes through $w$, sprinkle randomness through per-layer noise — so that's what training converges to. It's an inductive-bias argument, not a proof, but it's the assumption StyleGAN's design rests on.</p>
 
         <p>The division of labor that emerges:</p>
         <ul>
-            <li><strong>Intermediate variable <code>w</code> (global)</strong>: it controls every layer, so a change of any part of <code>w</code> affects the whole image — gender, pose, identity.</li>
+            <li><strong>Intermediate variable $w$ (global)</strong>: it controls every layer, so a change of any part of $w$ affects the whole image — gender, pose, identity.</li>
             <li><strong>Per-layer noise (local)</strong>: it controls details that make an image look more realistic but don't matter that much — e.g. the exact position of hairs. A change of random noise plays out at the pixel level.</li>
         </ul>
 
         <h2>Summary</h2>
         <ul>
-            <li>In a standard GAN, latent dimensions can't independently control single attributes — that would make physically implausible combinations (e.g. "female + beard") just as likely as plausible ones. Features have to be entangled, and <code>z</code> is smooth but not controllable.</li>
-            <li>Conditional GAN adds control directly: feed an attribute vector <code>c</code> alongside <code>z</code>, and have the discriminator judge the pair <code>(x, c)</code> instead of <code>x</code> alone.</li>
-            <li>Auxiliary Classifier GAN gives the discriminator a second head that classifies <code>x</code>, so the generator is pushed toward images that are recognizably the right class.</li>
-            <li>InfoGAN drops the need for labels: <code>c</code> is drawn randomly, and the discriminator must reconstruct it from the generated image, which forces the generator to encode meaningful structure (class, style, posture) into <code>c</code>.</li>
-            <li>StyleGAN restructures the generator itself: <code>z</code> is mapped to an intermediate variable <code>w</code> that modulates every layer (global attributes), while independent per-layer noise handles fine, local detail.</li>
+            <li>In a standard GAN, latent dimensions can't independently control single attributes — that would make physically implausible combinations (e.g. "female + beard") just as likely as plausible ones. Features have to be entangled, and $z$ is smooth but not controllable.</li>
+            <li>Conditional GAN adds control directly: feed an attribute vector $c$ alongside $z$, and have the discriminator judge the pair $(x, c)$ instead of $x$ alone.</li>
+            <li>Auxiliary Classifier GAN gives the discriminator a second head that classifies $x$, so the generator is pushed toward images that are recognizably the right class.</li>
+            <li>InfoGAN drops the need for labels: $c$ is drawn randomly, and the discriminator must reconstruct it from the generated image, which forces the generator to encode meaningful structure (class, style, posture) into $c$.</li>
+            <li>StyleGAN restructures the generator itself: $z$ is mapped to an intermediate variable $w$ that modulates every layer (global attributes), while independent per-layer noise handles fine, local detail.</li>
             <li>The assumption behind StyleGAN is that a network with many ways to solve a problem is biased toward the easy one — and the architecture is set up so the disentangled solution is the easy one.</li>
         </ul>
 

@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -162,38 +168,43 @@
 
         <p>Suppose the data is generated as:</p>
 
-        <pre><code>y = f(x) + ε</code></pre>
+        $$y = f(x) + \epsilon$$
 
-        <p>where f(x) is the <strong>generating function</strong> -- the true function we want to learn -- and ε is <strong>inherent noise</strong> with variance σ². For a fitted model f̂(x; D) trained on dataset D, the generalization error breaks into:</p>
+        <p>where $f(x)$ is the <strong>generating function</strong> -- the true function we want to learn -- and $\epsilon$ is <strong>inherent noise</strong> with variance $\sigma^2$. For a fitted model $\hat{f}(x; D)$ trained on dataset $D$, the generalization error breaks into:</p>
 
         <ul>
             <li><strong>Inherent noise:</strong> comes from the data itself. Even if we fit the generating function perfectly, this error cannot be reduced.</li>
-            <li><strong>Bias:</strong> the difference between the <strong>expected prediction</strong> E<sub>D</sub>[f̂(x; D)] and the underlying real value f(x).</li>
-            <li><strong>Variance:</strong> the variance of predictions given different training sets. Same x, different D, different answer.</li>
+            <li><strong>Bias:</strong> the difference between the <strong>expected prediction</strong> $\mathbb{E}_D[\hat{f}(x; D)]$ and the underlying real value $f(x)$.</li>
+            <li><strong>Variance:</strong> the variance of predictions given different training sets. Same $x$, different $D$, different answer.</li>
         </ul>
 
         <h2>Deriving the Decomposition</h2>
 
-        <p>The expected test error at a point x, averaging over both the training set D and the noise ε:</p>
+        <p>The expected test error at a point $x$, averaging over both the training set $D$ and the noise $\epsilon$:</p>
 
-        <pre><code>E_{D,ε}[(f̂(x;D) - y)²]
-  = E_{D,ε}[(f̂(x;D) - f(x) - ε)²]
-  = E_{D,ε}[(f̂(x;D) - f(x))² + ε² + 2ε(f̂(x;D) - f(x))]
-  = E_D[(f̂(x;D) - f(x))²] + E[ε²] + 0       ← cross term drops: E[ε] = 0</code></pre>
+        $$\begin{aligned}
+&\mathbb{E}_{D,\epsilon}\left[(\hat{f}(x;D) - y)^2\right] \\
+&= \mathbb{E}_{D,\epsilon}\left[(\hat{f}(x;D) - f(x) - \epsilon)^2\right] \\
+&= \mathbb{E}_{D,\epsilon}\left[(\hat{f}(x;D) - f(x))^2 + \epsilon^2 + 2\epsilon(\hat{f}(x;D) - f(x))\right] \\
+&= \mathbb{E}_D\left[(\hat{f}(x;D) - f(x))^2\right] + \mathbb{E}[\epsilon^2] + 0 \qquad \leftarrow \text{cross term drops: } \mathbb{E}[\epsilon] = 0
+\end{aligned}$$
 
-        <p>Now add and subtract the expected prediction E<sub>D</sub>[f̂(x;D)] inside the square:</p>
+        <p>Now add and subtract the expected prediction $\mathbb{E}_D[\hat{f}(x;D)]$ inside the square:</p>
 
-        <pre><code>E_D[(f̂(x;D) - E_D[f̂(x;D)] + E_D[f̂(x;D)] - f(x))²] + σ²
+        $$\begin{aligned}
+&\mathbb{E}_D\left[\left(\hat{f}(x;D) - \mathbb{E}_D[\hat{f}(x;D)] + \mathbb{E}_D[\hat{f}(x;D)] - f(x)\right)^2\right] + \sigma^2 \\[6pt]
+&= \mathbb{E}_D\left[\left(\hat{f}(x;D) - \mathbb{E}_D[\hat{f}(x;D)]\right)^2\right] && \leftarrow \text{variance} \\
+&\quad + \left(f(x) - \mathbb{E}_D[\hat{f}(x;D)]\right)^2 && \leftarrow \text{bias}^2 \\
+&\quad + \mathbb{E}_D\left[2\left(\hat{f}(x;D) - \mathbb{E}_D[\hat{f}(x;D)]\right)\left(\mathbb{E}_D[\hat{f}(x;D)] - f(x)\right)\right] && \leftarrow = 0 \\
+&\quad + \sigma^2 && \leftarrow \text{inherent noise}
+\end{aligned}$$
 
-  = E_D[(f̂(x;D) - E_D[f̂(x;D)])²]              ← variance
-  + (f(x) - E_D[f̂(x;D)])²                       ← bias²
-  + E_D[2(f̂(x;D) - E_D[f̂(x;D)])(E_D[f̂(x;D)] - f(x))]   ← = 0
-  + σ²                                            ← inherent noise</code></pre>
+        <p>The cross term vanishes for the same reason as before ($\mathbb{E}_D[\hat{f} - \mathbb{E}_D\hat{f}] = 0$), leaving:</p>
 
-        <p>The cross term vanishes for the same reason as before (E<sub>D</sub>[f̂ - E<sub>D</sub>f̂] = 0), leaving:</p>
-
-        <pre><code>Expected test error = Var_D(f̂(x;D)) + (f(x) - E_D[f̂(x;D)])² + σ²
-                    =    variance    +        bias²          + noise</code></pre>
+        $$\begin{aligned}
+\text{Expected test error} &= \mathrm{Var}_D(\hat{f}(x;D)) + \left(f(x) - \mathbb{E}_D[\hat{f}(x;D)]\right)^2 + \sigma^2 \\
+&= \text{variance} + \text{bias}^2 + \text{noise}
+\end{aligned}$$
 
         <p>Two cross terms, both zero, and the decomposition falls out. Nothing beyond "add and subtract the mean," used twice.</p>
 
@@ -201,7 +212,7 @@
 
         <p>Given enough data -- as many samples as we want -- is it possible to decompose a model's actual prediction error into variance, bias, and inherent noise? <strong>Variance is easy</strong>: sample the training data randomly, refit the model, and estimate the variance of its predictions directly. The hard part is separating bias from inherent noise, since they're glued together in what's left.</p>
 
-        <p>The trick is to consider a model with <strong>zero bias</strong> by construction -- one that simply predicts y, the data itself. Its error contains only variance and inherent noise. Since we can already estimate its variance by resampling, the inherent noise falls out by subtraction. From there, subtracting the inherent noise (and variance) from any other model's error leaves its bias.</p>
+        <p>The trick is to consider a model with <strong>zero bias</strong> by construction -- one that simply predicts $y$, the data itself. Its error contains only variance and inherent noise. Since we can already estimate its variance by resampling, the inherent noise falls out by subtraction. From there, subtracting the inherent noise (and variance) from any other model's error leaves its bias.</p>
 
         <h2>The Classical Picture: A Bias-Variance Trade-off Curve</h2>
 
@@ -269,7 +280,7 @@ loss
         <h2>Summary</h2>
 
         <ul>
-            <li>Generalization error decomposes as <strong>variance + bias² + inherent noise</strong>, derived by adding and subtracting the mean twice.</li>
+            <li>Generalization error decomposes as <strong>variance + $\text{bias}^2$ + inherent noise</strong>, derived by adding and subtracting the mean twice.</li>
             <li>Inherent noise is the floor; the classical game is trading bias against variance and finding the sweet point on the trade-off curve.</li>
             <li>The classical curve is <strong>incomplete</strong>: push model complexity past the point where parameters outnumber training data, and test error can descend a second time -- this is double descent.</li>
             <li>Mechanism: an interpolating model (zero training error) can only vary between training points, and implicit/explicit regularization pushes it toward a smooth interpolation there -- lower variance despite far more capacity.</li>

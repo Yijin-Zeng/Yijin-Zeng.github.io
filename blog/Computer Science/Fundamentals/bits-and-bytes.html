@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -197,7 +203,7 @@
 
         <ul>
             <li><strong>Sign (1 bit)</strong>: 0 = positive, 1 = negative</li>
-            <li><strong>Range (8 bits)</strong>: Determines the largest (and smallest) numbers the float can represent, it should be 2^(2^8 - 1) = 2^(255) as we will see later.</li>
+            <li><strong>Range (8 bits)</strong>: Determines the largest (and smallest) numbers the float can represent, it should be $2^{(2^8 - 1)} = 2^{255}$ as we will see later.</li>
             <li><strong>Precision (23 bits)</strong>: Determines how accurate or fine-grained the representation is</li>
         </ul>
 
@@ -247,7 +253,7 @@
         <p>It is somehow confusing that in the above example, the range part saves 10 + 127, rather than saving 10 directly.
            This is another clever trick for saving one bit.</p>
 
-        <p>Consider a very small number like <code>0.000010023</code>. In normalized binary scientific notation, the range could be negative (e.g., 2^(-5) or smaller). Without a bias, we would need a separate sign bit for the range.</p>
+        <p>Consider a very small number like <code>0.000010023</code>. In normalized binary scientific notation, the range could be negative (e.g., $2^{-5}$ or smaller). Without a bias, we would need a separate sign bit for the range.</p>
 
         <p>Instead, we add 127 to the actual exponent before storing it：</p>
         <ul>
@@ -260,7 +266,7 @@
 
         <h2>Summary</h2>
         <ul>
-            <li>Floating-point numbers are stored as: <code>(-1)^sign x 1.pricision x 2^(range - 127)</code></li>
+            <li>Floating-point numbers are stored as: $(-1)^{\text{sign}} \times 1.\text{pricision} \times 2^{\text{range} - 127}$</li>
             <li>More range bits = larger range; more precision bits = finer precision, always a trade-off (like everything else)</li>
             <li>The range bias term (127) allows negative range without a sign bit (127 for float32, 15 for float16)</li>
             <li>Most decimal fractions cannot be represented exactly in binary, hence rounding errors</li>

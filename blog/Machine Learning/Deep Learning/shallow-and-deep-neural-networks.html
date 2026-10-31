@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -163,17 +169,19 @@
         <p>A shallow neural network has exactly one hidden layer between the input and output. The architecture is simple:</p>
 
         <ul>
-            <li>Input layer: your data <em>x</em></li>
-            <li>Hidden layer: <em>h</em> neurons that compute intermediate representations</li>
+            <li>Input layer: your data $x$</li>
+            <li>Hidden layer: $h$ neurons that compute intermediate representations</li>
             <li>Output layer: produces the final prediction</li>
         </ul>
 
-        <p><strong>Mathematical formulation:</strong> For a shallow network with <em>h</em> hidden units, the computation looks like:</p>
+        <p><strong>Mathematical formulation:</strong> For a shallow network with $h$ hidden units, the computation looks like:</p>
 
-        <pre><code>h_i = θ_i0 + θ_i1 · x    for i = 1, ..., h
-y = β_0 + β_1 · a(h_1)</code></pre>
+        $$\begin{aligned}
+h_i &= \theta_{i0} + \theta_{i1} \cdot x \qquad \text{for } i = 1, \ldots, h \\
+y &= \beta_0 + \beta_1 \cdot a(h_1)
+\end{aligned}$$
 
-        <p>where <em>a</em>(·) is the activation function (ReLU, sigmoid, etc.). The hidden layer computes linear combinations of the input, then the activation function decides if and how much each neuron should "fire."</p>
+        <p>where $a(\cdot)$ is the activation function (ReLU, sigmoid, etc.). The hidden layer computes linear combinations of the input, then the activation function decides if and how much each neuron should "fire."</p>
 
         <h2>The Universal Approximation Theorem</h2>
 
@@ -192,22 +200,24 @@ y = β_0 + β_1 · a(h_1)</code></pre>
         <h3>Shallow Networks</h3>
         <p>For a shallow network:</p>
         <ul>
-            <li>When input is <strong>1D</strong>, there are at most <strong>D + 1 linear regions</strong> (or at most one fold)</li>
-            <li>When input is in <strong>ℝ<sup>k</sup></strong> and there are <strong>D hidden units</strong>, there are at most <strong>2<sup>D</sup> linear regions</strong></li>
+            <li>When input is <strong>1D</strong>, there are at most <strong>$D + 1$ linear regions</strong> (or at most one fold)</li>
+            <li>When input is in <strong>$\mathbb{R}^k$</strong> and there are <strong>$D$ hidden units</strong>, there are at most <strong>$2^D$ linear regions</strong></li>
         </ul>
 
-        <p>So if you have 10 hidden neurons, you can create at most 2<sup>10</sup> = 1,024 different linear regions. That sounds like a lot!</p>
+        <p>So if you have 10 hidden neurons, you can create at most $2^{10} = 1{,}024$ different linear regions. That sounds like a lot!</p>
 
         <h3>Deep Networks</h3>
-        <p>Deep networks have multiple hidden layers, typically denoted <em>A</em>₁, <em>A</em>₂, ..., <em>A<sub>n</sub></em>. The computation flows through each layer:</p>
+        <p>Deep networks have multiple hidden layers, typically denoted $A_1$, $A_2$, ..., $A_n$. The computation flows through each layer:</p>
 
-        <pre><code>A_1 = a(θ_1^(1) + θ_11^(1) x)
-A_2 = a(θ_2^(2) + θ_21^(2) A_1 + ... + θ_2h^(2) A_1)
-...
-y = a(θ_y^(n+1) + θ_y1^(n+1) A_n)</code></pre>
+        $$\begin{aligned}
+A_1 &= a\left(\theta_1^{(1)} + \theta_{11}^{(1)} x\right) \\
+A_2 &= a\left(\theta_2^{(2)} + \theta_{21}^{(2)} A_1 + \ldots + \theta_{2h}^{(2)} A_1\right) \\
+&\;\;\vdots \\
+y &= a\left(\theta_y^{(n+1)} + \theta_{y1}^{(n+1)} A_n\right)
+\end{aligned}$$
 
         <p>Equivalently, we can write this as nested compositions:</p>
-        <pre><code>y = a_m(β_m^T Ω_m a_2(β_2^T Ω_2 a(β_1^T Ω_1 x)) ...)</code></pre>
+        $$y = a_m\left(\beta_m^T \Omega_m\, a_2\left(\beta_2^T \Omega_2\, a\left(\beta_1^T \Omega_1 x\right)\right) \ldots\right)$$
 
         <p>Like shallow networks, <strong>deep networks can also approximate any continuous function</strong>. But here's the key insight:</p>
 

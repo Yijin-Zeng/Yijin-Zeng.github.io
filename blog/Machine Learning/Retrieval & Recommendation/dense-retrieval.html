@@ -139,7 +139,14 @@
         .post-content strong {
             color: var(--text);
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -165,7 +172,7 @@
         <pre><code>Query      --> encoder --> embedding
 Document   --> encoder --> embedding</code></pre>
 
-        <p>Normally the same encoder (the same model, tied weights) is used for both the query and the documents. During retrieval, we can use Approximate Nearest Neighbors (ANN) methods such as HNSW to find the top-k documents efficiently.</p>
+        <p>Normally the same encoder (the same model, tied weights) is used for both the query and the documents. During retrieval, we can use Approximate Nearest Neighbors (ANN) methods such as HNSW to find the top-$k$ documents efficiently.</p>
 
         <h3>Example: Sentence-BERT</h3>
 
@@ -182,16 +189,16 @@ u, v --> cosine similarity</code></pre>
            tokens of A + special sep token + tokens of B + special sep token. Then we 
            let the model decide if A and B has the following relationships:
         <ol>
-            <li><strong>Entailment</strong> of A: A =&gt; B, if A is true, B is true.</li>
-            <li><strong>Contradiction</strong> of A: A ≠&gt; B, if A is true, B is false.</li>
-            <li><strong>Neutral</strong>: A -/-&gt; B or A -/-&gt; ¬B.</li>
+            <li><strong>Entailment</strong> of A: $A \Rightarrow B$, if A is true, B is true.</li>
+            <li><strong>Contradiction</strong> of A: $A \not\Rightarrow B$, if A is true, B is false.</li>
+            <li><strong>Neutral</strong>: $A \not\to B$ or $A \not\to \neg B$.</li>
         </ol>
         We can see that for the NLI task, the order of the two sentences is crucial, 
-        so Sentence-BERT builds a longer feature vector containing u, v, and |u-v|, and uses this to classify the relationships.</p>
+        so Sentence-BERT builds a longer feature vector containing $u$, $v$, and $|u-v|$, and uses this to classify the relationships.</p>
 
-        <p>Why is |u-v| in there? If A and B are very similar, BERT produces similar u and v, so the model learns that when 
-           |u-v| is small, the pair is likely entailment. In other words, BERT and the final classification network learn 
-           to exploit the fact that a small |u-v| signals entailment, and so they learn to push u ≈ v when entailment is true. 
+        <p>Why is $|u-v|$ in there? If A and B are very similar, BERT produces similar $u$ and $v$, so the model learns that when 
+           $|u-v|$ is small, the pair is likely entailment. In other words, BERT and the final classification network learn 
+           to exploit the fact that a small $|u-v|$ signals entailment, and so they learn to push $u \approx v$ when entailment is true. 
         </p>
 
         <p><strong>Pros of bi-encoder:</strong> fast and efficient: all documents are embedded and stored as vectors ahead of time, ready for retrieval.<br>
@@ -205,15 +212,15 @@ u, v --> cosine similarity</code></pre>
 
         <pre><code>&lt;CLS&gt; + Query + &lt;SEP&gt; + Document + &lt;/SEP&gt;
 --> fine-tuned BERT
---> relevance score, using the contextual embedding of &lt;CLS&gt;
+--> relevance score, using the contextual embedding of &lt;CLS&gt;</code></pre>
 
-Score = w<sup>T</sup> · &lt;CLS&gt;</code></pre>
+        $$\text{Score} = w^T \cdot \langle\text{CLS}\rangle$$
 
         <p>How is BERT fine-tuned for a cross-encoder? There are normally two common ways:</p>
 
         <ol>
             <li>(Pointwise loss) BERT + a sigmoid adapter at the end, trained as a classification task (1 if the query matches the document, 0 if not).</li>
-            <li>(Pairwise loss) BERT + a sigmoid adapter at the end, trained with a pairwise loss: <code>-log(sigmoid(sig(q,d+) - sig(q,d-)))</code>, where d+ is the matched document and d- is the unmatched document.</li>
+            <li>(Pairwise loss) BERT + a sigmoid adapter at the end, trained with a pairwise loss: $-\log\left(\mathrm{sigmoid}\left(\mathrm{sig}(q,d^+) - \mathrm{sig}(q,d^-)\right)\right)$, where $d^+$ is the matched document and $d^-$ is the unmatched document.</li>
         </ol>
 
         <p>Why is a cross-encoder much more powerful than a bi-encoder? 
@@ -230,9 +237,9 @@ Score = w<sup>T</sup> · &lt;CLS&gt;</code></pre>
 
         <p>ColBERT stands for contextualized late interaction over BERT. In a bi-encoder, we use one single embedding vector for the whole query and the whole document. In ColBERT, the embedding for each token is kept instead.</p>
 
-        <p>So a document i with 500 words becomes an embedding matrix E<sub>i</sub> ∈ R <sup>500×d</sup> (e.g. d = 1024). A query j with 10 words becomes E<sub>qj</sub> ∈ R<sup>10×d</sup>. The relevance score is:</p>
+        <p>So a document $i$ with 500 words becomes an embedding matrix $E_i \in \mathbb{R}^{500 \times d}$ (e.g. $d = 1024$). A query $j$ with 10 words becomes $E_{qj} \in \mathbb{R}^{10 \times d}$. The relevance score is:</p>
 
-        <pre><code>S(q_j, d_i) = Σ_{tokens in query} max_{tokens in document} ( E_qj · E_di<sup>T</sup>, dim=-1 )</code></pre>
+        $$S(q_j, d_i) = \sum_{\text{tokens in query}} \max_{\text{tokens in document}} \left( E_{qj} \cdot E_{di}^T, \; \text{dim}=-1 \right)$$
 
         <p>In other words, the similarity between the query and a document is computed as follows: 
         for each token in the query, compute its similarity against every token in the document and take the maximum (the most similar document token); then sum these maximum similarities across all tokens in the query.</p>
@@ -247,7 +254,7 @@ Score = w<sup>T</sup> · &lt;CLS&gt;</code></pre>
         <ul>
             <li>Dense retrieval uses dense vectors for semantic retrieval, with three main approaches trading off speed against quality.</li>
             <li><strong>Bi-encoders</strong> embed the query and documents independently, enabling fast ANN search (e.g. HNSW), but embeddings can only be "average" over related queries, so quality is lower.</li>
-            <li><strong>Sentence-BERT</strong> fine-tunes bi-encoders using NLI, building a feature vector of u, v, and |u-v| so the model can learn that small |u-v| signals entailment.</li>
+            <li><strong>Sentence-BERT</strong> fine-tunes bi-encoders using NLI, building a feature vector of $u$, $v$, and $|u-v|$ so the model can learn that small $|u-v|$ signals entailment.</li>
             <li><strong>Cross-encoders</strong> jointly encode the query and document together, learning relevance specific to that pair, which makes them much more powerful — but very slow, since every document must be re-encoded with the query at retrieval time.</li>
             <li><strong>Late-interaction models (ColBERT)</strong> keep per-token embeddings and score with a sum-of-max operation, landing in the middle: better quality than bi-encoders via token-level detail, but with much larger storage cost.</li>
         </ul>

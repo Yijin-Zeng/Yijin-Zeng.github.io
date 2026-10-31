@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -161,48 +167,51 @@
         <p>Wasserstein distance is a <strong>metric</strong> for measuring distances between two probability measures (i.e. probability distributions). Being a metric is not just a formality &mdash; it means it behaves like a genuine "distance", satisfying:</p>
 
         <ol>
-            <li><strong>Non-negativity:</strong> <code>W(&mu;, &nu;) >= 0</code>, where equality holds if and only if <code>&mu;</code> and <code>&nu;</code> are equivalent (i.e. they mutually decide each other)</li>
-            <li><strong>Symmetry:</strong> <code>W(&mu;, &nu;) = W(&nu;, &mu;)</code></li>
-            <li><strong>Triangle inequality:</strong> <code>W(&mu;, &nu;) + W(&nu;, &omega;) >= W(&mu;, &omega;)</code></li>
+            <li><strong>Non-negativity:</strong> $W(\mu, \nu) \ge 0$, where equality holds if and only if $\mu$ and $\nu$ are equivalent (i.e. they mutually decide each other)</li>
+            <li><strong>Symmetry:</strong> $W(\mu, \nu) = W(\nu, \mu)$</li>
+            <li><strong>Triangle inequality:</strong> $W(\mu, \nu) + W(\nu, \omega) \ge W(\mu, \omega)$</li>
         </ol>
 
         <p>Notice that KL divergence fails on symmetry and the triangle inequality &mdash; it is a divergence, not a distance. Wasserstein passes all three.</p>
 
         <h2>Defining It: Start Discrete</h2>
 
-        <p>It is easier to start with discrete distributions. Suppose we have two discrete measures <code>&mu;</code> and <code>&nu;</code> with finite supports <code>X = {x_1, ..., x_n}</code> and <code>Y = {y_1, ..., y_m}</code>, respectively. Let <code>C_ij = c(x_i, y_j)</code> be a cost between <code>x_i</code> and <code>y_j</code>, e.g. L2 loss. Then the Wasserstein distance between <code>&mu;</code> and <code>&nu;</code> can be defined as:</p>
+        <p>It is easier to start with discrete distributions. Suppose we have two discrete measures $\mu$ and $\nu$ with finite supports $X = \{x_1, \dots, x_n\}$ and $Y = \{y_1, \dots, y_m\}$, respectively. Let $C_{ij} = c(x_i, y_j)$ be a cost between $x_i$ and $y_j$, e.g. L2 loss. Then the Wasserstein distance between $\mu$ and $\nu$ can be defined as:</p>
 
-        <pre><code>W(&mu;, &nu;) = min_P  sum_i sum_j  P_ij C_ij
+        $$\begin{aligned}
+        & W(\mu, \nu) = \min_P \sum_i \sum_j P_{ij} C_{ij} \\[4pt]
+        & \text{s.t. } \sum_j P_{ij} = \mu(x_i) \quad \text{for any } i = 1, \dots, n \\
+        & \phantom{\text{s.t. }} \sum_i P_{ij} = \nu(y_j) \quad \text{for any } j = 1, \dots, m
+        \end{aligned}$$
 
-s.t.  sum_j P_ij = &mu;(x_i)   for any i = 1, ..., n
-      sum_i P_ij = &nu;(y_j)   for any j = 1, ..., m</code></pre>
-
-        <p>First, what does this mean? The matrix <code>P</code> is called a <strong>transport plan</strong>. Each row of <code>P</code> corresponds to a point <code>x_i</code>, and that row distributes the probability mass of <code>x_i</code> across the columns (the <code>y_j</code>'s). The two constraints say exactly this: row <code>i</code> must sum to <code>&mu;(x_i)</code> (we move all the mass of <code>x_i</code>, no more, no less), and after distributing, column <code>j</code> must sum to <code>&nu;(y_j)</code> (each target point receives exactly the probability it requires). So <code>W(&mu;, &nu;)</code> is the <strong>lowest cost to move &mu; onto &nu; while keeping all the probability accounted for</strong> &mdash; the shovel picture, made precise.</p>
+        <p>First, what does this mean? The matrix $P$ is called a <strong>transport plan</strong>. Each row of $P$ corresponds to a point $x_i$, and that row distributes the probability mass of $x_i$ across the columns (the $y_j$'s). The two constraints say exactly this: row $i$ must sum to $\mu(x_i)$ (we move all the mass of $x_i$, no more, no less), and after distributing, column $j$ must sum to $\nu(y_j)$ (each target point receives exactly the probability it requires). So $W(\mu, \nu)$ is the <strong>lowest cost to move $\mu$ onto $\nu$ while keeping all the probability accounted for</strong> &mdash; the shovel picture, made precise.</p>
 
         <h3>A Concrete Example</h3>
 
-        <p>Here is the example from my note. Let <code>&mu;</code> put probabilities <code>(0.3, 0.5, 0.2)</code> on points <code>x_i = 1, 2, 3</code>, and <code>&nu;</code> put probabilities <code>(0.6, 0.1, 0.3)</code> on <code>y_j = 1, 2, 3</code>. The optimal plan turns out to be:</p>
+        <p>Here is the example from my note. Let $\mu$ put probabilities $(0.3, 0.5, 0.2)$ on points $x_i = 1, 2, 3$, and $\nu$ put probabilities $(0.6, 0.1, 0.3)$ on $y_j = 1, 2, 3$. The optimal plan turns out to be:</p>
 
         <pre><code>          y=1   y=2   y=3
 x=1     [ 0.3    0     0  ]   x=1 keeps all its prob for itself
 x=2     [ 0.3   0.1   0.1 ]   x=2 gives 0.3 to y=1, keeps 0.1, gives 0.1 to y=3
 x=3     [  0     0    0.2 ]   x=3 keeps all its prob</code></pre>
 
-        <p>Each row sums to <code>&mu;</code>'s probabilities <code>(0.3, 0.5, 0.2)</code>, each column sums to <code>&nu;</code>'s probabilities <code>(0.6, 0.1, 0.3)</code> &mdash; the plan converts <code>&mu;</code> to <code>&nu;</code>. If the cost is <code>c(x_i, y_j) = (x_i - y_j)&sup2;</code>, then the Wasserstein distance here is:</p>
+        <p>Each row sums to $\mu$'s probabilities $(0.3, 0.5, 0.2)$, each column sums to $\nu$'s probabilities $(0.6, 0.1, 0.3)$ &mdash; the plan converts $\mu$ to $\nu$. If the cost is $c(x_i, y_j) = (x_i - y_j)^2$, then the Wasserstein distance here is:</p>
 
-        <pre><code>W(&mu;, &nu;) = 0.3&middot;0 + 0.3&middot;1 + 0.1&middot;0 + 0.1&middot;1 + 0.2&middot;0 = 0.4</code></pre>
+        $$W(\mu, \nu) = 0.3 \cdot 0 + 0.3 \cdot 1 + 0.1 \cdot 0 + 0.1 \cdot 1 + 0.2 \cdot 0 = 0.4$$
 
-        <p>Notice how the diagonal entries (mass that stays put) contribute nothing, and only the mass that actually travels &mdash; the 0.3 and 0.1 moving one step away from <code>x=2</code> &mdash; costs anything. Exactly the earth-moving intuition.</p>
+        <p>Notice how the diagonal entries (mass that stays put) contribute nothing, and only the mass that actually travels &mdash; the 0.3 and 0.1 moving one step away from $x=2$ &mdash; costs anything. Exactly the earth-moving intuition.</p>
 
         <h2>How to Actually Solve It: Linear Programming</h2>
 
         <p>The definition is a minimization, but over what exactly? It turns out we can formulate the problem for two discrete distributions as a <strong>linear programming problem</strong>:</p>
 
-        <pre><code>min_x  c&#7488;x
-s.t.   Ax = b
-       x >= 0</code></pre>
+        $$\begin{aligned}
+        & \min_{x} \; c^\top x \\
+        & \text{s.t. } Ax = b \\
+        & \phantom{\text{s.t. }} x \ge 0
+        \end{aligned}$$
 
-        <p>Here <code>c</code> is the cost matrix <code>C</code> flattened row by row (first row of C, then second, ..., then last), <code>x</code> is the transport plan <code>P</code> flattened column by column, and <code>b = (&nu;(y_1), ..., &nu;(y_m), &mu;(x_1), ..., &mu;(x_n))&#7488;</code> stacks the two marginal constraints. The constraint matrix <code>A</code> stacks two blocks: <code>A_1</code>, a block-diagonal arrangement of all-ones row vectors <code>1_{1&times;n}</code> (m blocks, picking out the column sums), and <code>A_2 = (I_{n&times;n}  I_{n&times;n}  ...  I_{n&times;n})</code>, n&times;m identity matrices side by side (picking out the row sums). Writing out the bookkeeping is a bit tedious, but it is purely mechanical.</p>
+        <p>Here $c$ is the cost matrix $C$ flattened row by row (first row of $C$, then second, ..., then last), $x$ is the transport plan $P$ flattened column by column, and $b = (\nu(y_1), \dots, \nu(y_m), \mu(x_1), \dots, \mu(x_n))^\top$ stacks the two marginal constraints. The constraint matrix $A$ stacks two blocks: $A_1$, a block-diagonal arrangement of all-ones row vectors $\mathbf{1}_{1 \times n}$ ($m$ blocks, picking out the column sums), and $A_2 = (I_{n \times n} \;\; I_{n \times n} \;\; \dots \;\; I_{n \times n})$, $n \times m$ identity matrices side by side (picking out the row sums). Writing out the bookkeeping is a bit tedious, but it is purely mechanical.</p>
 
         <p>Why is writing it as a linear programming problem useful? Three reasons:</p>
 
@@ -214,22 +223,23 @@ s.t.   Ax = b
 
         <h2>From Discrete to Continuous</h2>
 
-        <p>The continuous version is the same idea, with sums replaced by integrals. Instead of a transport matrix <code>P</code>, we minimize over a joint measure <code>&pi;(x, y)</code>:</p>
+        <p>The continuous version is the same idea, with sums replaced by integrals. Instead of a transport matrix $P$, we minimize over a joint measure $\pi(x, y)$:</p>
 
-        <pre><code>W(&mu;, &nu;) = min_&pi;  &int;_{X&times;Y} c(x, y) d&pi;(x, y)
+        $$\begin{aligned}
+        & W(\mu, \nu) = \min_\pi \int_{X \times Y} c(x, y)\, d\pi(x, y) \\[4pt]
+        & \text{s.t. } \int_X \pi(x, y)\, dx = \nu(y) \\
+        & \phantom{\text{s.t. }} \int_Y \pi(x, y)\, dy = \mu(x)
+        \end{aligned}$$
 
-s.t.  &int;_X &pi;(x, y) dx = &nu;(y)
-      &int;_Y &pi;(x, y) dy = &mu;(x)</code></pre>
-
-        <p>The two constraints say that <code>&pi;(x, y)</code> is a <strong>coupling</strong> of <code>&mu;(x)</code> and <code>&nu;(y)</code>, i.e. a joint distribution whose marginals are exactly <code>&mu;</code> and <code>&nu;</code>. This is the <strong>Kantorovich formulation</strong> of optimal transport: among all joint distributions that "connect" the two marginals, find the one with the cheapest expected transport cost.</p>
+        <p>The two constraints say that $\pi(x, y)$ is a <strong>coupling</strong> of $\mu(x)$ and $\nu(y)$, i.e. a joint distribution whose marginals are exactly $\mu$ and $\nu$. This is the <strong>Kantorovich formulation</strong> of optimal transport: among all joint distributions that "connect" the two marginals, find the one with the cheapest expected transport cost.</p>
 
         <h2>Why Not Just Use KL Divergence?</h2>
 
-        <p>Here is the comparison that made this concept click for me. Picture three bell-shaped distributions on a line: <code>d_1</code> on the right, <code>d_2</code> overlapping <code>d_1</code> but shifted slightly left, and <code>d_3</code> far away on the left, with support disjoint from both. Now shift <code>d_1</code> towards <code>d_2</code> and ask each measure how the distance to <code>d_3</code> changed:</p>
+        <p>Here is the comparison that made this concept click for me. Picture three bell-shaped distributions on a line: $d_1$ on the right, $d_2$ overlapping $d_1$ but shifted slightly left, and $d_3$ far away on the left, with support disjoint from both. Now shift $d_1$ towards $d_2$ and ask each measure how the distance to $d_3$ changed:</p>
 
         <ul>
-            <li><code>KL(d_1, d_3) &asymp; KL(d_2, d_3)</code> &mdash; KL <strong>fails to capture the shift</strong> from <code>d_1</code> to <code>d_2</code>. Since the supports barely overlap with <code>d_3</code>, KL is essentially saturated (near infinite) either way, and moving closer does not register at all.</li>
-            <li><code>W(d_1, d_3) > W(d_2, d_3)</code> &mdash; Wasserstein <strong>can capture the shift even if the supports are disjoint</strong>, because moving the pile of earth closer genuinely reduces the transport cost.</li>
+            <li>$\mathrm{KL}(d_1, d_3) \approx \mathrm{KL}(d_2, d_3)$ &mdash; KL <strong>fails to capture the shift</strong> from $d_1$ to $d_2$. Since the supports barely overlap with $d_3$, KL is essentially saturated (near infinite) either way, and moving closer does not register at all.</li>
+            <li>$W(d_1, d_3) > W(d_2, d_3)$ &mdash; Wasserstein <strong>can capture the shift even if the supports are disjoint</strong>, because moving the pile of earth closer genuinely reduces the transport cost.</li>
         </ul>
 
         <p>This matters in practice. If you are training a generative model and the model's distribution starts far from the data distribution (disjoint supports are common early in training, especially in high dimensions), a KL-based loss gives you a flat, uninformative gradient. A Wasserstein-based loss still tells you "you are getting closer, keep going" &mdash; which is precisely the motivation behind Wasserstein GAN.</p>

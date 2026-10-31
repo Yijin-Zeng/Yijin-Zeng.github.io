@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -267,14 +273,14 @@ def dijkstra(graph, start, end):
 
         <h2>Time Complexity</h2>
 
-        <p>The time complexity is <code>O(E log V)</code>, where E is the number of edges and V is the number of vertices.</p>
+        <p>The time complexity is $O(E \log V)$, where $E$ is the number of edges and $V$ is the number of vertices.</p>
 
         <h3>Why?</h3>
         <ul>
             <li>Each node will be "visited" (processed) exactly once. Although a node may be pushed onto the heap multiple times, all pops after the first are skipped via the <code>continue</code> check.</li>
-            <li>For each visited node, we loop through all its neighbors. Across all nodes, the total number of neighbor iterations equals the number of edges E.</li>
-            <li>Each neighbor iteration may trigger a <code>heappush</code> operation, which costs <code>O(log V)</code> since the heap can hold at most V entries (in practice up to E, but <code>log E = O(log V)</code> for connected graphs).</li>
-            <li>Therefore total work: <code>V * (average neighbors) * log V = E * log V = O(E log V)</code>.</li>
+            <li>For each visited node, we loop through all its neighbors. Across all nodes, the total number of neighbor iterations equals the number of edges $E$.</li>
+            <li>Each neighbor iteration may trigger a <code>heappush</code> operation, which costs $O(\log V)$ since the heap can hold at most $V$ entries (in practice up to $E$, but $\log E = O(\log V)$ for connected graphs).</li>
+            <li>Therefore total work: $V \cdot (\text{average neighbors}) \cdot \log V = E \log V = O(E \log V)$.</li>
         </ul>
 
         <h2>Reference Problem</h2>

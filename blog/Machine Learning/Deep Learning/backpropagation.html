@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -160,9 +166,9 @@
 
         <h2>Setup: Numerator Layout</h2>
 
-        <p>Before we dive in, let's establish a convention. We'll stick to <strong>numerator layout</strong> for derivatives, which means if <em>z = x<sup>T</sup>y</em>, then:</p>
+        <p>Before we dive in, let's establish a convention. We'll stick to <strong>numerator layout</strong> for derivatives, which means if <em>$z = x^T y$</em>, then:</p>
 
-        <pre><code>∂z/∂x = y<sup>T</sup>    and    ∂z/∂y = x<sup>T</sup></code></pre>
+        $$\frac{\partial z}{\partial x} = y^T \quad\text{and}\quad \frac{\partial z}{\partial y} = x^T$$
 
         <p>This convention is crucial because it keeps dimensions consistent and makes the chain rule cleaner. More importantly: <strong>always use columns ONLY in the denominator</strong> to preserve the chain rule. This will become clear as we derive the gradients.</p>
 
@@ -171,10 +177,10 @@
         <p>Let's build a simple two-layer network:</p>
 
         <ul>
-            <li><strong>Input:</strong> x ∈ ℝⁿ (a column vector)</li>
-            <li><strong>Intermediate layer:</strong> m = xΔ₁ + b₁, then z = ReLU(m)</li>
-            <li><strong>Output:</strong> ŷ = zΔ₂ + b₂</li>
-            <li><strong>Loss:</strong> L(y, ŷ) = (ŷ - y)²</li>
+            <li><strong>Input:</strong> $x \in \mathbb{R}^n$ (a column vector)</li>
+            <li><strong>Intermediate layer:</strong> $m = x\Delta_1 + b_1$, then $z = \mathrm{ReLU}(m)$</li>
+            <li><strong>Output:</strong> $\hat{y} = z\Delta_2 + b_2$</li>
+            <li><strong>Loss:</strong> $L(y, \hat{y}) = (\hat{y} - y)^2$</li>
         </ul>
 
         <p>Here's the architecture visually:</p>
@@ -187,168 +193,176 @@ xₙ ──┘</code></pre>
         <p>The dimensions work out like this:</p>
 
         <ul>
-            <li>x ∈ ℝⁿˣ¹</li>
-            <li>Δ₁ ∈ ℝⁿˣᵐ (transforms n-dimensional input to m-dimensional hidden layer)</li>
-            <li>m, z ∈ ℝᵐˣ¹</li>
-            <li>Δ₂ ∈ ℝᵐˣ¹ (transforms m-dimensional hidden to scalar output)</li>
-            <li>ŷ, y ∈ ℝ (scalar output)</li>
+            <li>$x \in \mathbb{R}^{n \times 1}$</li>
+            <li>$\Delta_1 \in \mathbb{R}^{n \times m}$ (transforms $n$-dimensional input to $m$-dimensional hidden layer)</li>
+            <li>$m, z \in \mathbb{R}^{m \times 1}$</li>
+            <li>$\Delta_2 \in \mathbb{R}^{m \times 1}$ (transforms $m$-dimensional hidden to scalar output)</li>
+            <li>$\hat{y}, y \in \mathbb{R}$ (scalar output)</li>
         </ul>
 
         <h2>Forward Pass</h2>
 
         <p>The forward pass computes the prediction step by step:</p>
 
-        <pre><code>m = xΔ₁ + b₁
-z = ReLU(m) = max(0, m)
-ŷ = zΔ₂ + b₂
-L = (ŷ - y)²</code></pre>
+        $$\begin{aligned}
+m &= x\Delta_1 + b_1 \\
+z &= \mathrm{ReLU}(m) = \max(0, m) \\
+\hat{y} &= z\Delta_2 + b_2 \\
+L &= (\hat{y} - y)^2
+\end{aligned}$$
 
         <p>Straightforward. Now comes the interesting part -- computing gradients.</p>
 
         <h2>Backward Pass: Deriving Gradients</h2>
 
-        <p>To train the network with gradient descent, we need ∂L/∂Δ₂, ∂L/∂b₂, ∂L/∂Δ₁, and ∂L/∂b₁. Let's derive each one using the chain rule.</p>
+        <p>To train the network with gradient descent, we need $\frac{\partial L}{\partial \Delta_2}$, $\frac{\partial L}{\partial b_2}$, $\frac{\partial L}{\partial \Delta_1}$, and $\frac{\partial L}{\partial b_1}$. Let's derive each one using the chain rule.</p>
 
-        <h3>Gradient w.r.t. Δ₂</h3>
+        <h3>Gradient w.r.t. $\Delta_2$</h3>
 
         <p>Start with the loss and apply the chain rule:</p>
 
-        <pre><code>∂L/∂Δ₂ = (∂L/∂ŷ) · (∂ŷ/∂Δ₂)
-       = 2(ŷ - y) · z<sup>T</sup></code></pre>
+        $$\begin{aligned}
+\frac{\partial L}{\partial \Delta_2} &= \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial \Delta_2} \\
+&= 2(\hat{y} - y) \cdot z^T
+\end{aligned}$$
 
-        <p>The second term comes from ŷ = zΔ₂ + b₂. When we take ∂ŷ/∂Δ₂, we get z<sup>T</sup> (remember: denominator layout means Δ₂ is a column in the denominator, so we transpose z).</p>
+        <p>The second term comes from $\hat{y} = z\Delta_2 + b_2$. When we take $\frac{\partial \hat{y}}{\partial \Delta_2}$, we get $z^T$ (remember: denominator layout means $\Delta_2$ is a column in the denominator, so we transpose $z$).</p>
 
-        <h3>Gradient w.r.t. b₂</h3>
+        <h3>Gradient w.r.t. $b_2$</h3>
 
         <p>Similarly:</p>
 
-        <pre><code>∂L/∂b₂ = (∂L/∂ŷ) · (∂ŷ/∂b₂)
-       = 2(ŷ - y) · 1
-       = 2(ŷ - y)</code></pre>
+        $$\begin{aligned}
+\frac{\partial L}{\partial b_2} &= \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial b_2} \\
+&= 2(\hat{y} - y) \cdot 1 \\
+&= 2(\hat{y} - y)
+\end{aligned}$$
 
-        <p>This one's easier since ∂ŷ/∂b₂ = 1.</p>
+        <p>This one's easier since $\frac{\partial \hat{y}}{\partial b_2} = 1$.</p>
 
-        <h3>Gradient w.r.t. Δ₁</h3>
+        <h3>Gradient w.r.t. $\Delta_1$</h3>
 
         <p>Now it gets more interesting. The chain rule needs to go through multiple layers:</p>
 
-        <pre><code>∂L/∂Δ₁ = (∂L/∂ŷ) · (∂ŷ/∂z) · (∂z/∂m) · (∂m/∂Δ₁)</code></pre>
+        $$\frac{\partial L}{\partial \Delta_1} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z} \cdot \frac{\partial z}{\partial m} \cdot \frac{\partial m}{\partial \Delta_1}$$
 
         <p>Let's break this down:</p>
 
         <ul>
-            <li>∂L/∂ŷ = 2(ŷ - y) (scalar)</li>
-            <li>∂ŷ/∂z = Δ₂<sup>T</sup> ∈ ℝ¹ˣᵐ (since ŷ = zΔ₂ + b₂)</li>
-            <li>∂z/∂m = diag(𝟙{Mⱼ > 0}) ∈ ℝᵐˣᵐ (ReLU derivative)</li>
-            <li>∂m/∂Δ₁: here's where dimensions matter!</li>
+            <li>$\frac{\partial L}{\partial \hat{y}} = 2(\hat{y} - y)$ (scalar)</li>
+            <li>$\frac{\partial \hat{y}}{\partial z} = \Delta_2^T \in \mathbb{R}^{1 \times m}$ (since $\hat{y} = z\Delta_2 + b_2$)</li>
+            <li>$\frac{\partial z}{\partial m} = \mathrm{diag}(\mathbf{1}\{M_j > 0\}) \in \mathbb{R}^{m \times m}$ (ReLU derivative)</li>
+            <li>$\frac{\partial m}{\partial \Delta_1}$: here's where dimensions matter!</li>
         </ul>
 
-        <p>Since m = xΔ₁ + b₁, we have Mⱼ = Σᵢ xᵢΔ₁(i,j). Taking the derivative:</p>
+        <p>Since $m = x\Delta_1 + b_1$, we have $M_j = \sum_i x_i \Delta_1(i,j)$. Taking the derivative:</p>
 
-        <pre><code>∂Mⱼ/∂Δ₁ = (0<sup>T</sup>, 0<sup>T</sup>, ..., x<sup>T</sup>, ..., 0<sup>T</sup>)  where x<sup>T</sup> is in column j</code></pre>
+        $$\frac{\partial M_j}{\partial \Delta_1} = (0^T, 0^T, \ldots, x^T, \ldots, 0^T) \qquad (\text{where } x^T \text{ is in column } j)$$
 
         <p>This gives us:</p>
 
-        <pre><code>∂m/∂Δ₁ =
-┌                ┐
-│ x<sup>T</sup>            │ ∈ ℝᵐˣⁿᵐ
-│    ⋱           │
-│       x<sup>T</sup>       │
-└                ┘</code></pre>
+        $$\frac{\partial m}{\partial \Delta_1} = \begin{pmatrix} x^T & & \\ & \ddots & \\ & & x^T \end{pmatrix} \in \mathbb{R}^{m \times nm}$$
 
         <p>Putting it all together (this is where the magic happens):</p>
 
-        <pre><code>∂L/∂Δ₁ = 2(ŷ - y) · Δ₂<sup>T</sup> · diag(𝟙{Mⱼ > 0}) · (block diagonal of x<sup>T</sup>)</code></pre>
+        $$\frac{\partial L}{\partial \Delta_1} = 2(\hat{y} - y) \cdot \Delta_2^T \cdot \mathrm{diag}(\mathbf{1}\{M_j > 0\}) \cdot (\text{block diagonal of } x^T)$$
 
         <p>After matrix multiplication, this simplifies to:</p>
 
-        <pre><code>∂L/∂Δ₁(i,k) = 2(ŷ - y) · xᵢ · Δ₂(k) · 𝟙{Mₖ > 0}</code></pre>
+        $$\frac{\partial L}{\partial \Delta_1(i,k)} = 2(\hat{y} - y) \cdot x_i \cdot \Delta_2(k) \cdot \mathbf{1}\{M_k > 0\}$$
 
         <p>Or in matrix form:</p>
 
-        <pre><code>∂L/∂Δ₁ = 2(ŷ - y) · x · (Δ₂ ⊙ 𝟙{M > 0})<sup>T</sup></code></pre>
+        $$\frac{\partial L}{\partial \Delta_1} = 2(\hat{y} - y) \cdot x \cdot (\Delta_2 \odot \mathbf{1}\{M > 0\})^T$$
 
-        <p>where ⊙ denotes element-wise multiplication.</p>
+        <p>where $\odot$ denotes element-wise multiplication.</p>
 
-        <h3>Gradient w.r.t. b₁</h3>
+        <h3>Gradient w.r.t. $b_1$</h3>
 
         <p>Finally:</p>
 
-        <pre><code>∂L/∂b₁ = (∂L/∂ŷ) · (∂ŷ/∂z) · (∂z/∂m) · (∂m/∂b₁)
-       = 2(ŷ - y) · Δ₂<sup>T</sup> · diag(𝟙{M > 0}) · I
-       = 2(ŷ - y) · (Δ₂ ⊙ 𝟙{M > 0})</code></pre>
+        $$\begin{aligned}
+\frac{\partial L}{\partial b_1} &= \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z} \cdot \frac{\partial z}{\partial m} \cdot \frac{\partial m}{\partial b_1} \\
+&= 2(\hat{y} - y) \cdot \Delta_2^T \cdot \mathrm{diag}(\mathbf{1}\{M > 0\}) \cdot I \\
+&= 2(\hat{y} - y) \cdot (\Delta_2 \odot \mathbf{1}\{M > 0\})
+\end{aligned}$$
 
         <h2>The Chain Rule in Practice</h2>
 
         <p>Here's the key insight: <strong>the chain rule flows backwards through the network</strong>. We start from the loss and propagate gradients layer by layer:</p>
 
         <ol>
-            <li>Compute ∂L/∂ŷ at the output</li>
-            <li>Multiply by ∂ŷ/∂z to get gradients w.r.t. the hidden layer</li>
+            <li>Compute $\frac{\partial L}{\partial \hat{y}}$ at the output</li>
+            <li>Multiply by $\frac{\partial \hat{y}}{\partial z}$ to get gradients w.r.t. the hidden layer</li>
             <li>Pass through the ReLU derivative</li>
-            <li>Multiply by ∂m/∂Δ₁ to get gradients w.r.t. the first layer weights</li>
+            <li>Multiply by $\frac{\partial m}{\partial \Delta_1}$ to get gradients w.r.t. the first layer weights</li>
         </ol>
 
         <p>This is backpropagation -- literally propagating errors backward through the network.</p>
 
         <h2>Extending to Batches</h2>
 
-        <p>Training on single examples is inefficient. In practice, we process batches of B examples at once. How do we extend our gradients?</p>
+        <p>Training on single examples is inefficient. In practice, we process batches of $B$ examples at once. How do we extend our gradients?</p>
 
         <h3>Option 1: 3D Tensors</h3>
 
-        <p>Make X ∈ ℝ¹ˣⁿ into X ∈ ℝᴮˣ¹ˣⁿ, a 3D tensor. NumPy would return tensors for all operations. This works but can be awkward to implement.</p>
+        <p>Make $X \in \mathbb{R}^{1 \times n}$ into $X \in \mathbb{R}^{B \times 1 \times n}$, a 3D tensor. NumPy would return tensors for all operations. This works but can be awkward to implement.</p>
 
         <h3>Option 2: Matrix Batches (Cleaner)</h3>
 
-        <p>Make X ∈ ℝ¹ˣⁿ into X ∈ ℝᴮˣⁿ. Now each row is one training example. We need to update our chain rule accordingly.</p>
+        <p>Make $X \in \mathbb{R}^{1 \times n}$ into $X \in \mathbb{R}^{B \times n}$. Now each row is one training example. We need to update our chain rule accordingly.</p>
 
         <p>The forward pass becomes:</p>
 
-        <pre><code>M = XΔ₁ + 1ᴮb₁<sup>T</sup>    (M ∈ ℝᴮˣᵐ)
-Z = ReLU(M)
-Ŷ = ZΔ₂ + b₂1ᴮₓ₁    (Ŷ ∈ ℝᴮˣ¹)</code></pre>
+        $$\begin{aligned}
+M &= X\Delta_1 + 1_B b_1^T \qquad (M \in \mathbb{R}^{B \times m}) \\
+Z &= \mathrm{ReLU}(M) \\
+\hat{Y} &= Z\Delta_2 + b_2 1_{B \times 1} \qquad (\hat{Y} \in \mathbb{R}^{B \times 1})
+\end{aligned}$$
 
         <p>The loss is now summed over all examples:</p>
 
-        <pre><code>L(Y, Ŷ) = (Y - Ŷ)<sup>T</sup>(Y - Ŷ)</code></pre>
+        $$L(Y, \hat{Y}) = (Y - \hat{Y})^T (Y - \hat{Y})$$
 
         <h3>Batch Gradients</h3>
 
         <p>The gradients now involve sums over the batch:</p>
 
-        <p><strong>For Δ₂:</strong></p>
+        <p><strong>For $\Delta_2$:</strong></p>
 
-        <pre><code>∂L/∂Δ₂ = (∂L/∂Ŷ) · (∂Ŷ/∂Δ₂)
-       = 2(Ŷ - Y)<sup>T</sup> · Z    ∈ ℝᵐˣ¹</code></pre>
+        $$\begin{aligned}
+\frac{\partial L}{\partial \Delta_2} &= \frac{\partial L}{\partial \hat{Y}} \cdot \frac{\partial \hat{Y}}{\partial \Delta_2} \\
+&= 2(\hat{Y} - Y)^T \cdot Z \qquad \in \mathbb{R}^{m \times 1}
+\end{aligned}$$
 
-        <p><strong>For b₂:</strong></p>
+        <p><strong>For $b_2$:</strong></p>
 
-        <pre><code>∂L/∂b₂ = (∂L/∂Ŷ) · (∂Ŷ/∂b₂)
-       = 2(Ŷ - Y)<sup>T</sup> · 1ₘₓ₁    (sum over batch)</code></pre>
+        $$\begin{aligned}
+\frac{\partial L}{\partial b_2} &= \frac{\partial L}{\partial \hat{Y}} \cdot \frac{\partial \hat{Y}}{\partial b_2} \\
+&= 2(\hat{Y} - Y)^T \cdot 1_{m \times 1} \qquad (\text{sum over batch})
+\end{aligned}$$
 
-        <p>Note that ∂Ŷ/∂b₂ = 1ᴮₓ₁ (each example contributes 1), so we sum across the batch.</p>
+        <p>Note that $\frac{\partial \hat{Y}}{\partial b_2} = 1_{B \times 1}$ (each example contributes 1), so we sum across the batch.</p>
 
-        <p><strong>For Δ₁:</strong></p>
+        <p><strong>For $\Delta_1$:</strong></p>
 
-        <pre><code>∂L/∂Δ₁ = (∂L/∂Ŷ) · (∂Ŷ/∂Z) · (∂Z/∂M) · (∂M/∂Δ₁)</code></pre>
+        $$\frac{\partial L}{\partial \Delta_1} = \frac{\partial L}{\partial \hat{Y}} \cdot \frac{\partial \hat{Y}}{\partial Z} \cdot \frac{\partial Z}{\partial M} \cdot \frac{\partial M}{\partial \Delta_1}$$
 
-        <p>The key difference is in ∂M/∂Δ₁. For each example k in the batch:</p>
+        <p>The key difference is in $\frac{\partial M}{\partial \Delta_1}$. For each example $k$ in the batch:</p>
 
-        <pre><code>∂Mₖⱼ/∂Δ₁(i,k) = {  0       if i≠j
-                   { Xₖ,ᵢ    if i=j</code></pre>
+        $$\frac{\partial M_{kj}}{\partial \Delta_1(i,k)} = \begin{cases} 0 & \text{if } i \neq j \\ X_{k,i} & \text{if } i = j \end{cases}$$
 
         <p>After working through the chain rule (which involves some careful index juggling), we get:</p>
 
-        <pre><code>∂L/∂Δ₁ = Σₖ₌₁ᴮ Xₖᵢ · Δ₂(lₖ,j) · 𝟙{Mₖⱼ > 0}</code></pre>
+        $$\frac{\partial L}{\partial \Delta_1} = \sum_{k=1}^{B} X_{ki} \cdot \Delta_2(l_k, j) \cdot \mathbf{1}\{M_{kj} > 0\}$$
 
         <p>Or more compactly:</p>
 
-        <pre><code>∂L/∂Δ₁ = X<sup>T</sup> · [2(Ŷ - Y) · Δ₂<sup>T</sup> ⊙ 𝟙{M > 0}]</code></pre>
+        $$\frac{\partial L}{\partial \Delta_1} = X^T \cdot \left[2(\hat{Y} - Y) \cdot \Delta_2^T \odot \mathbf{1}\{M > 0\}\right]$$
 
-        <p><strong>For b₁:</strong></p>
+        <p><strong>For $b_1$:</strong></p>
 
-        <pre><code>∂L/∂b₁ = Σₖ [2(Ŷₖ - Yₖ) · (Δ₂ ⊙ 𝟙{Mₖ > 0})]</code></pre>
+        $$\frac{\partial L}{\partial b_1} = \sum_k \left[2(\hat{Y}_k - Y_k) \cdot (\Delta_2 \odot \mathbf{1}\{M_k > 0\})\right]$$
 
         <h2>Implementation Tips</h2>
 
@@ -356,9 +370,9 @@ Z = ReLU(M)
 
         <ul>
             <li><strong>Always check dimensions.</strong> If something doesn't match, you've probably made a transpose error or forgotten to sum over the batch dimension.</li>
-            <li><strong>Use broadcasting carefully.</strong> Adding biases to batches relies on NumPy's broadcasting rules -- make sure you understand when b gets added to each row vs each column.</li>
+            <li><strong>Use broadcasting carefully.</strong> Adding biases to batches relies on NumPy's broadcasting rules -- make sure you understand when $b$ gets added to each row vs each column.</li>
             <li><strong>Vectorize everything.</strong> Avoid loops over the batch dimension -- matrix operations handle this automatically.</li>
-            <li><strong>Test with numerical gradients.</strong> Compute (f(x + ε) - f(x - ε)) / (2ε) and compare to your analytical gradients. They should match to high precision.</li>
+            <li><strong>Test with numerical gradients.</strong> Compute $(f(x + \epsilon) - f(x - \epsilon)) / (2\epsilon)$ and compare to your analytical gradients. They should match to high precision.</li>
         </ul>
 
         <h2>Why This Matters</h2>

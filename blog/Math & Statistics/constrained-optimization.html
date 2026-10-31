@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -156,23 +162,20 @@
         
         <p>We sometimes face constrained optimization problems:</p>        
 
-                <pre><code>(q)  min  f(x)
-      x
-          s.t. g_i(x) <= 0  for all i = 1, ..., m</code></pre>
+        $$\begin{aligned}
+        (q)\quad & \min_{x} f(x) \\
+        & \text{s.t. } g_i(x) \le 0 \quad \text{for all } i = 1, \dots, m
+        \end{aligned}$$
 
         <p>This form is known as the standard form for constrained optimization problem. 
-           Any other formulation can be converted into this. For example, if we want to maximize <code>f(x)</code> rather than minimize it,
-           we have <code>max f(x) = min -f(x)</code>. Also, an equality constraint <code>g(x) = 0</code> can be equivalently written into two inequalities: 
-           <code>g(x) <= 0</code> and <code>-g(x) <= 0</code>.</p>
+           Any other formulation can be converted into this. For example, if we want to maximize $f(x)$ rather than minimize it,
+           we have $\max f(x) = \min -f(x)$. Also, an equality constraint $g(x) = 0$ can be equivalently written into two inequalities: 
+           $g(x) \le 0$ and $-g(x) \le 0$.</p>
 
         <h2>The Penalty Method (Naive Approach)</h2>
         <p>To solve the constrained problem as described above, a simple (but may be impractical) idea is to convert the problem into an unconstrained problem by adding a penalty for violating constraints:</p>
 
-        <pre><code>min  f(x) + sum_i I(g_i(x))
-x
-
-        where I(z) = 0     if z <= 0
-                    +inf (or a large value if violating slightly is acceptable)  otherwise</code></pre>
+        $$\min_{x} \; f(x) + \sum_i I(g_i(x)), \qquad \text{where } I(z) = \begin{cases} 0 & z \le 0 \\ +\infty \text{ (or a large value if violating slightly is acceptable)} & \text{otherwise} \end{cases}$$
 
         <p>The problem of this approach is that it makes optimization process hard. 
            The infinite penalty creates walls in the loss surface; if gradient descent starts on the wrong side, it can never cross over. 
@@ -181,55 +184,55 @@ x
         <h2>Lagrange Multiplier Method</h2>
         <p>Instead of introducing penalty, let us consider how <strong>Lagrange multiplier method</strong> approach the constrained problem. First, define the Lagrangian form for the problem:</p>
 
-        <pre><code>L(x, lambda) = f(x) + lambda^T g(x)
-
-where lambda = (lambda_1, ..., lambda_m)^T
-      g(x) = (g_1(x), ..., g_m(x))^T</code></pre>
+        $$\begin{aligned}
+        L(x, \lambda) &= f(x) + \lambda^\top g(x) \\[4pt]
+        \text{where } \lambda &= (\lambda_1, \dots, \lambda_m)^\top \\
+        g(x) &= (g_1(x), \dots, g_m(x))^\top
+        \end{aligned}$$
 
         <p>Notice that the original problem (q) is now equivalent to:</p>
 
-        <pre><code>(p)  min  max  L(x, lambda)
-      x  lambda>=0</code></pre>
+        $$(p)\quad \min_{x} \max_{\lambda \ge 0} L(x, \lambda)$$
 
-        <p>The reason is that for a feasible x (where all g_i(x) <= 0), the max over lambda >= 0 just gives f(x) since the lambda terms are non-positive. For an infeasible x, some g_i(x) > 0, 
-            and lambda can drive the Lagrangian to infinity. So the min-max formulation introduced by the Lagrangian form naturally enforces the constraints.</p>
+        <p>The reason is that for a feasible $x$ (where all $g_i(x) \le 0$), the max over $\lambda \ge 0$ just gives $f(x)$ since the $\lambda$ terms are non-positive. For an infeasible $x$, some $g_i(x) > 0$, 
+            and $\lambda$ can drive the Lagrangian to infinity. So the min-max formulation introduced by the Lagrangian form naturally enforces the constraints.</p>
 
         <h2>The Dual Problem</h2>
         <p>Next, we consider the so called dual problem of problem (p).
-           First, notice that for any function phi(x, y), we have:</p>
+           First, notice that for any function $\phi(x, y)$, we have:</p>
 
-        <pre><code>min phi(x,y) <= phi(x,y) <= max phi(x,y)
- x                             y
-
-=> max min phi(x,y) <= min max phi(x,y)
-    y   x              x   y</code></pre>
+        $$\begin{aligned}
+        \min_x \phi(x,y) &\le \phi(x,y) \le \max_y \phi(x,y) \\
+        \Rightarrow\; \max_y \min_x \phi(x,y) &\le \min_x \max_y \phi(x,y)
+        \end{aligned}$$
 
         <p>This gives us the <strong>Lagrange dual problem</strong>:</p>
 
-        <pre><code>(d)  max  min  L(x, lambda)
-    lambda  x
-     s.t. lambda >= 0</code></pre>
+        $$\begin{aligned}
+        (d)\quad & \max_{\lambda} \min_{x} L(x, \lambda) \\
+        & \text{s.t. } \lambda \ge 0
+        \end{aligned}$$
 
-        <p>Denote <code>q(lambda) = min_x L(x, lambda)</code> &mdash; this is called the inner problem. The dual problem in general much easier than the original problem (q).
+        <p>Denote $q(\lambda) = \min_x L(x, \lambda)$ &mdash; this is called the inner problem. The dual problem in general much easier than the original problem (q).
             Consider the following three reasons:</p>
 
         <ol>
-            <li><strong>Simpler constraints:</strong> we go from g_i(x) <= 0 (which could be arbitrarily complex) to lambda_i >= 0 (simple box constraints, the easiest kind)</li>
-            <li><strong>Convexity:</strong> even if min f(x) is non-convex, max q(lambda) is always a convex problem</li>
-            <li><strong>Dimensionality reduction (in some cases):</strong> say x is in R^10000 and we have 5 constraints; the dual reduces the problem to only 5 dimensions</li>
+            <li><strong>Simpler constraints:</strong> we go from $g_i(x) \le 0$ (which could be arbitrarily complex) to $\lambda_i \ge 0$ (simple box constraints, the easiest kind)</li>
+            <li><strong>Convexity:</strong> even if $\min f(x)$ is non-convex, $\max q(\lambda)$ is always a convex problem</li>
+            <li><strong>Dimensionality reduction (in some cases):</strong> say $x$ is in $\mathbb{R}^{10000}$ and we have 5 constraints; the dual reduces the problem to only 5 dimensions</li>
         </ol>
 
         <h2>Solve the Dual Problem</h2>
         <p>We now consider how to solving the dual problem (d).</p>
 
         <ol>
-            <li><strong>Ideal case:</strong> we solve the (unconstrained) inner problem, get the analytical form for the vector <code>x</code>. Then we put the form of <code>x</code> back into the dual problem, solve the dual problem (by taking the gradient with respect to the vector <code>λ</code> and setting the result to zero), find the solutions for each <code>λ_i >= 0</code>, and we take the results as they are.</li>
+            <li><strong>Ideal case:</strong> we solve the (unconstrained) inner problem, get the analytical form for the vector $x$. Then we put the form of $x$ back into the dual problem, solve the dual problem (by taking the gradient with respect to the vector $\lambda$ and setting the result to zero), find the solutions for each $\lambda_i \ge 0$, and we take the results as they are.</li>
             <li><strong>Practical algorithm (dual ascent):</strong> 
                 <ol type="a">
-                    <li><strong>Initialize:</strong> Start with an initial guess for the vector of penalty variables, <code>λ</code>, ensuring every individual penalty element starts at <code>λ_i >= 0</code>.</li>
-                    <li><strong>Primal Update (Inner Problem):</strong> Using the currently fixed <code>λ</code> vector, computationally find the multi-dimensional vector <code>x</code> that minimizes the Lagrangian: <code>x^(k+1) = argmin_x L(x, λ^k)</code>.</li>
-                    <li><strong>Dual Update (Gradient Ascent):</strong> Evaluate the constraint violations for all <i>m</i> constraints, <code>g_i(x^(k+1))</code>. Update each penalty variable in the <code>λ</code> vector individually by taking a step in the direction of its specific gradient: <code>λ_i^(k+1) = max(0, λ_i^k + α * g_i(x^(k+1)))</code> (note that <code>g_i(x^(k+1))</code> is the gradient wrt λ_i at x^(k+1)) for all <code>i = 1, ..., m</code>, where <code>α</code> is the step size. The <code>max(0, ...)</code> operation ensures no individual penalty ever drops below zero.</li>
-                    <li><strong>Iterate:</strong> Repeat steps (b) and (c) until the vectors <code>x</code> and <code>λ</code> both stabilize and stop changing (convergence).</li>
+                    <li><strong>Initialize:</strong> Start with an initial guess for the vector of penalty variables, $\lambda$, ensuring every individual penalty element starts at $\lambda_i \ge 0$.</li>
+                    <li><strong>Primal Update (Inner Problem):</strong> Using the currently fixed $\lambda$ vector, computationally find the multi-dimensional vector $x$ that minimizes the Lagrangian: $x^{(k+1)} = \arg\min_x L(x, \lambda^k)$.</li>
+                    <li><strong>Dual Update (Gradient Ascent):</strong> Evaluate the constraint violations for all $m$ constraints, $g_i(x^{(k+1)})$. Update each penalty variable in the $\lambda$ vector individually by taking a step in the direction of its specific gradient: $\lambda_i^{(k+1)} = \max(0, \lambda_i^k + \alpha \cdot g_i(x^{(k+1)}))$ (note that $g_i(x^{(k+1)})$ is the gradient wrt $\lambda_i$ at $x^{(k+1)}$) for all $i = 1, \dots, m$, where $\alpha$ is the step size. The $\max(0, \dots)$ operation ensures no individual penalty ever drops below zero.</li>
+                    <li><strong>Iterate:</strong> Repeat steps (b) and (c) until the vectors $x$ and $\lambda$ both stabilize and stop changing (convergence).</li>
                 </ol>
             </li>
         </ol>
@@ -240,53 +243,54 @@ where lambda = (lambda_1, ..., lambda_m)^T
            for the dual problem could be smaller than the original problem.
            The difference between the original and dual solutions is called <strong>duality gap</strong>:</p>
 
-        <pre><code>G = q* - d*
-
-where q* = optimal value of original problem
-      d* = optimal value of dual problem</code></pre>
+        $$\begin{aligned}
+        G &= q^* - d^* \\[4pt]
+        \text{where } q^* &= \text{optimal value of original problem} \\
+        d^* &= \text{optimal value of dual problem}
+        \end{aligned}$$
 
         <ul>
-            <li><strong>G = 0 (strong duality):</strong> the dual gives the exact solution</li>
-            <li><strong>G > 0 (weak duality):</strong> the dual only gives a lower bound, which means the x found by the dual is not in the feasible region of the original problem</li>
+            <li><strong>$G = 0$ (strong duality):</strong> the dual gives the exact solution</li>
+            <li><strong>$G > 0$ (weak duality):</strong> the dual only gives a lower bound, which means the $x$ found by the dual is not in the feasible region of the original problem</li>
         </ul>
 
         <h3>When Does Strong Duality Hold?</h3>
         <p>Naturally, we want to know when the strong duality would hold. A sufficient (but not necessary) condition is <strong>Slater's condition</strong>:</p>
         <ol>
-            <li><strong>Convexity:</strong> f(x) and all g_i(x) are convex</li>
-            <li><strong>Strict feasibility:</strong> there exists at least one x such that g_i(x) < 0 for all i (strictly inside the feasible region, not on the boundary)</li>
+            <li><strong>Convexity:</strong> $f(x)$ and all $g_i(x)$ are convex</li>
+            <li><strong>Strict feasibility:</strong> there exists at least one $x$ such that $g_i(x) < 0$ for all $i$ (strictly inside the feasible region, not on the boundary)</li>
         </ol>
 
-        <p>Why might weak duality happen? In the inner problem <code>min_x (f(x) + lambda^T g(x))</code>, when g_i(x) > 0 (violating the constraint), we get a penalty lambda_i * g_i(x). But if f(x) is very small at that point, the violation might be worth it from the Lagrangian's perspective.</p>
+        <p>Why might weak duality happen? In the inner problem $\min_x (f(x) + \lambda^\top g(x))$, when $g_i(x) > 0$ (violating the constraint), we get a penalty $\lambda_i \cdot g_i(x)$. But if $f(x)$ is very small at that point, the violation might be worth it from the Lagrangian's perspective.</p>
 
         <h2>KKT Conditions</h2>
         <p>While the Lagrange method gives us a simpler dual problem, it doesn't directly solve the problem. We often solve constrained optimization directly using <strong>KKT (Karush-Kuhn-Tucker) conditions</strong>. These give a local minimum (or global, if Slater's condition holds).</p>
 
         <p>The four conditions are:</p>
         <ol>
-            <li><strong>Stationarity:</strong> <code>grad_x f(x) + lambda^T grad_x g(x) = 0</code> &mdash; at the minimum, the gradient of the Lagrangian must be zero</li>
-            <li><strong>Primal feasibility:</strong> <code>g_i(x) <= 0</code> for all i &mdash; the solution must satisfy the original constraints</li>
-            <li><strong>Dual feasibility:</strong> <code>lambda_i >= 0</code> for all i &mdash; multipliers must be non-negative</li>
-            <li><strong>Complementary slackness:</strong> <code>lambda_i * g_i(x) = 0</code> for all i &mdash; either the constraint is active (g_i = 0) or its multiplier is zero</li>
+            <li><strong>Stationarity:</strong> $\nabla_x f(x) + \lambda^\top \nabla_x g(x) = 0$ &mdash; at the minimum, the gradient of the Lagrangian must be zero</li>
+            <li><strong>Primal feasibility:</strong> $g_i(x) \le 0$ for all $i$ &mdash; the solution must satisfy the original constraints</li>
+            <li><strong>Dual feasibility:</strong> $\lambda_i \ge 0$ for all $i$ &mdash; multipliers must be non-negative</li>
+            <li><strong>Complementary slackness:</strong> $\lambda_i \cdot g_i(x) = 0$ for all $i$ &mdash; either the constraint is active ($g_i = 0$) or its multiplier is zero</li>
         </ol>
 
         <p>The complementary slackness condition is the most interesting one. Intuitively, it says that
-            if a constraint is not tight (g_i(x) < 0 we're strictly inside the feasible region), then lambda_i = 0, i.e. that constraint doesn't matter at the optimum. 
+            if a constraint is not tight ($g_i(x) < 0$ we're strictly inside the feasible region), then $\lambda_i = 0$, i.e. that constraint doesn't matter at the optimum. 
             </p>
 
         <h2>Using KKT to Find Solutions</h2>
         <p>KKT conditions are both a checklist to verify a candidate solution and a tool to find one:</p>
 
         <ol>
-            <li><strong>Guess</strong> which constraints are active (on the boundary); this follows complementary slackness condition which says for each constraint either g_i(x) = 0 or lambda_i = 0</li>
-            <li><strong>Solve</strong> for x and lambda from the stationarity and complementary slackness equations;
-            suppose x is in <code>R^k_1</code> and lambda is in <code>R^k_2</code>, then stationarity codition provides <code>R^k_1</code> equations and complementary slackness provides <code>R^k_2</code> equations</li>
+            <li><strong>Guess</strong> which constraints are active (on the boundary); this follows complementary slackness condition which says for each constraint either $g_i(x) = 0$ or $\lambda_i = 0$</li>
+            <li><strong>Solve</strong> for $x$ and $\lambda$ from the stationarity and complementary slackness equations;
+            suppose $x$ is in $\mathbb{R}^{k_1}$ and $\lambda$ is in $\mathbb{R}^{k_2}$, then stationarity codition provides $\mathbb{R}^{k_1}$ equations and complementary slackness provides $\mathbb{R}^{k_2}$ equations</li>
             <li><strong>Check feasibility</strong>; if it passes, found a local minimum. If not, go back to step 1 with a different guess</li>
         </ol>
 
-        <p>Different guesses in step 1 can give different local minima. With m constraints, there are 2^m possible combinations to try in the worst case.
-           In some cases, the guess could be dramastically simpler. For example, if the target function is simply the sum of xi, then we can evaluate
-           if each xi is on the boundary seperately. 
+        <p>Different guesses in step 1 can give different local minima. With $m$ constraints, there are $2^m$ possible combinations to try in the worst case.
+           In some cases, the guess could be dramastically simpler. For example, if the target function is simply the sum of $x_i$, then we can evaluate
+           if each $x_i$ is on the boundary seperately. 
         </p>
     </div>
 </article>

@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -173,12 +179,12 @@
         <p>Why would training fail? One possible explanation is known as 
            <strong>shattered gradients</strong>. In standard training, the gradient with respect to an early layer is a long chain rule product:</p>
 
-        <pre><code>∂y/∂f1 = (∂y/∂fn) · (∂fn/∂fn-1) · ... · (∂f2/∂f1)</code></pre>
+        $$\frac{\partial y}{\partial f_1} = \frac{\partial y}{\partial f_n} \cdot \frac{\partial f_n}{\partial f_{n-1}} \cdot \ldots \cdot \frac{\partial f_2}{\partial f_1}$$
 
-        <p>As the model goes deeper and deeper, a small change in x leads to very different gradients. 
+        <p>As the model goes deeper and deeper, a small change in $x$ leads to very different gradients. 
            The loss surface effectively keeps changing with every batch, so the optimizer is chasing a moving target.</p>
 
-        <p>To picture it, consider a univariate input x mapped to a univariate output y, and plot the gradient ∂y/∂x as a function of x:</p>
+        <p>To picture it, consider a univariate input $x$ mapped to a univariate output $y$, and plot the gradient $\frac{\partial y}{\partial x}$ as a function of $x$:</p>
 
         <pre><code>Shallow network (1-2 layers)          Deep network (shattered)
 
@@ -194,11 +200,13 @@
 
         <h2>Residual Connection</h2>
 
-        <p>The idea of residual connection is simple. Instead of each layer replacing its input, each layer <strong>adds to it</strong>. For n = 3, this means</p>
+        <p>The idea of residual connection is simple. Instead of each layer replacing its input, each layer <strong>adds to it</strong>. For $n = 3$, this means</p>
 
-        <pre><code>h1 = x  + f1(x; φ1)
-h2 = h1 + f2(h1; φ2)
-y  = h2 + f3(h2; φ3)</code></pre>
+        $$\begin{aligned}
+h_1 &= x + f_1(x; \phi_1) \\
+h_2 &= h_1 + f_2(h_1; \phi_2) \\
+y &= h_2 + f_3(h_2; \phi_3)
+\end{aligned}$$
 
         <p>As a diagram, the input takes a shortcut around each block:</p>
 
@@ -208,16 +216,17 @@ x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ─�
 
         <p>Unroll the recursion, we have</p>
 
-        <pre><code>y = x
-  + f1(x; φ1)
-  + f2(x + f1(x; φ1); φ2 )
-  + f3(x + f1(x; φ1) + f2(x + f1(x; φ1); φ2); φ3)</code></pre>
+        $$\begin{aligned}
+y = x &+ f_1(x; \phi_1) \\
+&+ f_2(x + f_1(x; \phi_1); \phi_2) \\
+&+ f_3(x + f_1(x; \phi_1) + f_2(x + f_1(x; \phi_1); \phi_2); \phi_3)
+\end{aligned}$$
 
         <p>We have three observations from the formula above:</p>
         <ul>
             <li><strong>The lower-level information is kept.</strong> Lower level layers outputs has direct impact on the outputs.</li> 
             <li><strong>A residual network is essentially an ensemble model.</strong> The output is a sum of terms of different depths: 
-               a depth-0 term (x itself), a depth-1 term, up to a depth-3 term. We can think of residual connections as an <strong>ensemble of neural networks</strong> of varying depth, trained jointly.</li>
+               a depth-0 term ($x$ itself), a depth-1 term, up to a depth-3 term. We can think of residual connections as an <strong>ensemble of neural networks</strong> of varying depth, trained jointly.</li>
             <li><strong>There are many different paths from input to output.</strong> Information doesn't have to survive every layer; it just needs one good path from input to output.</li>
         </ul>
 
@@ -245,23 +254,25 @@ x ──→ f₁ ──→ ⊕ ──→ f₂ ──→ ⊕ ──→ f₃ ─�
 
         <h3>Exploding Variance</h3>
 
-        <p>Suppose x has variance 1, and each fi contributes an independent unit-variance output. Since we keep <strong>adding</strong>, variances add up:</p>
+        <p>Suppose $x$ has variance 1, and each $f_i$ contributes an independent unit-variance output. Since we keep <strong>adding</strong>, variances add up:</p>
 
         <pre><code>x ──→ f1 ──→ ⊕ ──→ f2 ──→ ⊕ ──→ f3 ──→ ⊕ ──→ y
 var: 1             2            4            8
                 variance grows exponentially
                 (and the backward pass behaves the same way)</code></pre>
 
-        <p><strong>Solution 1: rescale by 1/√2 after each addition.</strong> This keeps the variance pinned near 1... but it's not good. Unrolling the sum again, the output becomes</p>
+        <p><strong>Solution 1: rescale by $1/\sqrt{2}$ after each addition.</strong> This keeps the variance pinned near 1... but it's not good. Unrolling the sum again, the output becomes</p>
 
-        <pre><code>y = (1/√2)³ (x + f1(x))
-  + (1/√2)² f2(·)
-  + (1/√2)  f3(·)</code></pre>
+        $$\begin{aligned}
+y = \left(1/\sqrt{2}\right)^3 &(x + f_1(x)) \\
+&+ \left(1/\sqrt{2}\right)^2 f_2(\cdot) \\
+&+ \left(1/\sqrt{2}\right) f_3(\cdot)
+\end{aligned}$$
 
         <p>The variance is stable, but <strong>the contributions of the lower layers are scaled down</strong> exponentially.
            That was the whole point of the residual connection, so the shattered gradient problem persists.</p>
 
-        <p><strong>Solution 2: batch norm inside the branch, before fᵢ.</strong></p>
+        <p><strong>Solution 2: batch norm inside the branch, before $f_i$.</strong></p>
 
         <pre><code>x ──→ [BN] → f1 ──→ ⊕ ──→ [BN] → f2 ──→ ⊕ ──→ [BN] → f3 ──→ ⊕ ──→
 var:         1                    2                  3                   </code></pre>
@@ -278,8 +289,8 @@ var:         1                    2                  3                   </code>
         <p>There isn't one definite clean answer, but there are several plausible explanations:</p>
 
         <ol>
-            <li><strong>The work for each layer is easier.</strong> Without the skip, a layer must learn the full transformation f(x), i.e. 
-            it has to consider how to transform its input toward the output. With the skip, it only needs to learn the residual f(x) − x, 
+            <li><strong>The work for each layer is easier.</strong> Without the skip, a layer must learn the full transformation $f(x)$, i.e. 
+            it has to consider how to transform its input toward the output. With the skip, it only needs to learn the residual $f(x) - x$, 
             i.e. each layer just <strong>"adds" information to the current solution</strong>.</li>
             <li><strong>The loss landscape is much smoother.</strong> Lower-layer inputs contribute to the output directly through the skip paths, 
                 so it's much easier to take their gradients. Even if the gradient is blocked inside some layer (a dead ReLU, say), 

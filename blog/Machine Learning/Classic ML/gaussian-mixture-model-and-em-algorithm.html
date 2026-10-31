@@ -139,7 +139,14 @@
         .post-content strong {
             color: var(--text);
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -163,164 +170,147 @@
         <p>Naive K-means method cannot cluster elliptical clusters well, 
            because it creates circles or balls around its centers. It also cannot deal with clusters with different variance well, 
            because it uses the same distance measure (normally L2) for different clusters. GMM handles both well, since each cluster 
-           gets its own mean <code>μ_j</code> and its own covariance <code>Σ_j</code>.</p>
+           gets its own mean $\mu_j$ and its own covariance $\Sigma_j$.</p>
 
         <h2>Assumptions of Gaussian Mixture Model</h2>
 
         <p>Start from the likelihood of the observations:</p>
 
-        <pre><code>pr(x_1, ..., x_n) = pr(x_1) ⋯ pr(x_n)                           (independence assumption)
+        $$\begin{aligned}
+        \mathrm{pr}(x_1, \ldots, x_n) &= \mathrm{pr}(x_1) \cdots \mathrm{pr}(x_n) && (\text{independence assumption}) \\[6pt]
+        &= \prod_{i=1}^{n} \sum_{j=1}^{K} p(x_i \in \text{cluster } j)\, p(x_i \mid x_i \in \text{cluster } j) && (\text{law of total probability}) \\[6pt]
+        &= \prod_{i=1}^{n} \sum_{j=1}^{K} \lambda_j \mathcal{N}(x_i ; \mu_j, \Sigma_j) && (\text{Gaussian assumption})
+        \end{aligned}$$
 
-                  = ∏_{i=1}^{n} Σ_{j=1}^{K} p(x_i ∈ cluster j) p(x_i | x_i ∈ cluster j)
-                                                                  (law of total probability)
-
-                  = ∏_{i=1}^{n} Σ_{j=1}^{K} λ_j N(x_i ; μ_j, Σ_j)
-                                                                  (Gaussian assumption)</code></pre>
-
-        <p><strong>Generation process:</strong> the latent variable <code>z</code> is a discrete variable equal to <code>z_i</code> (where <code>z_i = 1, ..., K</code>) 
-            with probability <code>λ_i</code>. Given this latent variable, the likelihood of the data <code>x</code> is normally distributed with mean <code>= μ_i</code>, variance <code>= Σ_j²</code>. 
-            In other words: <code>z</code> goes to each cluster with probability <code>λ_i</code>, and within each cluster the data is generated from the corresponding Gaussian distribution <code>N(μ_i, Σ_i²)</code>, giving the observation <code>x</code>.</p>
+        <p><strong>Generation process:</strong> the latent variable $z$ is a discrete variable equal to $z_i$ (where $z_i = 1, ..., K$) 
+            with probability $\lambda_i$. Given this latent variable, the likelihood of the data $x$ is normally distributed with mean $= \mu_i$, variance $= \Sigma_j^2$. 
+            In other words: $z$ goes to each cluster with probability $\lambda_i$, and within each cluster the data is generated from the corresponding Gaussian distribution $\mathcal{N}(\mu_i, \Sigma_i^2)$, giving the observation $x$.</p>
 
         <h2>The difficulty to maximize the Likelihood Function Directly</h2>
 
         The likelihood function for GMM equals to:
-        <pre><code>pr(x_1, ..., x_n) = ∏_{i=1}^n Σ_{j=1}^K λ_j N(x_i ; μ_j, Σ_j)</code></pre>
+        $$\mathrm{pr}(x_1, \ldots, x_n) = \prod_{i=1}^{n} \sum_{j=1}^{K} \lambda_j \mathcal{N}(x_i ; \mu_j, \Sigma_j)$$
 
         <p>If we minimize the negative log-likelihood, we need to solve</p>
 
-        <pre><code>min_{λ,μ,Σ}  ( -l(λ, μ, Σ; x_1, ..., x_n) ) = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j N(x_i ; μ_j, Σ_j) )
-
-    = min_{λ,μ,Σ}  -Σ_i log( Σ_j λ_j (1 / ((2π)^{d/2} |Σ_j|^{1/2})) exp{ -1/2 (x_i-μ_j)ᵀ Σ_j⁻¹ (x_i-μ_j) } )
-
-s.t.  Σ_j λ_j = 1,   Σ_j symmetric and positive semi-definite</code></pre>
+        $$\begin{aligned}
+        \min_{\lambda,\mu,\Sigma} \left( -l(\lambda, \mu, \Sigma; x_1, \ldots, x_n) \right) &= \min_{\lambda,\mu,\Sigma} -\sum_i \log\left( \sum_j \lambda_j \mathcal{N}(x_i ; \mu_j, \Sigma_j) \right) \\[6pt]
+        &= \min_{\lambda,\mu,\Sigma} -\sum_i \log\left( \sum_j \lambda_j \frac{1}{(2\pi)^{d/2} |\Sigma_j|^{1/2}} \exp\left\{ -\frac{1}{2} (x_i-\mu_j)^T \Sigma_j^{-1} (x_i-\mu_j) \right\} \right) \\[6pt]
+        &\text{s.t.} \quad \sum_j \lambda_j = 1, \quad \Sigma_j \text{ symmetric and positive semi-definite}
+        \end{aligned}$$
 
         <p>Because of the sum within the log, we cannot use log to cancel out exp. 
-           There is no analytical form for the gradient w.r.t. <code>λ, μ, Σ</code> as well. We also need to satisfy the constraints, so directly using gradient descent is not ideal.</p>
+           There is no analytical form for the gradient w.r.t. $\lambda, \mu, \Sigma$ as well. We also need to satisfy the constraints, so directly using gradient descent is not ideal.</p>
 
-        <p>Notice that the problem is also ill-defined. If <code>μ_j → x_i</code>, <code>Σ_j → 0</code>, then <code>pr(x_1, ..., x_n) → infty</code>.</p>
+        <p>Notice that the problem is also ill-defined. If $\mu_j \to x_i$, $\Sigma_j \to 0$, then $\mathrm{pr}(x_1, \ldots, x_n) \to \text{infty}$.</p>
 
         <p>Below we consider how to use the E-M algorithm to solve these issues.</p>
 
         <h2>EM Algorithm</h2>
 
-        <p><strong>Problem:</strong> solving <code>argmax_θ l(θ; x)</code> directly is hard.</p>
+        <p><strong>Problem:</strong> solving $\arg\max_\theta l(\theta; x)$ directly is hard.</p>
 
-        <p><strong>Observation:</strong> if we introduce some latent variables <code>z</code>, then <code>argmax_θ l(θ; x, z)</code> — this is easy.</p>
+        <p><strong>Observation:</strong> if we introduce some latent variables $z$, then $\arg\max_\theta l(\theta; x, z)$ — this is easy.</p>
 
         <p><strong>EM algorithm:</strong></p>
 
-        <pre><code>θ^(t+1) = argmax_θ  E_{z~p(·|x, θ^(t))} [ l(θ; x, z) ]
-          ────────  ────────────────────────────────────
-           M-step                E-step</code></pre>
+        $$\theta^{(t+1)} = \underbrace{\arg\max_\theta}_{\text{M-step}} \; \underbrace{\mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})} \left[ l(\theta; x, z) \right]}_{\text{E-step}}$$
 
         <h3>Why Does EM Algorithm Work?</h3>
 
-        <p>Notice that <code>p(x, z, θ) = p(x; θ) p(z|x; θ)</code>:</p>
+        <p>Notice that $p(x, z, \theta) = p(x; \theta) p(z|x; \theta)$:</p>
 
-        <pre><code>=> l(θ; x, z) = l(θ; x) + l(θ; z|x)
+        $$\Rightarrow\; l(\theta; x, z) = l(\theta; x) + l(\theta; z|x)$$
 
-=> l(θ; x) = l(θ; x, z) - l(θ; z|x)
-    ────────    ─────────
-    target      the one we can maximize easily</code></pre>
+        $$\Rightarrow\; \underbrace{l(\theta; x)}_{\text{target}} = \underbrace{l(\theta; x, z)}_{\text{the one we can maximize easily}} - l(\theta; z|x)$$
 
-        <p>Take expectation on both sides w.r.t. <code>z ~ p(·|x, θ^(t))</code>:</p>
+        <p>Take expectation on both sides w.r.t. $z \sim p(\cdot|x, \theta^{(t)})$:</p>
 
-        <pre><code>l(θ; x) = E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ; z|x) ]
+        $$l(\theta; x) = \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta; x, z) \right] - \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta; z|x) \right]$$
 
-=> l(θ^(t); x) = E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ^(t); z|x) ]
+        $$\Rightarrow\; l(\theta^{(t)}; x) = \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t)}; x, z) \right] - \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t)}; z|x) \right]$$
 
-=> l(θ; x) - l(θ^(t); x) = E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ]
+        $$\begin{aligned}
+        \Rightarrow\; l(\theta; x) - l(\theta^{(t)}; x) &= \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta; x, z) \right] - \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t)}; x, z) \right] \\[6pt]
+        &\quad - \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta; z|x) \right] + \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t)}; z|x) \right] \\[6pt]
+        &= \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta; x, z) \right] - \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t)}; x, z) \right] \\[6pt]
+        &\quad + \underbrace{\mathrm{KL}\left( p(z|x, \theta^{(t)}), p(z|x, \theta) \right)}_{\geq\, 0}
+        \end{aligned}$$
 
-                          - E_{z~p(·|x,θ^(t))}[ l(θ; z|x) ] + E_{z~p(·|x,θ^(t))}[ l(θ^(t); z|x) ]
+        <p>Since $\theta^{(t+1)} = \arg\max_\theta \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta; x, z) \right]$, we have</p>
 
-                          = E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ] - E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ]
+        $$\mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t+1)}; x, z) \right] \;\geq\; \mathbb{E}_{z\sim p(\cdot|x,\theta^{(t)})}\left[ l(\theta^{(t)}; x, z) \right]$$
 
-                          + KL( p(z|x, θ^(t)), p(z|x, θ) )
-                            ─────────────────────────────
-                                        ≥ 0</code></pre>
-
-        <p>Since <code>θ^(t+1) = argmax_θ E_{z~p(·|x,θ^(t))}[ l(θ; x, z) ]</code>, we have</p>
-
-        <pre><code>E_{z~p(·|x,θ^(t))}[ l(θ^(t+1); x, z) ]  ≥  E_{z~p(·|x,θ^(t))}[ l(θ^(t); x, z) ]</code></pre>
-
-        <p>So <code>l(θ^(t+1); x) ≥ l(θ^(t); x)</code>, i.e. the EM algorithm leads to a non-decreasing likelihood function at each step.</p>
+        <p>So $l(\theta^{(t+1)}; x) \geq l(\theta^{(t)}; x)$, i.e. the EM algorithm leads to a non-decreasing likelihood function at each step.</p>
 
         <h2>EM Algorithm for Gaussian Mixture Model</h2>
 
         <p>Introduce latent variables:</p>
 
-        <pre><code>z_ij = 1  if x_i ∈ C_j
-     = 0  otherwise</code></pre>
+        $$z_{ij} = \begin{cases} 1 & \text{if } x_i \in C_j \\ 0 & \text{otherwise} \end{cases}$$
 
-        <p>In order to use the EM algorithm, we need the joint distribution <code>p(x, z; θ^(t))</code> and the conditional distribution <code>p(z|x; θ^(t))</code>.</p>
+        <p>In order to use the EM algorithm, we need the joint distribution $p(x, z; \theta^{(t)})$ and the conditional distribution $p(z|x; \theta^{(t)})$.</p>
 
         <h3>E-Step</h3>
 
         <p>Joint distribution:</p>
 
-        <pre><code>p(x, z; λ, μ, Σ) = ∏_{i=1}^n ∏_{j=1}^K ( λ_j N(x_i; μ_j, Σ_j) )^{z_ij}
+        $$p(x, z; \lambda, \mu, \Sigma) = \prod_{i=1}^{n} \prod_{j=1}^{K} \left( \lambda_j \mathcal{N}(x_i; \mu_j, \Sigma_j) \right)^{z_{ij}}$$
 
-=> l(λ, μ, Σ; x, z) = Σ_i Σ_j z_ij ( log λ_j + log N(x_i; μ_j, Σ_j) )</code></pre>
+        $$\Rightarrow\; l(\lambda, \mu, \Sigma; x, z) = \sum_i \sum_j z_{ij} \left( \log \lambda_j + \log \mathcal{N}(x_i; \mu_j, \Sigma_j) \right)$$
 
         <p>Conditional distribution, by Bayes' theorem:</p>
 
-        <pre><code>p(z_ij=1 | x; λ^(t), μ^(t), Σ^(t)) = p(z_ij=1 | x_i, λ^(t), μ^(t), Σ^(t))
-
-    = [ p(z_ij=1; λ^(t)) p(x_i | z_ij=1; λ^(t), μ^(t), Σ^(t)) ]
-      ────────────────────────────────────────────────────────
-      Σ_{j'=1}^K p(z_ij'=1; λ^(t)) p(x_i | z_ij'=1; λ^(t), μ^(t), Σ^(t))
-
-    = [ λ_j^(t) N(x_i; μ_j^(t), Σ_j^(t)) ]
-      ─────────────────────────────────────────────
-      Σ_{j'=1}^K λ_j'^(t) N(x_i; μ_j'^(t), Σ_j'^(t))
-
-    = p_ij^(t)</code></pre>
+        $$\begin{aligned}
+        p(z_{ij}=1 \mid x; \lambda^{(t)}, \mu^{(t)}, \Sigma^{(t)}) &= p(z_{ij}=1 \mid x_i, \lambda^{(t)}, \mu^{(t)}, \Sigma^{(t)}) \\[6pt]
+        &= \frac{p(z_{ij}=1; \lambda^{(t)})\, p(x_i \mid z_{ij}=1; \lambda^{(t)}, \mu^{(t)}, \Sigma^{(t)})}{\sum_{j'=1}^{K} p(z_{ij'}=1; \lambda^{(t)})\, p(x_i \mid z_{ij'}=1; \lambda^{(t)}, \mu^{(t)}, \Sigma^{(t)})} \\[6pt]
+        &= \frac{\lambda_j^{(t)} \mathcal{N}(x_i; \mu_j^{(t)}, \Sigma_j^{(t)})}{\sum_{j'=1}^{K} \lambda_{j'}^{(t)} \mathcal{N}(x_i; \mu_{j'}^{(t)}, \Sigma_{j'}^{(t)})} \\[6pt]
+        &= p_{ij}^{(t)}
+        \end{aligned}$$
 
         <p>So we have:</p>
 
-        <pre><code>E_{z~p(·|x,λ^(t),μ^(t),Σ^(t))}[ l(λ, μ, Σ; x, z) ] = Σ_i Σ_j p_ij^(t) ( log λ_j + log N(x_i; μ_j, Σ_j) )</code></pre>
+        $$\mathbb{E}_{z\sim p(\cdot|x,\lambda^{(t)},\mu^{(t)},\Sigma^{(t)})}\left[ l(\lambda, \mu, \Sigma; x, z) \right] = \sum_i \sum_j p_{ij}^{(t)} \left( \log \lambda_j + \log \mathcal{N}(x_i; \mu_j, \Sigma_j) \right)$$
 
-        <p>Notice that we can maximize the <code>log λ_j</code> term and the <code>log N</code> term independently.</p>
+        <p>Notice that we can maximize the $\log \lambda_j$ term and the $\log \mathcal{N}$ term independently.</p>
 
-        <h3>M-Step, Part 1: Maximize λ</h3>
+        <h3>M-Step, Part 1: Maximize $\lambda$</h3>
 
-        <pre><code>argmax_{λ_1,...,λ_K}  Σ_i Σ_j p_ij^(t) ln λ_j
+        $$\underset{\lambda_1,\ldots,\lambda_K}{\arg\max} \sum_i \sum_j p_{ij}^{(t)} \ln \lambda_j \qquad \text{s.t.} \quad 0 \le \lambda_j \le 1$$
 
-s.t.  0 ≤ λ_j ≤ 1</code></pre>
+        <p>This constraint is not necessary. Since we are dealing with logs, $\lambda_j &gt; 0$, and $\lambda_1 + ... + \lambda_K = 1$, so $\lambda_j \le 1$. The result will satisfy this automatically if it exists.</p>
 
-        <p>This constraint is not necessary. Since we are dealing with logs, <code>λ_j &gt; 0</code>, and <code>λ_1 + ... + λ_K = 1</code>, so <code>λ_j ≤ 1</code>. The result will satisfy this automatically if it exists.</p>
+        <p>Lagrange form (using $\ell$ for the Lagrange multiplier, to keep it distinct from $\lambda_j$):</p>
 
-        <p>Lagrange form (using <code>ℓ</code> for the Lagrange multiplier, to keep it distinct from <code>λ_j</code>):</p>
+        $$\mathcal{L}(\lambda_1, \ldots, \lambda_K, \ell) = \sum_i \sum_j p_{ij}^{(t)} \ln \lambda_j + \ell(\lambda_1 + \cdots + \lambda_K - 1)$$
 
-        <pre><code>𝓛(λ_1, ..., λ_K, ℓ) = Σ_i Σ_j p_ij^(t) ln λ_j + ℓ(λ_1 + ... + λ_K - 1)
+        $$\frac{\partial \mathcal{L}}{\partial \lambda_j} = \frac{\sum_i p_{ij}^{(t)}}{\lambda_j} + \ell = 0$$
 
-∂𝓛/∂λ_j = Σ_i p_ij^(t) / λ_j + ℓ = 0
+        $$\Rightarrow\; \lambda_j = \frac{\sum_i p_{ij}^{(t)}}{-\ell} = \frac{\sum_i p_{ij}^{(t)}}{\sum_i \sum_j p_{ij}^{(t)}}$$
 
-=> λ_j = Σ_i p_ij^(t) / (-ℓ) = Σ_i p_ij^(t) / Σ_i Σ_j p_ij^(t)</code></pre>
+        <p>(putting $\lambda_1 + ... + \lambda_K = 1$ gives $\sum_i \sum_j p_{ij}^{(t)} / (-\ell) = 1$.)</p>
 
-        <p>(putting <code>λ_1 + ... + λ_K = 1</code> gives <code>Σ_i Σ_j p_ij^(t) / (-ℓ) = 1</code>.)</p>
+        <h3>M-Step, Part 2: Maximize $\mu$ and $\Sigma$</h3>
 
-        <h3>M-Step, Part 2: Maximize μ and Σ</h3>
+        $$\underset{\mu_j, \Sigma_j}{\arg\max} \sum_i \sum_j p_{ij}^{(t)} \ln \mathcal{N}(x_i; \mu_j, \Sigma_j)$$
 
-        <pre><code>argmax_{μ_j, Σ_j}  Σ_i Σ_j p_ij^(t) ln N(x_i; μ_j, Σ_j)
+        $$\Longleftrightarrow\; \underset{\mu_j, \Sigma_j}{\arg\max} \sum_i \sum_j p_{ij}^{(t)} \left( -\frac{d}{2} \ln(2\pi) - \frac{1}{2} \ln(\det \Sigma_j) - \frac{1}{2} (x_i-\mu_j)^T \Sigma_j^{-1} (x_i-\mu_j) \right)$$
 
-⟺ argmax_{μ_j, Σ_j}  Σ_i Σ_j p_ij^(t) ( -d/2 ln(2π) - ½ ln(det Σ_j) - ½ (x_i-μ_j)ᵀ Σ_j⁻¹ (x_i-μ_j) )</code></pre>
+        <p>Take the derivative w.r.t. $\mu_j$ (using $\frac{\partial}{\partial x} (x^T A x) = (A + A^T)x$):</p>
 
-        <p>Take the derivative w.r.t. <code>μ_j</code> (using <code>∂/∂x (xᵀAx) = (A + Aᵀ)x</code>):</p>
+        $$\sum_i p_{ij}^{(t)}\, 2 \Sigma_j^{-1} (x_i - \mu_j) = 0$$
 
-        <pre><code>Σ_i p_ij^(t) 2 Σ_j⁻¹ (x_i - μ_j) = 0
+        $$\Rightarrow\; \sum_i p_{ij}^{(t)} \Sigma_j^{-1} x_i = \sum_i p_{ij}^{(t)} \Sigma_j^{-1} \mu_j$$
 
-=> Σ_i p_ij^(t) Σ_j⁻¹ x_i = Σ_i p_ij^(t) Σ_j⁻¹ μ_j
+        $$\Rightarrow\; \mu_j = \frac{\sum_i p_{ij}^{(t)} x_i}{\sum_i p_{ij}^{(t)}}$$
 
-=> μ_j = Σ_i p_ij^(t) x_i / Σ_i p_ij^(t)</code></pre>
+        <p>For the covariance, let $\Lambda_j = \Sigma_j^{-1}$ (the precision matrix), and take the derivative w.r.t. $\Lambda_j$ instead — if you take it w.r.t. $\Sigma_j$ you will get the same result, but it is much harder. Using $\frac{\partial}{\partial A} \ln(\det A) = (A^{-1})^T$ and $\frac{\partial}{\partial A} (x^T A x) = x x^T$:</p>
 
-        <p>For the covariance, let <code>Λ_j = Σ_j⁻¹</code> (the precision matrix), and take the derivative w.r.t. <code>Λ_j</code> instead — if you take it w.r.t. <code>Σ_j</code> you will get the same result, but it is much harder. Using <code>∂/∂A ln(det A) = (A⁻¹)ᵀ</code> and <code>∂/∂A (xᵀAx) = xxᵀ</code>:</p>
+        $$\sum_i p_{ij}^{(t)} \left( \Sigma_j - (x_i-\mu_j)(x_i-\mu_j)^T \right) = 0 \qquad (\text{up to a factor of } \tfrac{1}{2})$$
 
-        <pre><code>Σ_i p_ij^(t) ( Σ_j - (x_i-μ_j)(x_i-μ_j)ᵀ ) = 0     (up to a factor of ½)
+        $$\Rightarrow\; \Sigma_j = \frac{\sum_i p_{ij}^{(t)} (x_i-\mu_j)(x_i-\mu_j)^T}{\sum_i p_{ij}^{(t)}}$$
 
-=> Σ_j = Σ_i p_ij^(t) (x_i-μ_j)(x_i-μ_j)ᵀ / Σ_i p_ij^(t)</code></pre>
-
-        <p>Note: the variance collapses to 0 when <code>p_ij^(t) = 1</code> for a single point <code>i</code>.</p>
+        <p>Note: the variance collapses to 0 when $p_{ij}^{(t)} = 1$ for a single point $i$.</p>
 
         <h2>References</h2>
         <ul>

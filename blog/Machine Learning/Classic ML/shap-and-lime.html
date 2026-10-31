@@ -135,7 +135,14 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+    
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -164,7 +171,7 @@
         <h2>LIME: Local Interpretable Model-agnostic Explanations</h2>
 
         <p>LIME finds a <strong>local linear approximation</strong> of any model. 
-           The idea is that while a model (e.g. <code>f(x1, x2, x3)</code>) can be very complex globally, 
+           The idea is that while a model (e.g. $f(x_1, x_2, x_3)$) can be very complex globally, 
            a linear approximate in the vicinity of a particular instance could be good. 
            So we can fit a simple, interpretable linear model around the instance, and this linear model
            will behave similarly to the complex model near the point of interest.</p>
@@ -187,11 +194,11 @@
 
         <h3>Step 2: Make Predictions</h3>
         <p>Use the original (complex) model to get predictions for all perturbed instances:</p>
-        <pre><code>y1 = f(x1), y2 = f(x2), ..., yn = f(xn)</code></pre>
+        $$y_1 = f(x_1),\; y_2 = f(x_2),\; \ldots,\; y_n = f(x_n)$$
 
         <h3>Step 3: Measure Distance</h3>
-        <p>Compute the distance between the original instance <code>x</code> and each perturbed instance:</p>
-        <pre><code>d_i = d(x, x_i)</code></pre>
+        <p>Compute the distance between the original instance $x$ and each perturbed instance:</p>
+        $$d_i = d(x, x_i)$$
         <ul>
             <li>For <strong>continuous features</strong>: use Euclidean distance (or other suitable metric)</li>
             <li>For <strong>categorical features</strong>: if the value is the same as the original, distance is 0; if different, distance is 1</li>
@@ -199,21 +206,22 @@
 
         <h3>Step 4: Compute Weights</h3>
         <p>Assign weights to each perturbed instance using an exponential kernel. The intuition: instances close to the original should get more weight.</p>
-        <pre><code>w_i = exp(-d_i^2 / sigma^2)</code></pre>
-        <p>Here <code>sigma</code> is the kernel width, which controls the locality of the explanation:</p>
+        $$w_i = \exp\left(-\frac{d_i^2}{\sigma^2}\right)$$
+        <p>Here $\sigma$ is the kernel width, which controls the locality of the explanation:</p>
         <ul>
-            <li>A <strong>small sigma</strong>: only instances very close to the original get attention (more local explanation)</li>
-            <li>A <strong>larger sigma</strong>: instances farther from the original also receive attention (broader explanation)</li>
+            <li>A <strong>small $\sigma$</strong>: only instances very close to the original get attention (more local explanation)</li>
+            <li>A <strong>larger $\sigma$</strong>: instances farther from the original also receive attention (broader explanation)</li>
         </ul>
 
         <h3>Step 5: Fit a Weighted Linear Regression</h3>
         <p>With the perturbed instances as input, their predictions as labels, and the distance-based weights, fit a weighted linear regression:</p>
-        <pre><code>Input:  x1, ..., xn
-Labels: y1, ..., yn
+        $$\begin{aligned}
+        &\text{Input:} \quad x_1, \ldots, x_n \\
+        &\text{Labels:} \quad y_1, \ldots, y_n \\[6pt]
+        &\text{Loss} = \sum_{i=1}^{n} w_i \left(y_i - \sum_{j=1}^{d} \beta_j x_{ij}\right)^2
+        \end{aligned}$$
 
-Loss = sum_{i=1}^{n} w_i * (y_i - sum_{j=1}^{d} beta_j * x_{ij})^2</code></pre>
-
-        <p>The weight <code>w_i</code> ensures that the loss for each sample is weighted by its proximity to the original instance. The learned coefficients <code>beta_j</code> tell us how the model output changes locally when feature j changes.</p>
+        <p>The weight $w_i$ ensures that the loss for each sample is weighted by its proximity to the original instance. The learned coefficients $\beta_j$ tell us how the model output changes locally when feature $j$ changes.</p>
 
         <!-- SVG diagram: LIME learns the local hyperplane -->
         <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:400px;display:block;margin:0 auto 16px;">
@@ -234,7 +242,7 @@ Loss = sum_{i=1}^{n} w_i * (y_i - sum_{j=1}^{d} beta_j * x_{ij})^2</code></pre>
         </svg>
 
         <h3>LIME for Classification</h3>
-        <p>For classification problems, suppose the model predicts probabilities for multiple classes: <code>p(A) = 0.3</code>, <code>p(B) = 0.2</code>, <code>p(C) = 0.5</code>. To explain why the model predicted <code>p(A) = 0.3</code>, run LIME with <code>y = p(A)</code> as the target -- that is, use the probability of class A as the label for each perturbed instance.</p>
+        <p>For classification problems, suppose the model predicts probabilities for multiple classes: $p(A) = 0.3$, $p(B) = 0.2$, $p(C) = 0.5$. To explain why the model predicted $p(A) = 0.3$, run LIME with $y = p(A)$ as the target -- that is, use the probability of class A as the label for each perturbed instance.</p>
 
         <h2>SHAP: SHapley Additive exPlanations</h2>
 
@@ -251,53 +259,52 @@ Loss = sum_{i=1}^{n} w_i * (y_i - sum_{j=1}^{d} beta_j * x_{ij})^2</code></pre>
         <h3>Example Setup</h3>
         <p>Consider a model that predicts the price of a flat given three features:</p>
         <ul>
-            <li><code>x1</code>: location</li>
-            <li><code>x2</code>: square footage</li>
-            <li><code>x3</code>: number of bedrooms</li>
+            <li>$x_1$: location</li>
+            <li>$x_2$: square footage</li>
+            <li>$x_3$: number of bedrooms</li>
         </ul>
-        <p>The model can be anything -- linear model, tree, neural network, etc. Given specific values for <code>x1, x2, x3</code>, we get a prediction <code>y_hat = f(x1, x2, x3)</code>. The question is: how does each feature contribute to this particular prediction?</p>
+        <p>The model can be anything -- linear model, tree, neural network, etc. Given specific values for $x_1, x_2, x_3$, we get a prediction $\hat{y} = f(x_1, x_2, x_3)$. The question is: how does each feature contribute to this particular prediction?</p>
 
         <h3>Computing the SHAP Value for a Feature</h3>
-        <p>To find the contribution of <code>x1</code>, we consider all possible coalitions (subsets) of features and measure how adding <code>x1</code> changes the prediction.</p>
+        <p>To find the contribution of $x_1$, we consider all possible coalitions (subsets) of features and measure how adding $x_1$ changes the prediction.</p>
 
         <p>First, compute predictions for all possible subsets of features. When a feature is "absent" from a coalition, we marginalize over it (take the expectation over its possible values):</p>
         <ul>
-            <li>Average prediction: <code>E[f(x1, x2, x3)]</code></li>
-            <li>Prediction with only <code>{x1}</code>: <code>E[f(x1, x2, x3) | X1 = x1]</code></li>
-            <li>Prediction with <code>{x1, x2}</code>: <code>E[f(x1, x2, x3) | X1 = x1, X2 = x2]</code></li>
+            <li>Average prediction: $\mathbb{E}[f(x_1, x_2, x_3)]$</li>
+            <li>Prediction with only $\{x_1\}$: $\mathbb{E}[f(x_1, x_2, x_3) \mid X_1 = x_1]$</li>
+            <li>Prediction with $\{x_1, x_2\}$: $\mathbb{E}[f(x_1, x_2, x_3) \mid X_1 = x_1, X_2 = x_2]$</li>
             <li>...and so on for all subsets</li>
         </ul>
 
         <h3>Marginal Contributions</h3>
-        <p>For each coalition that does not contain <code>x1</code>, compute the marginal contribution of <code>x1</code> by comparing the prediction with and without it:</p>
+        <p>For each coalition that does not contain $x_1$, compute the marginal contribution of $x_1$ by comparing the prediction with and without it:</p>
 
-        <pre><code>Coalition {}:
-  Without x1: C({}) = E[f(x1,x2,x3)]
-  With x1:    C({x1}) = E[f(x1,x2,x3) | X1=x1]
-  Marginal contribution: C({x1}) - C({})
-
-Coalition {x2}:
-  Without x1: C({x2}) = E[f(x1,x2,x3) | X2=x2]
-  With x1:    C({x1,x2}) = E[f(x1,x2,x3) | X1=x1, X2=x2]
-  Marginal contribution: C({x1,x2}) - C({x2})
-
-Coalition {x3}:
-  Without x1: C({x3}) = E[f(x1,x2,x3) | X3=x3]
-  With x1:    C({x1,x3}) = E[f(x1,x2,x3) | X1=x1, X3=x3]
-  Marginal contribution: C({x1,x3}) - C({x3})
-
-Coalition {x2, x3}:
-  Without x1: C({x2,x3}) = E[f(x1,x2,x3) | X2=x2, X3=x3]
-  With x1:    C({x1,x2,x3}) = f(x1,x2,x3)
-  Marginal contribution: C({x1,x2,x3}) - C({x2,x3})</code></pre>
+        $$\begin{aligned}
+        &\textbf{Coalition } \{\}: \\
+        &\quad \text{Without } x_1: \; C(\{\}) = \mathbb{E}[f(x_1,x_2,x_3)] \\
+        &\quad \text{With } x_1: \; C(\{x_1\}) = \mathbb{E}[f(x_1,x_2,x_3) \mid X_1=x_1] \\
+        &\quad \text{Marginal contribution: } C(\{x_1\}) - C(\{\}) \\[10pt]
+        &\textbf{Coalition } \{x_2\}: \\
+        &\quad \text{Without } x_1: \; C(\{x_2\}) = \mathbb{E}[f(x_1,x_2,x_3) \mid X_2=x_2] \\
+        &\quad \text{With } x_1: \; C(\{x_1,x_2\}) = \mathbb{E}[f(x_1,x_2,x_3) \mid X_1=x_1, X_2=x_2] \\
+        &\quad \text{Marginal contribution: } C(\{x_1,x_2\}) - C(\{x_2\}) \\[10pt]
+        &\textbf{Coalition } \{x_3\}: \\
+        &\quad \text{Without } x_1: \; C(\{x_3\}) = \mathbb{E}[f(x_1,x_2,x_3) \mid X_3=x_3] \\
+        &\quad \text{With } x_1: \; C(\{x_1,x_3\}) = \mathbb{E}[f(x_1,x_2,x_3) \mid X_1=x_1, X_3=x_3] \\
+        &\quad \text{Marginal contribution: } C(\{x_1,x_3\}) - C(\{x_3\}) \\[10pt]
+        &\textbf{Coalition } \{x_2, x_3\}: \\
+        &\quad \text{Without } x_1: \; C(\{x_2,x_3\}) = \mathbb{E}[f(x_1,x_2,x_3) \mid X_2=x_2, X_3=x_3] \\
+        &\quad \text{With } x_1: \; C(\{x_1,x_2,x_3\}) = f(x_1,x_2,x_3) \\
+        &\quad \text{Marginal contribution: } C(\{x_1,x_2,x_3\}) - C(\{x_2,x_3\})
+        \end{aligned}$$
 
         <h3>The SHAP Value Formula</h3>
-        <p>The SHAP value is the <strong>weighted average</strong> of all marginal contributions of <code>x1</code> across all coalitions. The weight for each coalition of size <code>n_i</code> (out of <code>d</code> total features) is:</p>
+        <p>The SHAP value is the <strong>weighted average</strong> of all marginal contributions of $x_1$ across all coalitions. The weight for each coalition of size $n_i$ (out of $d$ total features) is:</p>
 
-        <pre><code>weight = n_i! * (d - n_i - 1)! / d!</code></pre>
+        $$\text{weight} = \frac{n_i!\,(d - n_i - 1)!}{d!}$$
 
-        <p>For example, with <code>d = 3</code> features and coalition <code>{x2}</code> (size <code>n_i = 1</code>):</p>
-        <pre><code>weight = 1! * (3 - 1 - 1)! / 3! = 1 * 1 / 6 = 1/6</code></pre>
+        <p>For example, with $d = 3$ features and coalition $\{x_2\}$ (size $n_i = 1$):</p>
+        $$\text{weight} = \frac{1!\,(3 - 1 - 1)!}{3!} = \frac{1 \cdot 1}{6} = \frac{1}{6}$$
 
         <p>This weighting ensures that all possible orderings in which features could join the coalition are treated equally -- this is the fairness guarantee from Shapley value theory.</p>
 
@@ -305,7 +312,7 @@ Coalition {x2, x3}:
         <p>The procedure above computes the SHAP value for one feature in one prediction. We can compute SHAP values for all features across many predictions. Averaging the absolute SHAP values for one feature across many predictions gives us a measure of <strong>feature importance</strong> -- how much that feature matters globally.</p>
 
         <h2>Practical Considerations</h2>
-        <p>Computing exact SHAP values requires evaluating <code>2^d</code> marginal contributions (one for each possible coalition), which becomes impractical as the number of features grows. Approximation methods are necessary in practice.</p>
+        <p>Computing exact SHAP values requires evaluating $2^d$ marginal contributions (one for each possible coalition), which becomes impractical as the number of features grows. Approximation methods are necessary in practice.</p>
 
         <p>For efficient approximation, see the <a href="https://shap.readthedocs.io/en/latest/generated/shap.KernelExplainer.html">SHAP KernelExplainer</a>, which uses a weighted linear regression approach (similar in spirit to LIME) to approximate Shapley values without exhaustive enumeration.</p>
 

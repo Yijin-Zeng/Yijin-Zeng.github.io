@@ -135,7 +135,13 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -162,7 +168,7 @@
         <p>We cannot always just paste all relevant information directly into the prompt. There are several practical reasons:</p>
         <ol>
             <li><strong>Limited context window</strong> -- even modern models have a finite number of tokens they can process at once.</li>
-            <li><strong>Latency</strong> -- transformer self-attention has O(n^2) complexity in the sequence length, so longer prompts are significantly slower.</li>
+            <li><strong>Latency</strong> -- transformer self-attention has $O(n^2)$ complexity in the sequence length, so longer prompts are significantly slower.</li>
             <li><strong>Memory / lost-in-the-middle</strong> -- models tend to focus on the beginning and end of long contexts, often missing information in the middle.</li>
         </ol>
 
@@ -278,7 +284,7 @@ user: [user query]</code></pre>
         <h3>4.2 Solution for efficient retrieval: Hierarchical Navigable Small World (HNSW)</h3>
         <p>Even with compact embeddings as we just described, searching through millions of vectors with brute-force cosine similarity could be slow. We can consider some naive methods for 
             more efficient searching. For example, we could cluster all vectors into different clusters first, and then search within the cluster. While simple, this method does not produces
-            high quaility retrieval results in practice. A widely adopted solution is HNSW, which is a graph-based approximate nearest-neighbor algorithm that achieves O(log N) search time.</p>
+            high quaility retrieval results in practice. A widely adopted solution is HNSW, which is a graph-based approximate nearest-neighbor algorithm that achieves $O(\log N)$ search time.</p>
 
         <h3>The Core Architecture</h3>
         <ul>
@@ -289,13 +295,13 @@ user: [user query]</code></pre>
         </ul>
 
         <h3>The Search Phase</h3>
-        <p>When a user asks a question, the query vector q navigates the graph in O(log N) time:</p>
+        <p>When a user asks a question, the query vector $q$ navigates the graph in $O(\log N)$ time:</p>
         <ol>
-            <li><strong>Enter at the Top</strong>: the query q starts at a predefined entry point (e.g. choosen randomly) on the highest, sparsest layer.</li>
-            <li><strong>Horizontal Greedy search</strong>: q measures its distance to the entry point's neighbors, jumps to the neighbor with the minimum distance, and repeats.</li>
-            <li><strong>The ef List</strong>: as q searches, it maintains a dynamic running list of the top <code>ef</code> (e.g., 50) closest nodes it has evaluated on that layer.</li>
-            <li><strong>Local Minimum and Drop</strong>: when q can no longer find any neighbor closer than those already in its ef list, it has hit a local minimum. It stops moving horizontally and drops down one layer, using its current position (i.e. the node with minimum distance to q at this layer) as the new starting point to search.</li>
-            <li><strong>The Final Answer</strong>: steps 2-4 repeats until q hits the local minimum on Layer 0. Because Layer 0 contains all the data, the closest nodes in the final ef list are returned as Top-K retrieved chunks.</li>
+            <li><strong>Enter at the Top</strong>: the query $q$ starts at a predefined entry point (e.g. choosen randomly) on the highest, sparsest layer.</li>
+            <li><strong>Horizontal Greedy search</strong>: $q$ measures its distance to the entry point's neighbors, jumps to the neighbor with the minimum distance, and repeats.</li>
+            <li><strong>The ef List</strong>: as $q$ searches, it maintains a dynamic running list of the top <code>ef</code> (e.g., 50) closest nodes it has evaluated on that layer.</li>
+            <li><strong>Local Minimum and Drop</strong>: when $q$ can no longer find any neighbor closer than those already in its ef list, it has hit a local minimum. It stops moving horizontally and drops down one layer, using its current position (i.e. the node with minimum distance to $q$ at this layer) as the new starting point to search.</li>
+            <li><strong>The Final Answer</strong>: steps 2-4 repeats until $q$ hits the local minimum on Layer 0. Because Layer 0 contains all the data, the closest nodes in the final ef list are returned as Top-K retrieved chunks.</li>
         </ol>
 
         <pre><code>Example (n=10 vectors, M=2 neighbors, ef=2 search size):
@@ -313,14 +319,14 @@ Layer 0:  V1  V2  V3  V4  V5  V6  V7  V8  V9  V10 (all vectors)
               final answer: return top-K from ef list</code></pre>
 
         <h3>The Insertion Phase</h3>
-        <p>When embedding a new text chunk and inserting it into the graph (also O(log N) time):</p>
+        <p>When embedding a new text chunk and inserting it into the graph (also $O(\log N)$ time):</p>
         <ol>
             <li><strong>Initialization</strong>: randomly assign a maximum layer height for the new node (exponential decay, so very few nodes reach the top layers).</li>
             <li><strong>Search to Insert</strong>: the new node pretends to be a search query.</li>
             <li><strong>Wire the Edges (M connections)</strong>: for every layer the new node exists on, it selects the top M closest nodes from its ef list on that layer and creates bidirectional horizontal connections.</li>
         </ol>
 
-        <p>Why is HNSW O(log N)? It is desgined to have log(N) layers (remember that the number of nodes become exponentially sparser going up the layers).
+        <p>Why is HNSW $O(\log N)$? It is desgined to have $\log(N)$ layers (remember that the number of nodes become exponentially sparser going up the layers).
             For each layer, the search is (in average) constant time. Intuitivly, because at layer n-1, the node is already at the local minimum, so we might 
             not do too much searching at layer n.
         </p>

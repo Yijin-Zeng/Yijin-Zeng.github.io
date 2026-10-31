@@ -139,7 +139,13 @@
         .post-content strong {
             color: var(--text);
         }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 </head>
 <body>
 
@@ -163,7 +169,7 @@
 
         <h2>Simple RNN</h2>
 
-        <p>Consider a single neuron with output y and input x, feeding its own previous output back in at every step. Unrolled through time, this looks like:</p>
+        <p>Consider a single neuron with output $y$ and input $x$, feeding its own previous output back in at every step. Unrolled through time, this looks like:</p>
 
         <svg viewBox="0 0 600 210" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
     <text x="90" y="34" text-anchor="middle" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">ŷ⁽¹⁾</text>
@@ -213,24 +219,24 @@
 
         <p>The formulation is</p>
 
-        <pre><code>ŷ⁽ᵗ⁾ = σ( w_y · ŷ⁽ᵗ⁻¹⁾ + w_x x⁽ᵗ⁾ + b )</code></pre>
+        $$\hat{y}^{(t)} = \sigma\left( w_y \cdot \hat{y}^{(t-1)} + w_x x^{(t)} + b \right)$$
 
-        <p>where σ is the <strong>activation function</strong>, w_y is a scalar, w_x is a vector of length d (the dimension of inputs), and b is a scalar.</p>
+        <p>where $\sigma$ is the <strong>activation function</strong>, $w_y$ is a scalar, $w_x$ is a vector of length $d$ (the dimension of inputs), and $b$ is a scalar.</p>
 
-        <p>With multiple neurons, the output y and input x are vectors, and the same unrolling applies (same diagram, just vector-valued at every arrow), except the ŷ⁽ᵗ⁻¹⁾ terms at each time step are also known as <strong>hidden states</strong>:</p>
+        <p>With multiple neurons, the output $y$ and input $x$ are vectors, and the same unrolling applies (same diagram, just vector-valued at every arrow), except the $\hat{y}^{(t-1)}$ terms at each time step are also known as <strong>hidden states</strong>:</p>
 
-        <pre><code>ŷ⁽ᵗ⁾ = σ( W_y ŷ⁽ᵗ⁻¹⁾ + W_x x⁽ᵗ⁾ + b )</code></pre>
+        $$\hat{y}^{(t)} = \sigma\left( W_y \hat{y}^{(t-1)} + W_x x^{(t)} + b \right)$$
 
         <p>Apparently, we can stack many layers of RNN to make our model more representative.</p>
 
-        <p><strong>Problem with Simple RNN: short-term memory.</strong> ŷ⁽ᵗ⁾ contains less and less information about x⁽¹⁾ as t increases. Therefore,
+        <p><strong>Problem with Simple RNN: short-term memory.</strong> $\hat{y}^{(t)}$ contains less and less information about $x^{(1)}$ as $t$ increases. Therefore,
         Simple RNN cannot deal with long sequences well.
         </p>
 
         <h2>LSTM</h2>
 
         <p><strong>LSTM (long short-term memory)</strong> cells solve the short-term memory problem partly by introducing 
-           <strong>gates</strong> to divide memory into short-term memory <code>h⁽ᵗ⁾</code> and long-term memory <code>C⁽ᵗ⁾</code>.</p>
+           <strong>gates</strong> to divide memory into short-term memory $h^{(t)}$ and long-term memory $C^{(t)}$.</p>
 
         <svg viewBox="0 0 620 330" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:560px; display:block; margin:0 auto 24px;">
             <text x="30" y="55" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">C⁽ᵗ⁻¹⁾</text>
@@ -291,7 +297,7 @@
                 </marker>
             </defs>
         </svg>
-        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">All four boxes take both h⁽ᵗ⁻¹⁾ and x⁽ᵗ⁾ as input. The forget and input gates decide how much of C⁽ᵗ⁻¹⁾ to keep versus overwrite with a new candidate, giving C⁽ᵗ⁾; the output gate then decides how much of tanh(C⁽ᵗ⁾) becomes h⁽ᵗ⁾ and y⁽ᵗ⁾.</p>
+        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">All four boxes take both $h^{(t-1)}$ and $x^{(t)}$ as input. The forget and input gates decide how much of $C^{(t-1)}$ to keep versus overwrite with a new candidate, giving $C^{(t)}$; the output gate then decides how much of $\tanh(C^{(t)})$ becomes $h^{(t)}$ and $y^{(t)}$.</p>
 
         <p><strong>Pros of LSTM:</strong> in theory, it can decide what information to forget and keep, so important information can be kept
         for longer sequences, and less important information can be discarded.</p>
@@ -345,11 +351,11 @@
                 </marker>
             </defs>
         </svg>
-        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">One sigmoid vector (bottom left box) controls both gates: it feeds the input gate directly, and its complement (1&minus;·) feeds the forget gate.</p>
+        <p style="text-align:center; font-size:0.82rem; color:var(--text-light); margin-top:-8px;">One sigmoid vector (bottom left box) controls both gates: it feeds the input gate directly, and its complement ($1-\cdot$) feeds the forget gate.</p>
 
         <h2>Encoder-Decoder for Machine Translation</h2>
 
-        <p>An encoder-decoder network for machine translation works as follows. The encoder is an RNN that produces y⁽⁰⁾, y⁽¹⁾, ..., y⁽ᵗ⁾, and the last of these is used to initialize the hidden state of the first layer of the decoder. The decoder has an embedding layer and generates tokens autoregressively, e.g. translating "milk, drink, I" (the encoder input is reversed, because "I" is normally the first word to translate) into a sequence of Chinese tokens ending in <code>&lt;eos&gt;</code>.</p>
+        <p>An encoder-decoder network for machine translation works as follows. The encoder is an RNN that produces $y^{(0)}, y^{(1)}, \ldots, y^{(t)}$, and the last of these is used to initialize the hidden state of the first layer of the decoder. The decoder has an embedding layer and generates tokens autoregressively, e.g. translating "milk, drink, I" (the encoder input is reversed, because "I" is normally the first word to translate) into a sequence of Chinese tokens ending in <code>&lt;eos&gt;</code>.</p>
 
         <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:700px; display:block; margin:0 auto 24px;">
     <rect x="30" y="80" width="130" height="55" fill="none" stroke="#1a1a1a" stroke-width="2" rx="5"/>
@@ -421,16 +427,16 @@
 
 
 
-        <p><strong>Decoder during inference: autoregressive.</strong> At time t, layer i's hidden state hᵢ⁽ᵗ⁻¹⁾ feeds layer i+1's hᵢ₊₁⁽ᵗ⁻¹⁾. Each layer deals with one time step and moves immediately to the next layer.</p>
+        <p><strong>Decoder during inference: autoregressive.</strong> At time $t$, layer $i$'s hidden state $h_i^{(t-1)}$ feeds layer $i+1$'s $h_{i+1}^{(t-1)}$. Each layer deals with one time step and moves immediately to the next layer.</p>
 
-        <p><strong>Decoder during training: teacher forcing.</strong> The decoder behaves exactly like the encoder by applying teacher forcing, where each layer processes all time steps before moving to the next layer. For predicting y⁽ᵗ⁾, we assume the model predicted y⁽¹⁾, ..., y⁽ᵗ⁻¹⁾ correctly.</p>
+        <p><strong>Decoder during training: teacher forcing.</strong> The decoder behaves exactly like the encoder by applying teacher forcing, where each layer processes all time steps before moving to the next layer. For predicting $y^{(t)}$, we assume the model predicted $y^{(1)}, \ldots, y^{(t-1)}$ correctly.</p>
 
         <p><strong>Problem with standard encoder-decoder: information bottleneck.</strong> We need to encode the whole input sentence into a fixed-length vector regardless of the input length. 
         As the sequence becomes longer, important information gets diluted.</p>
 
         <h2>Bahdanau Attention</h2>
 
-        <p>In a standard encoder-decoder, only the <strong>last</strong> embedding of the encoder is used for decoding, because it is the only one with all of the input's information. In <strong>Bahdanau attention</strong>, at each decoder time step, all encoder embeddings y⁽⁰⁾, y⁽¹⁾, ..., y⁽ᵗ⁾ are weighted-averaged instead. This new embedding determines which word the decoder should focus on at that time step.</p>
+        <p>In a standard encoder-decoder, only the <strong>last</strong> embedding of the encoder is used for decoding, because it is the only one with all of the input's information. In <strong>Bahdanau attention</strong>, at each decoder time step, all encoder embeddings $y^{(0)}, y^{(1)}, \ldots, y^{(t)}$ are weighted-averaged instead. This new embedding determines which word the decoder should focus on at that time step.</p>
 
         <svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:600px; display:block; margin:0 auto 24px;">
             <text x="90" y="108" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#1a1a1a">y⁽⁰⁾</text>
@@ -479,15 +485,15 @@
 
         <p>The formulas for Bahdanau attention:</p>
 
-        <pre><code>e(t,i) = vᵗ tanh( W [ h_{t-1} ; y⁽ⁱ⁾ ] )
+        $$\begin{aligned}
+e(t,i) &= v^t \tanh\left( W \left[ h_{t-1} ; y^{(i)} \right] \right) \\[8pt]
+s(t,i) &= \frac{\exp(e(t,i))}{\sum_i \exp(e(t,i))} \\[8pt]
+\text{weighted average} &= \sum_i y^{(i)} s(t,i)
+\end{aligned}$$
 
-s(t,i) = exp(e(t,i)) / Σᵢ exp(e(t,i))
+        <p>where $h_{t-1}$ is the decoder's hidden state at time $t-1$, used to determine the distribution of the next token at time $t-1$.</p>
 
-weighted average = Σᵢ y⁽ⁱ⁾ s(t,i)</code></pre>
-
-        <p>where h_{t-1} is the decoder's hidden state at time t-1, used to determine the distribution of the next token at time t-1.</p>
-
-        <p>How to use it: (1) concatenate it with the current input before feeding into the RNN, or (2) use it for the output only — get y_(t) as usual, then do softmax(Wc [ y_(t) ; c_(t) ]).</p>
+        <p>How to use it: (1) concatenate it with the current input before feeding into the RNN, or (2) use it for the output only — get $y_{(t)}$ as usual, then do $\mathrm{softmax}(W_c [\, y_{(t)} ; c_{(t)} ])$.</p>
 
         <p><strong>Why is attention mechanism revolutionary?</strong> It breaks the information bottleneck. Without attention, the whole sentence, e.g. 3 words long or 1000 words long,
         is compressed into one fixed-length vector. With attention, information is represented as number of words vector length, so it scales dynamically with sequence length.</p>
