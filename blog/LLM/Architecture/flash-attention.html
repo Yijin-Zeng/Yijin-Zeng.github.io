@@ -176,7 +176,7 @@ $$R = \mathrm{Softmax}\!\left(\frac{Q K^T}{\sqrt{d}}\right) V$$
 <p>Here $R$ is the output matrix. The problem is that computing the full $Q K^T$ matrix requires $O(N^2)$ memory where $N$ is the sequence length. 
     For long sequences, this intermediate matrix is enormous and must be read/written to slow GPU high-bandwidth memory (HBM).</p>
 
-<p><strong>The Hardware Process for standard attention:</strong></p>
+<p><strong>The Hardware Process for standard attention:</strong> (see <a href="../../Computer Science/Fundamentals/gpu-basics.html">GPU Basics</a> for what HBM and SRAM are)</p>
 <ol>
     <li><strong>Read</strong> $Q$ and $K$ from HBM into Static Random-Access Memory (SRAM).</li>
     <li>Compute the pre-softmax scores $S = Q K^T$ in SRAM.</li>
@@ -189,7 +189,7 @@ $$R = \mathrm{Softmax}\!\left(\frac{Q K^T}{\sqrt{d}}\right) V$$
     <li><strong>Write</strong> the final $N \times d$ output $R$ to HBM.</li>
 </ol>
 <p>Those four massive reads/writes of $S$ and $P$ takes $O(N^2)$ memory and also
-   most of the computing time (memory-bounded).</p>
+   most of the computing time (<a href="../../Computer Science/Fundamentals/gpu-basics.html#memory-bound">memory-bounded</a>).</p>
 
 <h2>The FlashAttention Idea: Block-wise Computation</h2>
 <p>FlashAttention eliminates those intermediate $O(N^2)$ 

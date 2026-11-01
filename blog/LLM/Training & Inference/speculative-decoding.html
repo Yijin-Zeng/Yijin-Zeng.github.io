@@ -166,11 +166,11 @@
 
         <blockquote>The real constraint is memory bandwidth, not compute. For example, if we want an LLM to generate a 100-word story, doing the math is not the bottleneck &mdash; transferring the massive model weights back and forth between memory and the processing units is.</blockquote>
 
-        <p>Large models have billions of parameters. For each token generated, the entire model's weights need to be loaded from high-bandwidth memory (HBM) into the compute units. The arithmetic intensity (ratio of compute to memory access) of generating a single token is extremely low, meaning the GPU spends most of its time waiting for data rather than computing. This is the <strong>memory-bandwidth bound</strong> regime.</p>
+        <p>Large models have billions of parameters. For each token generated, the entire model's weights need to be loaded from high-bandwidth memory (HBM) into the compute units. The arithmetic intensity (ratio of compute to memory access) of generating a single token is extremely low, meaning the GPU spends most of its time waiting for data rather than computing. This is the <strong><a href="../../Computer Science/Fundamentals/gpu-basics.html#memory-bound">memory-bandwidth bound</a></strong> regime.</p>
 
         <h2>The Speculative Decoding Approach</h2>
 
-        <p>The key insight is that if we can process the tokens in a batch, we would be much faster. Notice that dealing tokens in a batch does not reduce compute, but save the time for moving the weights in and out of the memory. 
+        <p>The key insight is that if we can process the tokens in a batch, we would be much faster. Notice that <a href="../../Computer Science/Fundamentals/gpu-basics.html#batch-vs-single">dealing tokens in a batch</a> does not reduce compute, but save the time for moving the weights in and out of the memory. 
            The speculative decoding approach offers an elegant solution for doing exactly this in three steps:</p>
 
         <h3>Step 1: Draft</h3>
