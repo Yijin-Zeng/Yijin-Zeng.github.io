@@ -163,11 +163,14 @@
     <div class="post-content">
         <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../notes/Math & Statistics/Gaussian Identities .pdf">PDF</a>.</p>
 
-        <p>Gaussian distribution is arguably the most important single distribution (due to CLT), and it has a lot of interesting properties.</p>
+        <p>Gaussian distribution is one of the most important distributions in statistics and machine learning.
+           Its popularity and importance comes not only from the Central Limit Theorem (CLT) but also from its mathematically properties, and its ability to produce closed-form results.
+           Here we discuss a few of its mathematical properties and and derive some of the most practically useful results, such as the conditional distribution.
+        </p>
 
         <h2>Univariate Gaussian Distribution</h2>
 
-        <p>The density is</p>
+        <p>The density function for a univariate Gaussian distribution is</p>
 
         $$f(x; \mu, \sigma) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)$$
 
@@ -191,16 +194,17 @@
         $$\begin{aligned}
         \int_{\mathbb{R}} f(x;\mu,\sigma)\,dx \cdot \int_{\mathbb{R}} f(y;\mu,\sigma)\,dy
         &= \frac{1}{2\pi\sigma^2} \int_0^{2\pi} \int_0^\infty \exp\!\left(-\frac{r^2}{2\sigma^2}\right) r\, dr\, d\theta \\
-        &= \frac{1}{2\pi\sigma^2} \int_0^{2\pi} \left[ -\sigma^2 \exp\!\left(-\frac{r^2}{2\sigma^2}\right) \right]_0^\infty d\theta \\
-        &= \frac{1}{2\pi\sigma^2} \int_0^{2\pi} \sigma^2\, d\theta \\
-        &= \frac{1}{2\pi\sigma^2} \cdot 2\pi\sigma^2 = 1
+        &= \frac{1}{2\pi\sigma^2} \int_0^{2\pi} \int_0^\infty \frac{1}{2} \exp\!\left(-\frac{r^2}{2\sigma^2}\right) d(r^2)\, d\theta \\
+        &= \frac{1}{4\pi\sigma^2} \int_0^{2\pi} \left[ -2\sigma^2 \exp\!\left(-\frac{r^2}{2\sigma^2}\right) \right]_{r=0}^{\infty} d\theta \\
+        &= \frac{1}{4\pi\sigma^2} \int_0^{2\pi} 2\sigma^2\, d\theta \\
+        &= \frac{1}{4\pi\sigma^2} \cdot 4\pi\sigma^2 = 1
         \end{aligned}$$
 
         <p>Both factors in the product are the same integral (just with the variable renamed), and both are positive, so if their product is 1, each one individually must equal 1.</p>
 
         <h3>Deriving Its Moment Generating Function</h3>
 
-        <p>So what does its moment generating function look like?</p>
+        <p>To derive the moment generating function of the normal distribution, we use another trick by completing squares.</p>
 
         $$\begin{aligned}
         \mathbb{E}(e^{tX}) &= \int e^{tx} \cdot \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x-\mu)^2}{2\sigma^2}\right) dx \\
@@ -217,17 +221,24 @@
         \mathbb{E}(X) &= \left( t e^{t^2/2} \right)\Big|_{t=0} = 0 \\
         \mathbb{E}(X^2) &= \left( e^{t^2/2} + t^2 e^{t^2/2} \right)\Big|_{t=0} = 1 \\
         \mathbb{E}(X^3) &= \left( t e^{t^2/2} + 2t e^{t^2/2} + t^3 e^{t^2/2} \right)\Big|_{t=0} = 0 \\
-        \mathbb{E}(X^4) &= \left( e^{t^2/2} + t^2 e^{t^2/2} + 2t^2 e^{t^2/2} + 2t^2 e^{t^2/2} + 3t^2 e^{t^2/2} + t^4 e^{t^2/2} \right)\Big|_{t=0} = 3
+        \mathbb{E}(X^4) &= \left( e^{t^2/2} + t^2 e^{t^2/2} + 2e^{t^2/2} + 2t^2 e^{t^2/2} + 3t^2 e^{t^2/2} + t^4 e^{t^2/2} \right)\Big|_{t=0} = 3
         \end{aligned}$$
 
         <h2>Multivariate Gaussian Distribution</h2>
+
+        <p>The density function for a multivariate Gaussian distribution is</p>
 
         $$f(x; \mu, \Sigma) = (2\pi)^{-n/2} \det(\Sigma)^{-1/2} \exp\!\left( -\frac{1}{2} (x-\mu)^\top \Sigma^{-1} (x-\mu) \right)$$
 
         <h3>Showing It Is a Proper Distribution</h3>
 
+        <p>As we did for the univariate case, we first show the density function allows for a proper distribution.
+           We will see that many derivations for the general multivariate Gaussian rely on the fact that any arbitrary Gaussian distribution 
+           can be expressed as an affine transformation of a standard normal random vector (i.e., one with an identity covariance matrix).
+        </p>
+
         $$\begin{aligned}
-        I &= \int_{\mathbb{R}^n} \exp\!\left( -\frac{1}{2} (x-\mu)^\top \Sigma^{-1} (x-\mu) \right) dx \\
+        \mathcal{I} &= \int_{\mathbb{R}^n} \exp\!\left( -\frac{1}{2} (x-\mu)^\top \Sigma^{-1} (x-\mu) \right) dx \\
         &= \int_{\mathbb{R}^n} \exp\!\left( -\frac{1}{2} y^\top \Sigma^{-1} y \right) dy \qquad (y = x - \mu)
         \end{aligned}$$
 
@@ -238,13 +249,20 @@
         <p>Because $S$ is an orthogonal matrix, $\partial z/\partial y = S$, so $|\det(S)| = 1$ (since $SS^\top = I \Rightarrow |S||S^\top| = 1 \Rightarrow \det(S) = \pm 1$). So we have</p>
 
         $$\begin{aligned}
-        I &= \int_{\mathbb{R}^n} \exp\!\left( -\frac{1}{2} z^\top \Lambda^{-1} z \right) dz \\
+        \mathcal{I} &= \int_{\mathbb{R}^n} \exp\!\left( -\frac{1}{2} z^\top \Lambda^{-1} z \right) dz \\
         &= \int_{\mathbb{R}^n} \exp\!\left( \sum_i -\frac{z_i^2}{2\lambda_i} \right) dz_1 \cdots dz_n \\
         &= \prod_i \sqrt{2\pi\lambda_i} \\
         &= (2\pi)^{n/2} |\Sigma|^{1/2} \qquad \text{since } |\Sigma| = |S||\Lambda||S^\top| = |\Lambda| = \prod_i \lambda_i
         \end{aligned}$$
 
-        <p>This makes $f$ integrate to $(2\pi)^{-n/2}|\Sigma|^{-1/2} \cdot (2\pi)^{n/2}|\Sigma|^{1/2} = 1$. Along the way, this also gives the two directions we use constantly: if $Z \sim \mathcal{N}(0,I)$ then $\Sigma^{1/2}Z + \mu \sim \mathcal{N}(\mu,\Sigma)$; and if $X \sim \mathcal{N}(\mu,\Sigma)$ then $\Sigma^{-1/2}(X-\mu) \sim \mathcal{N}(0,I)$.</p>
+        <p>This makes $f$ integrate to $(2\pi)^{-n/2}|\Sigma|^{-1/2} \cdot (2\pi)^{n/2}|\Sigma|^{1/2} = 1$. As discussed, the change of variables 
+           uses the fact that any Gaussian distribution 
+           can be expressed as an affine transformation of a standard normal random vector:</p>
+
+        <ul>
+            <li>if $Z \sim \mathcal{N}(0,I)$, then $\Sigma^{1/2}Z + \mu \sim \mathcal{N}(\mu,\Sigma)$;</li>
+            <li>on the other hand, if $X \sim \mathcal{N}(\mu,\Sigma)$, then $\Sigma^{-1/2}(X-\mu) \sim \mathcal{N}(0,I)$.</li>
+        </ul>
 
         <h2>Mean and Variance of the Multivariate Gaussian</h2>
 
@@ -271,13 +289,14 @@
         &= \Sigma
         \end{aligned}$$
 
-        <h2>Conditional Distribution</h2>
+        <h2>Conditional Distribution of the Multivariate Gaussian</h2>
 
-        <p>If $(X,Y) \sim \mathcal{N}\!\left( \begin{pmatrix} \mu_x \\ \mu_y \end{pmatrix}, \begin{pmatrix} \Sigma_{xx} & \Sigma_{xy} \\ \Sigma_{yx} & \Sigma_{yy} \end{pmatrix} \right)$, then what is $Y|X$?</p>
+        <p> A major advantage of the Gaussian distribution over other distributions is that its conditional distributions are also Gaussian and can be derived in closed form.
+            To be more spefici, if $(X,Y) \sim \mathcal{N}\!\left( \begin{pmatrix} \mu_x \\ \mu_y \end{pmatrix}, \begin{pmatrix} \Sigma_{xx} & \Sigma_{xy} \\ \Sigma_{yx} & \Sigma_{yy} \end{pmatrix} \right)$, then what is $Y|X$?</p>
 
         $$f_{X,Y}(x,y; \mu,\Sigma) = (2\pi)^{-n/2} \det(\Sigma)^{-1/2} \exp\!\left( -\frac{1}{2} \begin{pmatrix} x-\mu_x \\ y-\mu_y \end{pmatrix}^\top \Sigma^{-1} \begin{pmatrix} x-\mu_x \\ y-\mu_y \end{pmatrix} \right)$$
 
-        <p>Let $\Lambda = \Sigma^{-1}$ be the <strong>precision matrix</strong>. (Note the note briefly reuses the same letter $\Lambda$ here as the diagonal eigenvalue matrix from the earlier eigendecomposition $\Sigma = S\Lambda S^\top$ — $\Lambda = \Sigma^{-1} = (S\Lambda S^\top)^{-1} = S\Lambda^{-1}S^\top$ — but the resulting object, block-partitioned below, is the precision matrix, not the eigenvalue matrix.) It is positive-definite as well:</p>
+        <p>Let $\Lambda = \Sigma^{-1}$ be the <strong>precision matrix</strong>. (This reuses the letter $\Lambda$, which was the diagonal eigenvalue matrix in the eigendecomposition $\Sigma = S\Lambda S^\top$ above. Here $\Lambda$ means the precision matrix instead, which is $\Sigma^{-1} = (S\Lambda S^\top)^{-1} = S\Lambda^{-1}S^\top$ in terms of the old one.) It is positive-definite as well:</p>
 
         $$\Lambda = \begin{pmatrix} \Lambda_{xx} & \Lambda_{xy} \\ \Lambda_{yx} & \Lambda_{yy} \end{pmatrix}$$
 
@@ -291,10 +310,11 @@
         &\qquad\quad + (x-\mu_x)^\top \Lambda_{xy} (y-\mu_y) + (y-\mu_y)^\top \Lambda_{yy} (y-\mu_y) \Big)
         \end{aligned}$$
 
-        <p>Now note that $f_{Y|X}(y|x;\mu,\Sigma) = f_{X,Y}(x,y;\mu,\Sigma) / f_X(x;\mu,\Sigma)$ is a function of $y$ only, given $x$. Keeping only the terms that depend on $y$ and folding everything else into a constant:</p>
+        <p>Now note that the conditional density $f_{Y|X}(y|x;\mu,\Sigma) = f_{X,Y}(x,y;\mu,\Sigma) / f_X(x;\mu,\Sigma)$ is a function of $y$ only, given $x$. So we expand the exponent again, this time keeping only the terms that depend on $y$ and folding everything else into a constant:</p>
 
         $$\begin{aligned}
         &-\frac{1}{2} \begin{pmatrix} x-\mu_x \\ y-\mu_y \end{pmatrix}^\top \Lambda \begin{pmatrix} x-\mu_x \\ y-\mu_y \end{pmatrix} \\
+        &= -\frac{1}{2} \Big( y^\top \Lambda_{yy} y - y^\top \Lambda_{yy} \mu_y - \mu_y^\top \Lambda_{yy} y + y^\top \Lambda_{yx} (x-\mu_x) + (x-\mu_x)^\top \Lambda_{xy} y + \text{const} \Big) \\
         &= -\frac{1}{2} \Big( y^\top \Lambda_{yy} y + 2y^\top \big( \Lambda_{yx}(x-\mu_x) - \Lambda_{yy} \mu_y \big) \Big) + \text{const} \\
         &= -\frac{1}{2} \Big( y^\top \Lambda_{yy} y + 2y^\top \Lambda_{yy} \big( \Lambda_{yy}^{-1} \Lambda_{yx}(x-\mu_x) - \mu_y \big) \Big) + \text{const}
         \end{aligned}$$
@@ -302,7 +322,7 @@
         <p>Note that any multivariate Gaussian distribution has the exponent</p>
 
         $$\begin{aligned}
-        -\frac{1}{2} (x-\mu)^\top \Sigma^{-1} (x-\mu) &= -\frac{1}{2} \left( x^\top \Sigma^{-1} x - x^\top \Sigma^{-1} \mu - \mu^\top \Sigma^{-1} x \right) + \text{const} \\
+        -\frac{1}{2} (x-\mu)^\top \Sigma^{-1} (x-\mu) &= -\frac{1}{2} \left( x^\top \Sigma^{-1} x - x^\top \Sigma^{-1} \mu - \mu^\top \Sigma^{-1} x + \mu^\top \Sigma^{-1} \mu \right) \\
         &= -\frac{1}{2} \Big( \underbrace{x^\top \Sigma^{-1} x}_{\text{quadratic term}} - \underbrace{2x^\top \Sigma^{-1} \mu}_{\text{linear term}} \Big) + \text{const}
         \end{aligned}$$
 
@@ -330,6 +350,36 @@
         \end{aligned}$$
 
         <p>where $M = (A - BD^{-1}C)^{-1}$</p>
+
+        <h2>Generating Samples from a Non-identity Gaussian</h2>
+
+        <p> We have discussed that general multivariate Gaussian is only an affine transformation of a standard normal random vector.
+            Suppose we can sample from $\mathcal{N}(0,1)$. How do we generate $X \sim \mathcal{N}(\mu, \Sigma)$?</p>
+
+        <p>Let $Y \sim \mathcal{N}(0, I)$ and $Z = \mu + WY$. Then</p>
+
+        $$\begin{aligned}
+        \mathbb{E}(Z) &= \mu \\
+        \mathrm{Cov}(Z) &= W\, \mathrm{Cov}(Y)\, W^\top = W W^\top
+        \end{aligned}$$
+
+        <p>So if $W W^\top = \Sigma$, then $Z \sim \mathcal{N}(\mu, \Sigma)$. The question becomes how to find such a $W$ for a given symmetric positive definite matrix $A$ (here $A = \Sigma$):</p>
+
+        <ol>
+            <li><strong>Cholesky decomposition.</strong> For a real-valued symmetric positive definite matrix $A$, we have
+                $$A = L L^\top$$
+                where $L$ is a lower triangular matrix with strictly positive diagonal entries.</li>
+            <li><strong>Eigen-decomposition.</strong> Since $A$ is symmetric, we have
+                $$\begin{aligned}
+                A &= Q \Lambda Q^\top \\
+                &= Q \Lambda^{1/2} \Lambda^{1/2} Q^\top \\
+                &= Q \Lambda^{1/2} (Q \Lambda^{1/2})^\top \\
+                &= W W^\top
+                \end{aligned}$$</li>
+            <li><strong>Symmetric square root.</strong> Let $A^{1/2} = Q \Lambda^{1/2} Q^\top$. Then $A = A^{1/2} A^{1/2} = A^{1/2} (A^{1/2})^\top$, and this $W = A^{1/2}$ is symmetric.</li>
+        </ol>
+
+        <p>If $W$ works, i.e. $W W^\top = \Sigma$, then $WR$ also works as long as $R R^\top = I$, since $W R R^\top W^\top = W W^\top = \Sigma$. So we have <strong>infinitely many valid matrices $W$</strong>.</p>
     </div>
 </article>
 
