@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCA and PPCA - Yijin Zeng</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+        :root {
+            --text: #1a1a1a;
+            --text-secondary: #666;
+            --text-light: #999;
+            --bg: #fafaf8;
+            --border: #e8e8e4;
+            --link: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        a { color: var(--link); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .post {
+            max-width: 1350px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .post-back {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            display: inline-block;
+        }
+
+        .post-back:hover { color: var(--text); }
+
+        .post-header {
+            margin-bottom: 40px;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .post-meta .tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 4px;
+            background: #eef2ff;
+            color: #4338ca;
+            margin-left: 12px;
+        }
+
+        .post-content h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .post-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+            color: var(--text-secondary);
+        }
+
+        .post-content li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .post-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: #f0f0ec;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .post-content pre {
+            background: #1a1a1a;
+            color: #e8e8ed;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid var(--link);
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        .katex-display { margin: 20px 0; overflow-x: auto; overflow-y: hidden; }
+        .post-content .katex { color: var(--text); }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('.post-content'), {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+    <script data-goatcounter="https://yijin.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<article class="post">
+    <a href="../../../index.html" class="post-back">&larr; Back to home</a>
+
+    <header class="post-header">
+        <h1 class="post-title">PCA and PPCA</h1>
+        <div class="post-meta">
+            <span class="tag">Machine Learning</span>
+        </div>
+    </header>
+
+    <div class="post-content">
+        <p style="font-size: 0.9rem; color: var(--text-light, #999); margin-bottom: 24px;">A concise handwritten version of this note is available as a <a href="../../../notes/Machine Learning/Classic ML/PCA and PPCA.pdf">PDF</a>.</p>
+
+        <p>PCA (principal component analysis) is one of the oldest methods for linear dimensionality reduction.</p>
+
+        <h2>Two Views of PCA</h2>
+        <p>There are two views of PCA. Both ask us to find a lower dimension subspace such that:</p>
+        <ol>
+            <li>we keep the most sample variance, or</li>
+            <li>we minimize the reconstruction loss.</li>
+        </ol>
+
+        <p>The data is $X \in \mathbb{R}^{n \times m}$, and we want to project $X$ into $\mathbb{R}^d$ where $d < m$. We assume $X$ is centered (after subtracting its mean for each dimension). Then the projection matrix is $U \in \mathbb{R}^{m \times d}$ where</p>
+
+        $$
+        u_i^T u_j = \begin{cases} 1 & \text{if } i = j \\ 0 & \text{otherwise} \end{cases}
+        $$
+
+        <p>(note this implies $\|u_i\| = 1$, and in matrix form $U^T U = I$). The two views then become:</p>
+
+        <p><strong>1. Keep the most sample variance after projection</strong></p>
+        $$
+        \arg\max_U \; \mathrm{trace}(U^T X^T X U)
+        $$
+
+        <p><strong>2. Minimize the reconstruction error</strong></p>
+        $$
+        \arg\min_U \; \big\| X^T - U \underbrace{U^T X^T}_{\text{project}} \big\|_F^2
+        $$
+        <p>Here $U^T X^T$ projects the data, and multiplying by $U$ recovers it back to the original space.</p>
+
+        <h2>Solving the Variance View</h2>
+        <p>Let us try to solve $\arg\max_U \mathrm{trace}(U^T X^T X U)$ subject to $u_i^T u_j = 1$ if $i = j$ and $0$ otherwise, i.e. $U^T U = I$. The Lagrangian form is:</p>
+
+        $$
+        \mathcal{L}(U, \Lambda) = \mathrm{trace}(U^T X^T X U) - \mathrm{trace}\big(\Lambda\, (U^T U - I)\big)
+        $$
+
+        <p>Each constraint will have its own $\lambda$, and $\Lambda$ must be symmetric since $u_i^T u_j = u_j^T u_i$. Also recall that $\mathrm{trace}(A^T B) = \sum_{i,j} A_{i,j} B_{i,j}$ sums the elementwise products of $A$ and $B$. Then:</p>
+
+        $$
+        \begin{aligned}
+        \frac{\partial \mathcal{L}}{\partial U} &= 2 X^T X U - 2 U \Lambda = 0 \\
+        &\Rightarrow\; X^T X U = U \Lambda \\[6pt]
+        \frac{\partial \mathcal{L}}{\partial \Lambda} &= U^T U - I = 0 \;\Rightarrow\; U^T U = I
+        \end{aligned}
+        $$
+
+        <p>If we force $\Lambda$ to be diagonal, then the columns of $U$ must be eigenvectors of $X^T X$ and $\Lambda$ must hold the eigenvalues. To maximize $\mathrm{trace}(U^T X^T X U) = \mathrm{trace}(\Lambda)$, we choose the <strong>maximum eigenvalues</strong>.</p>
+
+        <h2>Why Can We Force $\Lambda$ to Be Diagonal?</h2>
+        <p>We show that for a solution $U$ with corresponding $\Lambda = \Lambda'$, we can find another solution $U'$ corresponding to a diagonal $\Lambda$.</p>
+
+        <p>Suppose the optimal solution for $U$ has corresponding $\Lambda = \Lambda'$. Since $\Lambda'$ is symmetric, we must have</p>
+        $$
+        \Lambda' = Q D Q^T
+        $$
+        <p>with $Q$ orthogonal and $D$ diagonal. We first show that $U' = UQ$ is also an optimal solution.</p>
+
+        <p><strong>1. $U'$ satisfies the constraint:</strong></p>
+        $$
+        U'^T U' = Q^T U^T U Q = Q^T Q = I
+        $$
+
+        <p><strong>2. $U'$ leads to the same objective as $U$:</strong></p>
+        $$
+        \begin{aligned}
+        \mathrm{trace}(U'^T X^T X U') &= \mathrm{trace}(Q^T U^T X^T X U Q) \\
+        &= \mathrm{trace}(Q Q^T U^T X^T X U) \\
+        &= \mathrm{trace}(U^T X^T X U)
+        \end{aligned}
+        $$
+
+        <p>Then we show that $U'$ corresponds to a diagonal $\Lambda$. Since $U'$ is also an optimal solution, we must have $U'^T X^T X U' = \Lambda$ for its corresponding $\Lambda$, and:</p>
+        $$
+        \begin{aligned}
+        U'^T X^T X U' &= \Lambda \\
+        Q^T U^T X^T X U Q &= \Lambda \\
+        Q^T \Lambda' Q &= \Lambda \\
+        Q^T Q D Q^T Q &= \Lambda \\
+        D &= \Lambda
+        \end{aligned}
+        $$
+
+        <p>So $U'$ corresponds to the diagonal matrix $D$. In short, <strong>PCA projects the data into the first $d$ eigenvectors of $X^T X$</strong>.</p>
+
+        <svg viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:560px; display:block; margin:0 auto 28px;" role="img">
+<defs><marker id="f1-k" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#1a1a1a"/></marker><marker id="f1-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2563eb"/></marker></defs>
+<line x1="30.0" y1="170.0" x2="530.0" y2="170.0" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#f1-k)" /><line x1="280.0" y1="320.0" x2="280.0" y2="15.0" stroke="#1a1a1a" stroke-width="1.4" marker-end="url(#f1-k)" /><text x="538" y="186" text-anchor="middle" font-size="13" font-weight="400" font-family="Inter, sans-serif" fill="#1a1a1a">x</text><text x="292" y="22" text-anchor="middle" font-size="13" font-weight="400" font-family="Inter, sans-serif" fill="#1a1a1a">y</text><line x1="168.6" y1="270.4" x2="391.4" y2="69.6" stroke="#2563eb" stroke-width="2.2" marker-end="url(#f1-b)" /><line x1="199.7" y1="80.8" x2="360.3" y2="259.2" stroke="#2563eb" stroke-width="2.2" marker-end="url(#f1-b)" /><circle cx="255.7" cy="228.4" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="260.7" cy="174.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="339.4" cy="117.0" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="261.5" cy="208.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="297.0" cy="108.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="312.1" cy="178.5" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="206.0" cy="186.2" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="315.4" cy="190.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="292.0" cy="193.4" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="253.2" cy="206.5" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="233.9" cy="192.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="285.0" cy="182.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="290.2" cy="137.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="195.5" cy="248.3" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="229.9" cy="217.0" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="210.6" cy="227.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="282.3" cy="176.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="229.4" cy="223.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="240.6" cy="241.9" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="307.7" cy="178.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="332.6" cy="105.3" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="169.0" cy="255.3" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="220.5" cy="219.0" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="310.5" cy="201.5" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="271.1" cy="184.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="348.3" cy="146.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="335.1" cy="155.3" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="274.1" cy="199.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="349.7" cy="95.2" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="401.3" cy="49.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="313.4" cy="117.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="248.5" cy="198.5" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="358.0" cy="115.9" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="290.4" cy="161.9" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="317.8" cy="148.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="268.4" cy="172.8" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="297.8" cy="179.9" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="346.4" cy="151.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="233.7" cy="245.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="337.0" cy="132.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><text x="401.4413563914021" y="63.59669285504336" text-anchor="start" font-size="12" font-weight="400" font-family="Inter, sans-serif" fill="#2563eb">first eigenvector</text><text x="368.32264571596534" y="253.15308511312168" text-anchor="start" font-size="12" font-weight="400" font-family="Inter, sans-serif" fill="#2563eb">second eigenvector</text><text x="280" y="342" text-anchor="middle" font-size="12" font-weight="400" font-family="Inter, sans-serif" fill="#16a34a">eigenvectors of X<tspan baseline-shift="super" font-size="9">T</tspan>X on centered data</text>
+        </svg>
+
+        <h2>A Few Notes About PCA</h2>
+        <ol>
+            <li><strong>Standardize first.</strong> In practice, PCA will first standardize the data for each dimension. If we don't center the data, the direction of the eigenvector will be biased. If we don't scale each dimension, then the dimension with larger variance will be favoured, i.e. it gets more variance after projection.</li>
+            <li><strong>After projection and reconstruction</strong>, the data is $U U^T X^T$ with covariance matrix:
+        $$
+        \begin{aligned}
+        (U U^T X^T)(X U U^T) &= U U^T X^T X U U^T \\
+        &= U U^T U \Lambda U^T \qquad (U_{:,i} \text{ is an eigenvector of } X^T X) \\
+        &= U \Lambda U^T
+        \end{aligned}
+        $$
+        where $\Lambda = \mathrm{diag}(\lambda_1, \dots, \lambda_d)$. Note that $\mathrm{trace}(U \Lambda U^T) = \mathrm{trace}(\Lambda)$, i.e. the variance equals the sum of the eigenvalues.</li>
+            <li><strong>Projection only.</strong> If we only do projection (without reconstruction), the data is $U^T X^T$, with covariance matrix $\Lambda$ (uncorrelated).</li>
+            <li><strong>PCA is different from linear regression.</strong> PCA minimizes the distance from each point to the line (perpendicular), while linear regression minimizes the vertical distance.</li>
+        </ol>
+
+        <svg viewBox="0 0 600 285" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:640px; display:block; margin:0 auto 28px;" role="img">
+<defs><marker id="f2-k" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#1a1a1a"/></marker><marker id="f2-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2563eb"/></marker></defs>
+<line x1="40.0" y1="125.0" x2="260.0" y2="125.0" stroke="#1a1a1a" stroke-width="1.3" marker-end="url(#f2-k)" /><line x1="150.0" y1="220.0" x2="150.0" y2="25.0" stroke="#1a1a1a" stroke-width="1.3" marker-end="url(#f2-k)" /><line x1="69.1" y1="183.8" x2="230.9" y2="66.2" stroke="#2563eb" stroke-width="2.2" marker-end="url(#f2-b)" /><line x1="112.2" y1="103.9" x2="135.3" y2="135.7" stroke="#dc2626" stroke-width="2" /><line x1="113.2" y1="152.7" x2="112.8" y2="152.1" stroke="#dc2626" stroke-width="2" /><line x1="121.1" y1="155.6" x2="116.5" y2="149.3" stroke="#dc2626" stroke-width="2" /><line x1="130.3" y1="147.1" x2="126.6" y2="142.0" stroke="#dc2626" stroke-width="2" /><line x1="153.9" y1="134.4" x2="148.1" y2="126.4" stroke="#dc2626" stroke-width="2" /><line x1="159.4" y1="136.2" x2="150.8" y2="124.4" stroke="#dc2626" stroke-width="2" /><line x1="171.8" y1="115.7" x2="168.7" y2="111.4" stroke="#dc2626" stroke-width="2" /><line x1="190.1" y1="87.1" x2="194.2" y2="92.8" stroke="#dc2626" stroke-width="2" /><line x1="198.1" y1="92.2" x2="197.0" y2="90.8" stroke="#dc2626" stroke-width="2" /><circle cx="112.2" cy="103.9" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="113.2" cy="152.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="121.1" cy="155.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="130.3" cy="147.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="153.9" cy="134.4" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="159.4" cy="136.2" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="171.8" cy="115.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="190.1" cy="87.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="198.1" cy="92.2" r="3.2" fill="#1a1a1a" opacity="0.8"/><line x1="340.0" y1="125.0" x2="560.0" y2="125.0" stroke="#1a1a1a" stroke-width="1.3" marker-end="url(#f2-k)" /><line x1="450.0" y1="220.0" x2="450.0" y2="25.0" stroke="#1a1a1a" stroke-width="1.3" marker-end="url(#f2-k)" /><line x1="350.0" y1="180.3" x2="550.0" y2="69.7" stroke="#2563eb" stroke-width="2.2" marker-end="url(#f2-b)" /><line x1="412.2" y1="103.9" x2="412.2" y2="145.9" stroke="#dc2626" stroke-width="2" /><line x1="413.2" y1="152.7" x2="413.2" y2="145.3" stroke="#dc2626" stroke-width="2" /><line x1="421.1" y1="155.6" x2="421.1" y2="141.0" stroke="#dc2626" stroke-width="2" /><line x1="430.3" y1="147.1" x2="430.3" y2="135.9" stroke="#dc2626" stroke-width="2" /><line x1="453.9" y1="134.4" x2="453.9" y2="122.9" stroke="#dc2626" stroke-width="2" /><line x1="459.4" y1="136.2" x2="459.4" y2="119.8" stroke="#dc2626" stroke-width="2" /><line x1="471.8" y1="115.7" x2="471.8" y2="113.0" stroke="#dc2626" stroke-width="2" /><line x1="490.1" y1="87.1" x2="490.1" y2="102.9" stroke="#dc2626" stroke-width="2" /><line x1="498.1" y1="92.2" x2="498.1" y2="98.4" stroke="#dc2626" stroke-width="2" /><circle cx="412.2" cy="103.9" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="413.2" cy="152.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="421.1" cy="155.6" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="430.3" cy="147.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="453.9" cy="134.4" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="459.4" cy="136.2" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="471.8" cy="115.7" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="490.1" cy="87.1" r="3.2" fill="#1a1a1a" opacity="0.8"/><circle cx="498.1" cy="92.2" r="3.2" fill="#1a1a1a" opacity="0.8"/><text x="150" y="250" text-anchor="middle" font-size="14" font-weight="600" font-family="Inter, sans-serif" fill="#16a34a">PCA</text><text x="450" y="250" text-anchor="middle" font-size="14" font-weight="600" font-family="Inter, sans-serif" fill="#16a34a">Linear regression</text><text x="150" y="270" text-anchor="middle" font-size="12" font-weight="400" font-family="Inter, sans-serif" fill="#dc2626">errors are perpendicular to the line</text><text x="450" y="270" text-anchor="middle" font-size="12" font-weight="400" font-family="Inter, sans-serif" fill="#dc2626">errors are vertical</text>
+        </svg>
+
+        <h2>How Do We Evaluate the Quality of PCA?</h2>
+        <p>PCA is quite intuitive, but how do we evaluate the quality of PCA?</p>
+        <ol>
+            <li>Check the variance kept.</li>
+            <li>A generative approach, i.e. <strong>probabilistic PCA (PPCA)</strong>, where we seek a Gaussian latent variable model. It will allow likelihood evaluation, outlier detection and data generation.</li>
+        </ol>
+
+        <h2>Probabilistic PCA (PPCA)</h2>
+        <p>Suppose we have data $X \in \mathbb{R}^{n \times m}$ ($n$ is the sample size), and as before, we want to find a $d$-dimensional linear space to project the data into.</p>
+        <ol>
+            <li>Assume each data point $x_i$ has an unknown $z_i \in \mathbb{R}^d$ associated with it (in the subspace). This variable satisfies $z_i \sim \mathcal{N}(0, I_d)$.</li>
+            <li>Each $x_i$ is the outcome of a random variable such that $x_i \mid z_i \sim \mathcal{N}(W z_i + \mu,\; \sigma^2 I_m)$.</li>
+        </ol>
+
+        <p>In short, we have $x = W z + \mu + \epsilon$, where</p>
+        $$
+        \begin{aligned}
+        z &\sim \mathcal{N}(0, I_d) \\
+        \epsilon &\sim \mathcal{N}(0, \sigma^2 I_m)
+        \end{aligned}
+        $$
+
+        <p>The mean and covariance of $x$ are:</p>
+        $$
+        \begin{aligned}
+        \mathbb{E}[x] &= \mathbb{E}[W z + \mu + \epsilon] = W\,\mathbb{E}[z] + \mu + \mathbb{E}[\epsilon] = \mu \\[6pt]
+        \mathrm{Cov}(x) &= \mathbb{E}\big[(W z + \mu + \epsilon - \mathbb{E}[x])(W z + \mu + \epsilon - \mathbb{E}[x])^T\big] \\
+        &= \mathbb{E}\big[(W z + \epsilon)(z^T W^T + \epsilon^T)\big] \\
+        &= \mathbb{E}\big[W z z^T W^T + \epsilon \epsilon^T\big] \\
+        &= W\, \mathbb{E}[z z^T]\, W^T + \mathbb{E}[\epsilon \epsilon^T] \\
+        &= W W^T + \sigma^2 I_m
+        \end{aligned}
+        $$
+
+        <p>So $x \sim \mathcal{N}(\mu,\; W W^T + \sigma^2 I_m)$. We learn $\mu$, $W$ and $\sigma$ through maximum likelihood (MLE):</p>
+        $$
+        \begin{aligned}
+        \mu &= \bar{x} \\
+        W &= Q (\Lambda - \sigma^2 I)^{1/2} R \\
+        \sigma^2 &= \frac{1}{m - d} \sum_{i=d+1}^{m} \lambda_i
+        \end{aligned}
+        $$
+        <p>where $Q$ holds the eigenvectors, $\Lambda = \mathrm{diag}(\lambda_1, \dots, \lambda_d)$, and $R$ is any orthogonal matrix (we let $R = I$ without loss of generality).</p>
+
+        <h3>The Posterior of $z$ Given $x$</h3>
+        <p>Note that</p>
+        $$
+        \begin{aligned}
+        \mathrm{Cov}(x, z) &= \mathbb{E}\big[(x - \mathbb{E}[x])(z - \mathbb{E}[z])^T\big] \\
+        &= \mathbb{E}\big[(x - \mu) z^T\big] \\
+        &= \mathbb{E}\big[x z^T\big] \\
+        &= \mathbb{E}\big[W z z^T\big] \\
+        &= W
+        \end{aligned}
+        $$
+
+        <p>So we have</p>
+        $$
+        \begin{pmatrix} x \\ z \end{pmatrix} \sim \mathcal{N}\left( \begin{pmatrix} \mu \\ 0 \end{pmatrix},\; \begin{pmatrix} W W^T + \sigma^2 I_m & W \\ W^T & I_d \end{pmatrix} \right)
+        $$
+        <p>and therefore</p>
+        $$
+        z \mid x \sim \mathcal{N}\big(M^{-1} W^T (x - \mu),\; \sigma^2 M^{-1}\big), \qquad \text{where } M = W^T W + \sigma^2 I
+        $$
+
+        <h3>Connection with PCA</h3>
+        <p><strong>1. When $\sigma \to 0$</strong>, we have $W = Q \Lambda^{1/2}$ and</p>
+        $$
+        \begin{aligned}
+        \mathbb{E}[z \mid x] &= (W^T W)^{-1} W^T (x - \mu) \\
+        &= (\Lambda^{1/2} Q^T Q \Lambda^{1/2})^{-1} W^T (x - \mu) \\
+        &= \Lambda^{-1} \Lambda^{1/2} Q^T (x - \mu) \\
+        &= \Lambda^{-1/2} Q^T (x - \mu) \\[6pt]
+        \Rightarrow\; W\, \mathbb{E}[z \mid x] &= Q \Lambda^{1/2} \Lambda^{-1/2} Q^T (x - \mu) \\
+        &= Q Q^T (x - \mu) \qquad \text{(equal to PCA)}
+        \end{aligned}
+        $$
+
+        <p><strong>2. But for $\sigma > 0$</strong>, we have $W_{\mathrm{MLE}} = Q (\Lambda - \sigma^2 I)^{1/2}$, so</p>
+        $$
+        \begin{aligned}
+        W\, \mathbb{E}[z \mid x] &= Q (\Lambda - \sigma^2 I)^{1/2}\, \Lambda^{-1}\, (\Lambda - \sigma^2 I)^{1/2} Q^T (x - \mu) \\
+        &= Q (\Lambda - \sigma^2 I)^{1/2}\, \Lambda^{-1/2} \Lambda^{-1/2}\, (\Lambda - \sigma^2 I)^{1/2} Q^T (x - \mu) \\
+        &= Q (I - \sigma^2 \Lambda^{-1})^{1/2} (I - \sigma^2 \Lambda^{-1})^{1/2} Q^T (x - \mu) \\
+        &= Q \underbrace{(I - \sigma^2 \Lambda^{-1})}_{\text{scaling factor}} Q^T (x - \mu)
+        \end{aligned}
+        $$
+
+        <p>The $i$-th entry of the scaling factor is $1 - \dfrac{\sigma^2}{\lambda_i}$: it is the <strong>scaling factor before reconstruction</strong>. So compared with PCA, PPCA shrinks each direction a little, and the directions with small eigenvalues are shrunk the most. When $\sigma \to 0$, the factor goes to 1 and we recover PCA.</p>
+    </div>
+</article>
+
+</body>
+</html>
