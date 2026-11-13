@@ -178,9 +178,31 @@
 
         $$\min_{x} \; f(x) + \sum_i I(g_i(x)), \qquad \text{where } I(z) = \begin{cases} 0 & z \le 0 \\ +\infty \text{ (or a large value if violating slightly is acceptable)} & \text{otherwise} \end{cases}$$
 
-        <p>The problem of this approach is that it makes optimization process hard. 
+        <p><strong>Why does the naive penalty method often not work well?</strong> It could make the loss space very bad. 
            The infinite penalty creates walls in the loss surface; if gradient descent starts on the wrong side, it can never cross over. 
            Even with a large finite penalty instead of infinity, the sharp discontinuity makes optimization extremely difficult.</p>
+
+        <svg viewBox="0 0 640 270" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:640px; display:block; margin:8px auto 28px;" role="img">
+<defs><marker id="pm-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#16a34a"/></marker><marker id="pm-k" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#1a1a1a"/></marker></defs>
+<line x1="40" y1="150" x2="620" y2="150" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#pm-k)"/>
+<line x1="60" y1="20" x2="60" y2="230" stroke="#1a1a1a" stroke-width="1.5" marker-end="url(#pm-k)"/>
+<text x="624" y="168" font-size="13" font-family="Inter, sans-serif" fill="#1a1a1a">x</text>
+<text x="72" y="26" font-size="12" font-family="Inter, sans-serif" fill="#666">loss</text>
+<rect x="260" y="30" width="150" height="190" fill="#dc2626" opacity="0.07"/>
+<line x1="260" y1="30" x2="260" y2="220" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4"/>
+<line x1="410" y1="30" x2="410" y2="220" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="6,4"/>
+<text x="248" y="48" text-anchor="end" font-size="12" font-family="Inter, sans-serif" fill="#dc2626">wall</text>
+<text x="422" y="48" font-size="12" font-family="Inter, sans-serif" fill="#dc2626">wall</text>
+<text x="335" y="120" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#dc2626">infeasible:</text>
+<text x="335" y="138" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#dc2626">penalty is +&#8734;</text>
+<path d="M62 138 C80 118 96 146 118 132 S150 120 168 136 S200 150 222 134 S246 130 258 128" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+<path d="M412 70 C420 100 428 170 462 188 S520 196 548 160 S596 90 622 56" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+<circle cx="118" cy="132" r="4.5" fill="#16a34a"/>
+<line x1="118" y1="190" x2="118" y2="142" stroke="#16a34a" stroke-width="1.5" marker-end="url(#pm-g)"/>
+<text x="118" y="206" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#16a34a">start here</text>
+<text x="335" y="248" text-anchor="middle" font-size="12" font-family="Inter, sans-serif" fill="#16a34a">if we start to the left of the wall, we can never cross it</text>
+</svg>
+
 
         <h2>Lagrange Multiplier Method</h2>
         <p>Instead of introducing penalty, let us consider how <strong>Lagrange multiplier method</strong> approach the constrained problem. First, define the Lagrangian form for the problem:</p>
@@ -265,22 +287,72 @@
         <p>Why might weak duality happen? In the inner problem $\min_x (f(x) + \lambda^\top g(x))$, when $g_i(x) > 0$ (violating the constraint), we get a penalty $\lambda_i \cdot g_i(x)$. But if $f(x)$ is very small at that point, the violation might be worth it from the Lagrangian's perspective.</p>
 
         <h2>KKT Conditions</h2>
-        <p>While the Lagrange method gives us a simpler dual problem, it doesn't directly solve the problem. We often solve constrained optimization directly using <strong>KKT (Karush-Kuhn-Tucker) conditions</strong>. These give a local minimum (or global, if Slater's condition holds).</p>
+        <p>While the Lagrange method gives us a often simpler dual problem, it does not solve the problem directly. Let us first look at how the Lagrangian helps in two cases.</p>
+
+        <h3>Case 1: Only Equality Constraints</h3>
+
+        $$\min_x f(x) \qquad \text{s.t. } g_i(x) = 0, \quad i = 1, \dots, m$$
+
+        <p>An equality constraint can be written as two inequalities, $g_i(x) \ge 0$ and $g_i(x) \le 0$. So the Lagrange form is:</p>
+
+        $$\begin{aligned}
+        L(x, \lambda, \lambda') &= f(x) - \sum_{i=1}^{m} \lambda_i g_i(x) + \sum_{i=1}^{m} \lambda'_i g_i(x) \qquad \text{s.t. } \lambda_i \ge 0,\; \lambda'_i \ge 0 \\
+        \Leftrightarrow\quad L(x, \mu) &= f(x) - \sum_{i=1}^{m} \mu_i g_i(x)
+        \end{aligned}$$
+
+        <p>where $\mu_i = \lambda_i - \lambda'_i$ can take either sign. If we have only equality constraints, we get an <strong>unconstrained</strong> optimization problem. We solve</p>
+
+        $$\begin{aligned}
+        \frac{\partial L}{\partial x} &= 0 \qquad (n \text{ equations}) \\
+        \frac{\partial L}{\partial \mu_i} &= g_i(x) = 0 \qquad (m \text{ equations})
+        \end{aligned}$$
+
+        <p>for the optimal $x$.</p>
+
+        <h3>Case 2: With Inequality Constraints</h3>
+
+        $$\begin{aligned}
+        &\min_x f(x) \\
+        &\text{s.t. } g_i(x) = 0, \quad h_i(x) \le 0
+        \end{aligned}$$
+
+        <p>The Lagrange form becomes</p>
+
+        $$L(x, \lambda, \mu) = f(x) + \sum_{i=1}^{m_1} \mu_i g_i(x) + \sum_{i=1}^{m_2} \lambda_i h_i(x) \qquad \text{s.t. } \lambda_i \ge 0$$
+
+        <ol>
+            <li>If $h_i(x) < 0$ (constraint strictly satisfied), then in order to maximize $L(x, \lambda, \mu)$ over $\lambda_i$, we must have $\lambda_i = 0$.</li>
+            <li>If $h_i(x) = 0$, then $\lambda_i \ge 0$.</li>
+        </ol>
+
+        <p>Either way, we must have $\lambda_i h_i(x) = 0$!</p>
+
+        <h3>The KKT Conditions</h3>
+        <p>To solve constrained problems with inequality constraints, we often solve the constrained optimization problem directly using <strong>KKT (Karush-Kuhn-Tucker) conditions</strong>. These give a local minimum (or global, if Slater's condition holds).</p>
 
         <p>The four conditions are:</p>
         <ol>
             <li><strong>Stationarity:</strong> $\nabla_x f(x) + \lambda^\top \nabla_x g(x) = 0$ &mdash; at the minimum, the gradient of the Lagrangian must be zero</li>
             <li><strong>Primal feasibility:</strong> $g_i(x) \le 0$ for all $i$ &mdash; the solution must satisfy the original constraints</li>
             <li><strong>Dual feasibility:</strong> $\lambda_i \ge 0$ for all $i$ &mdash; multipliers must be non-negative</li>
-            <li><strong>Complementary slackness:</strong> $\lambda_i \cdot g_i(x) = 0$ for all $i$ &mdash; either the constraint is active ($g_i = 0$) or its multiplier is zero</li>
+            <li><strong>Complementary slackness:</strong> $\lambda_i \cdot g_i(x) = 0$ for all $i$ &mdash; either the constraint is active ($g_i = 0$, and then $\lambda_i \ge 0$) or its multiplier is zero ($g_i < 0$, and then $\lambda_i = 0$)</li>
         </ol>
 
         <p>The complementary slackness condition is the most interesting one. Intuitively, it says that
             if a constraint is not tight ($g_i(x) < 0$ we're strictly inside the feasible region), then $\lambda_i = 0$, i.e. that constraint doesn't matter at the optimum. 
             </p>
 
+        <p>Both stationarity and complementary slackness come from the min-max form. Recall that the original problem is equivalent to</p>
+
+        $$\min_x \max_{\lambda \ge 0} L(x, \lambda) = \min_x \max_{\lambda \ge 0} \big( f(x) + \lambda^\top g(x) \big)$$
+
+        <ul>
+            <li><strong>Stationarity:</strong> if $x$ is a local minimum, then the gradient must be $0$ (for every $x_i$).</li>
+            <li><strong>Complementary slackness:</strong> if $g_i(x) < 0$, then $\lambda_i = 0$, because for a fixed $x$, $\lambda$ maximizes $L(x, \lambda)$.</li>
+        </ul>
+
         <h2>Using KKT to Find Solutions</h2>
-        <p>KKT conditions are both a checklist to verify a candidate solution and a tool to find one:</p>
+        <p>KKT conditions are a checklist (a sufficient condition) for whether the $x^*, \lambda^*$ we have in hand are a valid local (or global, if Slater's condition holds) result. But they can also be used to find a local minimum. The idea is to construct $x^*, \lambda^*$ that satisfy the KKT conditions. The steps are:</p>
 
         <ol>
             <li><strong>Guess</strong> which constraints are active (on the boundary); this follows complementary slackness condition which says for each constraint either $g_i(x) = 0$ or $\lambda_i = 0$</li>
@@ -293,6 +365,33 @@
            In some cases, the guess could be dramastically simpler. For example, if the target function is simply the sum of $x_i$, then we can evaluate
            if each $x_i$ is on the boundary seperately. 
         </p>
+
+        <h2>A Simple Example of a Constrained Problem</h2>
+
+        $$\begin{aligned}
+        &\min_{\hat{p}_1, \dots, \hat{p}_K} \sum_{i=1}^{K} -p_i \log(\hat{p}_i) \\
+        &\text{s.t. } \sum_{i=1}^{K} \hat{p}_i = 1 \\
+        &\hphantom{\text{s.t. }} \hat{p}_i \ge 0 \quad \text{for all } i = 1, \dots, K
+        \end{aligned}$$
+
+        <p>The Lagrangian is</p>
+
+        $$L(\hat{p}, \mu, \lambda) = -\sum_{i=1}^{K} p_i \log(\hat{p}_i) - \mu \Big( \sum_{i=1}^{K} \hat{p}_i - 1 \Big) - \sum_{i=1}^{K} \lambda_i \hat{p}_i$$
+
+        <p>By complementary slackness, for the last term we need either $\lambda_i = 0$, or $\hat{p}_i = 0$. But $\hat{p}_i = 0$ would lead the objective to $\infty$, so we must have $\lambda_i = 0$, and the last term drops out:</p>
+
+        $$L(\hat{p}, \mu) = -\sum_{i=1}^{K} p_i \log(\hat{p}_i) - \mu \Big( \sum_{i=1}^{K} \hat{p}_i - 1 \Big)$$
+
+        <p>Taking the derivative and setting it to zero:</p>
+
+        $$\begin{aligned}
+        \frac{\partial L}{\partial \hat{p}_i} = -\frac{p_i}{\hat{p}_i} - \mu &= 0 \\
+        \Rightarrow\; \hat{p}_i &= -\frac{p_i}{\mu}
+        \end{aligned}$$
+
+        <p>Since $\sum_i \hat{p}_i = 1$, we have $\sum_i \left(-\dfrac{p_i}{\mu}\right) = 1$, so $\mu = -\sum_i p_i$. Therefore</p>
+
+        $$\hat{p}_i = \frac{p_i}{\sum_{j=1}^{K} p_j}$$
     </div>
 </article>
 
