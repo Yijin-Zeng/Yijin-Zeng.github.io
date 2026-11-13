@@ -236,7 +236,8 @@
         & \text{s.t. } \lambda \ge 0
         \end{aligned}$$
 
-        <p>Denote $q(\lambda) = \min_x L(x, \lambda)$ &mdash; this is called the inner problem. The dual problem in general much easier than the original problem (q).
+        <p>Denote $q(\lambda) = \min_x L(x, \lambda)$, i.e. find the optimal $x$ for given $\lambda$,
+            this is called the inner problem. The dual problem in general much easier than the original problem (q).
             Consider the following three reasons:</p>
 
         <ol>
@@ -246,7 +247,7 @@
         </ol>
 
         <h2>Solve the Dual Problem</h2>
-        <p>We now consider how to solving the dual problem (d).</p>
+        <p>We now consider how to solving the dual problem (d) numerically.</p>
 
         <ol>
             <li><strong>Ideal case:</strong> we solve the (unconstrained) inner problem, get the analytical form for the vector $x$. Then we put the form of $x$ back into the dual problem, solve the dual problem (by taking the gradient with respect to the vector $\lambda$ and setting the result to zero), find the solutions for each $\lambda_i \ge 0$, and we take the results as they are.</li>
@@ -287,7 +288,10 @@
         <p>Why might weak duality happen? In the inner problem $\min_x (f(x) + \lambda^\top g(x))$, when $g_i(x) > 0$ (violating the constraint), we get a penalty $\lambda_i \cdot g_i(x)$. But if $f(x)$ is very small at that point, the violation might be worth it from the Lagrangian's perspective.</p>
 
         <h2>KKT Conditions</h2>
-        <p>While the Lagrange method gives us a often simpler dual problem, it does not solve the problem directly. Let us first look at how the Lagrangian helps in two cases.</p>
+        <p>The Lagrange method gives us a often much simpler dual problem, and we can now solve the problem
+           more easily using numerical methods such as the dual ascent method we discussed. 
+           Alternatively, we can solve the problem analytically by using KKT conditions. 
+           Let us first look at how the Lagrangian helps in two cases.</p>
 
         <h3>Case 1: Only Equality Constraints</h3>
 
@@ -363,7 +367,8 @@
 
         <p>Different guesses in step 1 can give different local minima. With $m$ constraints, there are $2^m$ possible combinations to try in the worst case.
            In some cases, the guess could be dramastically simpler. For example, if the target function is simply the sum of $x_i$, then we can evaluate
-           if each $x_i$ is on the boundary seperately. 
+           if each $x_i$ is on the boundary seperately. We can also consider numerical methods for solving the dual problem, such as the dual ascent method
+           we discussed.
         </p>
 
         <h2>A Simple Example of a Constrained Problem</h2>
