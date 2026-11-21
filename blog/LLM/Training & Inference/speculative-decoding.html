@@ -162,19 +162,26 @@
 
         <h2>The Problem: Autoregressive Generation is Slow</h2>
 
-        <p>Standard autoregressive generation produces tokens one at a time. Each forward pass through the model generates exactly one token, and the next token depends on the previous one. This sounds like the computation (all those matrix multiplications) would be the bottleneck, but it is not.</p>
+        <p>Standard autoregressive generation produces tokens one at a time. Each forward pass through the model generates exactly one token, 
+           and the next token depends on the previous one. Some would think the computation of the embeddings of the tokens with the billions
+           of the LLM parameters would be the bottleneck, but it is not.</p>
 
-        <blockquote>The real constraint is memory bandwidth, not compute. For example, if we want an LLM to generate a 100-word story, doing the math is not the bottleneck &mdash; transferring the massive model weights back and forth between memory and the processing units is.</blockquote>
+        <blockquote>The real constraint during inference is memory bandwidth, not compute. For example, if we want an LLM to generate a 100-word story, doing the math is not the bottleneck,
+        transferring the massive model weights back and forth between memory and the processing units is.</blockquote>
 
-        <p>Large models have billions of parameters. For each token generated, the entire model's weights need to be loaded from high-bandwidth memory (HBM) into the compute units. The arithmetic intensity (ratio of compute to memory access) of generating a single token is extremely low, meaning the GPU spends most of its time waiting for data rather than computing. This is the <strong><a href="../../Computer Science/Fundamentals/gpu-basics.html#memory-bound">memory-bandwidth bound</a></strong> regime.</p>
+        <p>Large models have billions of parameters. For each token generated, the entire model's weights need to be loaded from high-bandwidth memory (HBM) into the compute units. 
+           The arithmetic intensity (ratio of compute to memory access) of generating a single token is extremely low, meaning the GPU spends most of its time waiting for data rather than computing. 
+           This is the <strong><a href="../../Computer Science/Fundamentals/gpu-basics.html#memory-bound">memory-bandwidth bound</a></strong> regime.</p>
 
         <h2>The Speculative Decoding Approach</h2>
 
-        <p>The key insight is that if we can process the tokens in a batch, we would be much faster. Notice that <a href="../../Computer Science/Fundamentals/gpu-basics.html#batch-vs-single">dealing tokens in a batch</a> does not reduce compute, but save the time for moving the weights in and out of the memory. 
+        <p>As we discussed above, for LLM, processing a batch of tokens take almost the same time for processing one token, since the 
+           majority of the time during inference is moving the weights in and out of the memory.
+           Therefore, if we can process the tokens in a batch during inference, we would be much faster than process one token each time. 
            The speculative decoding approach offers an elegant solution for doing exactly this in three steps:</p>
 
         <h3>Step 1: Draft</h3>
-        <p>Let a much smaller, faster model (the "draft model") generate the next $K$ tokens autoregressively. Because the draft model is small, this should be super fast &mdash; it has far fewer weights to move around.</p>
+        <p>Let a much smaller, faster model (the "draft model") generate the next $K$ tokens autoregressively. Because the draft model is small, this should be much faster than the big model.</p>
 
         <h3>Step 2: Verification</h3>
         <p>Feed all $K$ drafted tokens into the large model in a single forward pass. The large model processes them all at once using causal self-attention (exactly like during training phase). This is computationally equivalent to what the large model would have done if it had generated those $K$ tokens sequentially, but the key point is that we only move the large model's weights once instead of $K$ times.</p>
@@ -250,16 +257,299 @@
 
         In other words, the output probability equals exactly $p(w_i)$, i,e, the probability of drawing the word from the large model directly.
 
+        <h2>Tree-based Speculative Decoding</h2>
+
+        <p>Standard speculative decoding already accelerates autoregressive LLM inference a lot, often around $1.5\times \sim 2\times$ faster depending on the draft/target models, the domain, the sampling temperature, etc. However, its efficiency can be improved further.</p>
+
+        <h3>The Problem: Larger $K$ Hardly Helps</h3>
+
+        <p>In standard speculative decoding, the draft model proposes a single chain of tokens $t_1 \to t_2 \to \cdots \to t_K$. If $t_i$ is rejected, then $t_{i+1}, \dots, t_K$ are all discarded, no matter how good they were. In practice, this means that on average we only accept about 1&ndash;2 tokens each time.</p>
+
+        <p>The proposal length $K$ can be seen as a resource that we can spend. Depending on the hardware limits, it could be small (e.g. 8) or large (e.g. 128). Unfortunately, standard speculative decoding hardly benefits from a larger $K$. To see this, assume each draft token is accepted independently with probability $p$. The expected number of accepted tokens for one proposed sequence is</p>
+
+        $$\begin{aligned}
+\mathbb{E} &= \sum_{i=1}^{K-1} i\, p^i (1-p) + K p^K \\
+&= \sum_{i=1}^{K-1} i\, p^i - \sum_{i=2}^{K} (i-1)\, p^i + K p^K \\
+&= p + \sum_{i=2}^{K-1} p^i - (K-1)p^K + K p^K \\
+&= \sum_{i=1}^{K} p^i = \frac{p(1-p^K)}{1-p}.
+\end{aligned}$$
+
+        <p>As $K \to \infty$, this converges to $\frac{p}{1-p}$, and the effect of $K$ decays exponentially. For example, with $p = 0.7$ the expected number of accepted tokens can never exceed $0.7/0.3 \approx 2.3$, no matter how large $K$ is.</p>
+
+
+        <svg viewBox="0 0 420 290" xmlns="http://www.w3.org/2000/svg" style="display:block; margin: 24px auto; max-width: 480px;" role="img" aria-label="Expected number of accepted tokens versus K, saturating at p/(1-p)">
+            <defs>
+                <marker id="sd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M0,0 L10,5 L0,10 z" fill="#1a1a1a"/>
+                </marker>
+            </defs>
+            <!-- axes -->
+            <line x1="70" y1="230" x2="390" y2="230" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#sd-arrow)"/>
+            <line x1="70" y1="230" x2="70" y2="30" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#sd-arrow)"/>
+            <text x="392" y="246" font-size="13" fill="#1a1a1a" font-style="italic">K</text>
+            <text x="48" y="38" font-size="13" fill="#1a1a1a" font-style="italic">E</text>
+            <!-- asymptote -->
+            <line x1="70" y1="59.5" x2="370" y2="59.5" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <text x="62" y="63.5" font-size="13" fill="#1a1a1a" text-anchor="end">p/(1&#8722;p)</text>
+            <!-- curve -->
+            <path d="M70.0,230.0 L76.0,212.7 L82.0,197.1 L88.0,183.2 L94.0,170.6 L100.0,159.4 L106.0,149.2 L112.0,140.1 L118.0,131.9 L124.0,124.6 L130.0,118.0 L136.0,112.0 L142.0,106.7 L148.0,101.9 L154.0,97.6 L160.0,93.7 L166.0,90.3 L172.0,87.1 L178.0,84.3 L184.0,81.8 L190.0,79.5 L196.0,77.5 L202.0,75.7 L208.0,74.0 L214.0,72.6 L220.0,71.2 L226.0,70.0 L232.0,69.0 L238.0,68.0 L244.0,67.1 L250.0,66.4 L256.0,65.7 L262.0,65.0 L268.0,64.5 L274.0,64.0 L280.0,63.5 L286.0,63.1 L292.0,62.7 L298.0,62.4 L304.0,62.1 L310.0,61.8 L316.0,61.6 L322.0,61.4 L328.0,61.2 L334.0,61.0 L340.0,60.9 L346.0,60.7 L352.0,60.6 L358.0,60.5 L364.0,60.4 L370.0,60.3" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+            <!-- annotation -->
+            <text x="230.0" y="93.5" font-size="12" fill="#15803d">the effect of K decays exponentially</text>
+            <text x="70" y="246" font-size="11" fill="#666" text-anchor="middle">0</text>
+            <text x="220.0" y="266" font-size="12" fill="#666" text-anchor="middle">E = p(1&#8722;p&#7499;)/(1&#8722;p) &nbsp;(here p = 0.7)</text>
+        </svg>
+
+        <blockquote>Conclusion: for a moderate size $K$ (e.g. 3 or 5), the bottleneck of speculative decoding is the acceptance rate $p$, not $K$.</blockquote>
+
+        <h3>The Idea: Propose Multiple Candidates at Each Step</h3>
+
+        <p>Since increasing $K$ has exponentially decaying returns, instead of increasing the number of proposed <em>steps</em>, we increase the probability of acceptance <em>at each step</em> by proposing multiple candidate tokens for each step. This turns the chain into a tree:</p>
+
+<pre><code>Standard SD            Tree-based SD
+
+ accepted tokens        accepted tokens
+      |                /       |       \
+     t1              t1       t1       t1      &larr; step 1 (3 candidates, sampled
+      |             / \      / \      / \             from q with replacement)
+     t2            t2  t2  t2  t2  t2  t2      &larr; step 2 (each candidate gets its own children)
+      |                       ...
+     t3                                        &larr; step 3
+      :
+     tK</code></pre>
+
+        <p>At each step, the draft model samples several candidates (e.g. 3) <strong>with replacement</strong> from its distribution $q$. Each candidate then serves as the root of its own sub-branch for the next step. If one candidate is rejected, we still have a chance that its siblings are accepted, which directly raises the per-step acceptance rate.</p>
+
+        <h3>Verifying a Tree in One Batch</h3>
+
+        <p>As with standard speculative decoding, the target model verifies the whole tree in one forward pass. To verify the tree in one pass, 
+           we need to change the classic causal attention mask and use <strong>tree attention</strong>: as in causal attention, each token only attends to its ancestors in the tree (its parent nodes), and not to its siblings or other branches.</p>
+
+
+        <svg viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" style="display:block; margin: 24px auto; max-width: 760px;" role="img" aria-label="Tree of drafted tokens and the corresponding tree attention mask">
+        <text x="170" y="18" font-size="13" font-weight="600" fill="#1a1a1a" text-anchor="middle">Draft tree</text>
+        <line x1="170" y1="56" x2="60" y2="114" stroke="#cfcfca" stroke-width="1.2"/>
+        <line x1="170" y1="56" x2="170" y2="114" stroke="#2563eb" stroke-width="2"/>
+        <line x1="170" y1="56" x2="280" y2="114" stroke="#cfcfca" stroke-width="1.2"/>
+        <line x1="60" y1="146" x2="35" y2="209" stroke="#cfcfca" stroke-width="1.2"/>
+        <line x1="60" y1="146" x2="85" y2="209" stroke="#cfcfca" stroke-width="1.2"/>
+        <line x1="170" y1="146" x2="145" y2="209" stroke="#cfcfca" stroke-width="1.2"/>
+        <line x1="170" y1="146" x2="195" y2="209" stroke="#2563eb" stroke-width="2"/>
+        <line x1="280" y1="146" x2="255" y2="209" stroke="#cfcfca" stroke-width="1.2"/>
+        <line x1="280" y1="146" x2="305" y2="209" stroke="#cfcfca" stroke-width="1.2"/>
+        <circle cx="170" cy="40" r="18" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
+        <text x="170" y="44" font-size="11" text-anchor="middle" fill="#fff">ctx</text>
+        <circle cx="60" cy="130" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="60" y="134" font-size="11" text-anchor="middle" fill="#999">A</text>
+        <circle cx="170" cy="130" r="16" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
+        <text x="170" y="134" font-size="11" text-anchor="middle" fill="#fff">B</text>
+        <circle cx="280" cy="130" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="280" y="134" font-size="11" text-anchor="middle" fill="#999">C</text>
+        <circle cx="35" cy="225" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="35" y="229" font-size="11" text-anchor="middle" fill="#999">A1</text>
+        <circle cx="85" cy="225" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="85" y="229" font-size="11" text-anchor="middle" fill="#999">A2</text>
+        <circle cx="145" cy="225" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="145" y="229" font-size="11" text-anchor="middle" fill="#999">B1</text>
+        <circle cx="195" cy="225" r="16" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+        <text x="195" y="229" font-size="11" text-anchor="middle" fill="#1a1a1a">B2</text>
+        <circle cx="255" cy="225" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="255" y="229" font-size="11" text-anchor="middle" fill="#999">C1</text>
+        <circle cx="305" cy="225" r="16" fill="#f0f0ec" stroke="#cfcfca" stroke-width="1.5"/>
+        <text x="305" y="229" font-size="11" text-anchor="middle" fill="#999">C2</text>
+        <text x="170" y="285" font-size="11" fill="#666" text-anchor="middle">ctx = previously accepted tokens</text>
+        <text x="170" y="302" font-size="11" fill="#666" text-anchor="middle">step 1: A, B, C &#160;&#160; step 2: two children each</text>
+        <text x="170" y="322" font-size="11" fill="#b45309" text-anchor="middle">B2 (orange) sees only itself and its ancestors (blue)</text>
+        <text x="560" y="18" font-size="13" font-weight="600" fill="#1a1a1a" text-anchor="middle">Tree attention mask</text>
+        <text x="560" y="34" font-size="11" fill="#666" text-anchor="middle">key (attended to) &#8594;</text>
+        <text x="443.0" y="82" font-size="10" fill="#666" text-anchor="middle">ctx</text>
+        <text x="469.0" y="82" font-size="10" fill="#666" text-anchor="middle">A</text>
+        <text x="495.0" y="82" font-size="10" fill="#666" text-anchor="middle">B</text>
+        <text x="521.0" y="82" font-size="10" fill="#666" text-anchor="middle">C</text>
+        <text x="547.0" y="82" font-size="10" fill="#666" text-anchor="middle">A1</text>
+        <text x="573.0" y="82" font-size="10" fill="#666" text-anchor="middle">A2</text>
+        <text x="599.0" y="82" font-size="10" fill="#666" text-anchor="middle">B1</text>
+        <text x="625.0" y="82" font-size="10" fill="#666" text-anchor="middle">B2</text>
+        <text x="651.0" y="82" font-size="10" fill="#666" text-anchor="middle">C1</text>
+        <text x="677.0" y="82" font-size="10" fill="#666" text-anchor="middle">C2</text>
+        <text x="422" y="107.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">ctx</text>
+        <rect x="431" y="91" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="91" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="133.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">A</text>
+        <rect x="431" y="117" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="117" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="483" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="117" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="159.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">B</text>
+        <rect x="431" y="143" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="143" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="509" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="143" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="185.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">C</text>
+        <rect x="431" y="169" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="169" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="535" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="169" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="211.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">A1</text>
+        <rect x="431" y="195" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="195" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="483" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="195" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="561" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="195" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="237.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">A2</text>
+        <rect x="431" y="221" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="221" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="483" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="221" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="587" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="221" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="263.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">B1</text>
+        <rect x="431" y="247" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="247" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="509" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="247" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="613" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="247" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="289.0" font-size="10" fill="#b45309" text-anchor="end" font-weight="600">B2</text>
+        <rect x="431" y="273" width="24" height="24" rx="3" fill="#f59e0b" opacity="1"/>
+        <rect x="457" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="273" width="24" height="24" rx="3" fill="#f59e0b" opacity="1"/>
+        <rect x="509" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="535" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="273" width="24" height="24" rx="3" fill="#f59e0b" opacity="1"/>
+        <rect x="639" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="273" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="315.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">C1</text>
+        <rect x="431" y="299" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="299" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="535" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="299" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="665" y="299" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <text x="422" y="341.0" font-size="10" fill="#666" text-anchor="end" font-weight="400">C2</text>
+        <rect x="431" y="325" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="457" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="483" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="509" y="325" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="535" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="561" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="587" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="613" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="639" y="325" width="24" height="24" rx="3" fill="#f0f0ec"/>
+        <rect x="665" y="325" width="24" height="24" rx="3" fill="#2563eb" opacity="0.55"/>
+        <rect x="429" y="272" width="262" height="26" fill="none" stroke="#b45309" stroke-width="1.5"/>
+        <text x="382" y="220" font-size="10" fill="#666" transform="rotate(-90 382 220)" text-anchor="middle">query (token being scored)</text>
+        <text x="560" y="372" font-size="11" fill="#666" text-anchor="middle">filled = may attend; blank = masked</text>
+        </svg>
+
+        <p>The output is the target model's probability distribution of the next token, conditioned on each node and its parent nodes. These distributions are what we use in the accept/reject step below.</p>
+
+        <h3>Acceptance, Rejection and Resampling</h3>
+
+        <p>At each step, suppose the draft model has sampled $m$ candidates $X_1, \dots, X_m \overset{\text{i.i.d.}}{\sim} q$, and the target distribution at this step (given all accepted tokens) is $p$. Define the initial target distribution $p^{(0)} = p$. We go through the candidates in order:</p>
+
+        <ol>
+            <li>For candidate $j \in \{1, \dots, m\}$ (given that all previous candidates were rejected), accept $t_j$ with probability
+                $$\alpha(t_j) = \min\!\left(1, \frac{p^{(j-1)}(t_j)}{q(t_j)}\right).$$
+                If accepted, output $x_{\text{out}} = t_j$, and move on to the next step (going down the branch of $t_j$).</li>
+            <li>Otherwise, update the residual target distribution to
+                $$p^{(j)}(x) = \frac{\max\!\left(0,\, p^{(j-1)}(x) - q(x)\right)}{\sum_{x'} \max\!\left(0,\, p^{(j-1)}(x') - q(x')\right)}$$
+                and try the next candidate.</li>
+            <li>If all $m$ candidates are rejected, sample the next token from the final residual distribution, $x_{\text{out}} \sim p^{(m)}$, and stop (the remaining tree is discarded).</li>
+        </ol>
+
+        <p>Notice that with $m = 1$ this is exactly the standard speculative decoding procedure above.</p>
+
+        <h3>Why Is It Still Lossless?</h3>
+
+        <p>We now show that Tree-based speculative decoding we described above is still lossless.
+           To this end, we need to show that each step is lossless, i.e. $\Pr(X_{\text{out}} = x) = p(x)$ for all tokens $x \in \mathcal{V}$ (the vocabulary), where $p$ is the target distribution. We use induction on the number of candidates $m$.</p>
+
+        <p><strong>Base case</strong> ($m = 1$): only one token is proposed for the branch. This is the standard speculative decoding, which we have already proved.</p>
+
+        <p><strong>Inductive step:</strong> assume the result holds for $m-1$ i.i.d. candidates from $q$ and <em>any</em> target distribution. Now consider $m$ candidates $X_1, \dots, X_m \overset{\text{i.i.d.}}{\sim} q$ with target $p$. Splitting on whether $X_1$ is accepted,</p>
+
+        $$\begin{aligned}
+\Pr(X_{\text{out}} = x) &= \Pr(\text{accept } X_1 \text{ and } X_1 = x) + \Pr(\text{reject } X_1 \text{ and } X_{\text{out}} = x) \\
+&= \min(p(x), q(x)) + \Pr(\text{reject } X_1)\, \Pr(X_{\text{out}} = x \mid \text{reject } X_1).
+\end{aligned}$$
+
+        <p>The rejection probability is the same as in the standard case:</p>
+
+        $$\Pr(\text{reject } X_1) = 1 - \sum_{x \in \mathcal{V}} \min(p(x), q(x)) = \sum_{x \in \mathcal{V}} \max(0,\, p(x) - q(x)).$$
+
+        <p>For the conditional term, note that after rejecting $X_1$ there are exactly $m-1$ i.i.d. candidates from $q$ left, and the target distribution has become $p^{(1)}$. By the induction hypothesis, $\Pr(X_{\text{out}} = x \mid \text{reject } X_1) = p^{(1)}(x)$, since the hypothesis holds for any target distribution. Plugging in $p^{(1)}(x) = \frac{\max(0,\, p(x) - q(x))}{\sum_{x'} \max(0,\, p(x') - q(x'))}$,</p>
+
+        $$\begin{aligned}
+\Pr(X_{\text{out}} = x) &= \min(p(x), q(x)) + \sum_{x'} \max(0,\, p(x') - q(x')) \cdot \frac{\max(0,\, p(x) - q(x))}{\sum_{x'} \max(0,\, p(x') - q(x'))} \\
+&= \min(p(x), q(x)) + \max(0,\, p(x) - q(x)) = p(x).
+\end{aligned}$$
+
+        <p>So each step of tree-based speculative decoding samples exactly from the target distribution, and hence the whole output sequence does too.</p>
+
+        <p>It is also easy to show that the per-step acceptance rate is no worse than with a single candidate. The probability that all $m$ candidates are rejected is</p>
+
+        $$\prod_{i=1}^{m} \sum_{x \in \mathcal{V}} \max\!\left(0,\, p^{(i-1)}(x) - q(x)\right) \;\le\; \sum_{x \in \mathcal{V}} \max\!\left(0,\, p(x) - q(x)\right),$$
+
+        <p>because the $i=1$ factor (using $p^{(0)} = p$) is exactly the single-candidate rejection probability, and every other factor is at most 1. Equivalently, the acceptance rate $1 - \prod_{i=1}^m \sum_x \max(0, p^{(i-1)}(x) - q(x))$ is at least that of standard speculative decoding.</p>
+
         <h2>Summary</h2>
         <ul>
             <li>Speculative decoding exploits the memory-bandwidth bound nature of LLM inference by letting a small draft model propose $K$ tokens cheaply, while the large model verify them all in a batch.</li>
             <li>The accept and resample probabilities are designed such that they mathematically guarantees the output distribution is identical to sampling from the large model alone.</li>
             <li>In the best case, we get $K+1$ tokens for the cost of one large-model forward pass. In the worst case, we still get 1 token (no worse than standard decoding), although we might waste time on small model generating process.</li>
+            <li>Because the expected number of accepted tokens saturates at $\frac{p}{1-p}$, a larger $K$ has exponentially decaying returns. The bottleneck is the per-step acceptance rate $p$.</li>
+            <li>Tree-based speculative decoding raises the acceptance rate by proposing multiple candidates per step, verifies the whole tree in one pass with tree attention, and uses a sequential accept/residual-resample procedure that remains lossless.</li>
         </ul>
 
         <h2>References</h2>
         <ul>
-            <li>Leviathan, Y., Kalman, M. and Matias, Y., 2023, July. Fast inference from transformers via speculative decoding. In International Conference on Machine Learning (pp. 19274-19286). PMLR.</li>
+            <li>Leviathan, Y., Kalman, M. and Matias, Y., 2023, July. Fast inference from transformers via speculative decoding. In International conference on machine learning (pp. 19274-19286). PMLR.</li>
+            <li>Miao, X., Oliaro, G., Zhang, Z., Cheng, X., Wang, Z., Zhang, Z., Wong, R.Y.Y., Zhu, A., Yang, L., Shi, X. and Shi, C., 2024, April. Specinfer: Accelerating large language model serving with tree-based speculative inference and verification. In Proceedings of the 29th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 3 (pp. 932-949).</li>
         </ul>
     </div>
 </article>
